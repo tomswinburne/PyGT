@@ -1,8 +1,9 @@
-import os,time
+import os,time,sys
 import numpy as np
-
 from scipy.sparse import csgraph, csr_matrix, eye, save_npz, load_npz, diags
 
+os.system('mkdir -p cache')
+os.system('mkdir -p output')
 
 
 """ test for custom umfpack_hack """
@@ -171,27 +172,34 @@ def load_mat_discon(path="../../data/LJ38",Nmax=8000):
     return dU, dS, U, S, U.shape[0]
 
 def load_save_mat_histo(path="../../data/LJ38",Nmax=8000,generate=True):
+    name = path.split("/")[-1]
+    if len(name)==0:
+        name = path.split("/")[-2]
     if not generate:
         try:
-            dU = np.loadtxt('temp_dU.txt')
-            dS = np.loadtxt('temp_dS.txt')
+            dU = np.loadtxt('cache/temp_%s_dU.txt' % name)
+            dS = np.loadtxt('cache/temp_%s_dS.txt' % name)
         except IOError:
             generate = True
             print("no files found, generating...")
     if generate:
           print("Generating....")
           dU, dS = load_mat(path,beta=1.0,Nmax=Nmax,histo=True)
-          np.savetxt('temp_dU.txt',dU)
-          np.savetxt('temp_dS.txt',dS)
+          np.savetxt('cache/temp_%s_dU.txt' % name,dU)
+          np.savetxt('cache/temp_%s_dS.txt' % name,dS)
 
     return dU,dS
 
 def load_save_mat_discon(path="../../data/LJ38",Nmax=8000,generate=True):
+    name = path.split("/")[-1]
+    if len(name)==0:
+        name = path.split("/")[-2]
+
     if not generate:
         try:
-            dU = load_npz('temp_dU.npz')
-            dS = load_npz('temp_dS.npz')
-            US = np.loadtxt('temp_US.txt')
+            dU = load_npz('cache/temp_%s_dU.npz' % name)
+            dS = load_npz('cache/temp_%s_dS.npz' % name)
+            US = np.loadtxt('cache/temp_%s_US.txt' % name)
         except IOError:
             generate = True
             print("no files found, generating...")
@@ -203,20 +211,22 @@ def load_save_mat_discon(path="../../data/LJ38",Nmax=8000,generate=True):
           US = np.zeros((U.shape[0],2))
           US[:,0] = U
           US[:,1] = S
-          np.savetxt('temp_US.txt',US)
-          save_npz('temp_dU.npz',dU)
-          save_npz('temp_dS.npz',dS)
+          np.savetxt('cache/temp_%s_US.txt' % name,US)
+          save_npz('cache/temp_%s_dU.npz' % name,dU)
+          save_npz('cache/temp_%s_dS.npz' % name,dS)
 
     return dU,dS,US[:,0],US[:,1]
 
 def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,generate=True,discon=False):
-
+    name = path.split("/")[-1]
+    if len(name)==0:
+        name = path.split("/")[-2]
     if not generate and not discon:
         try:
-            B = load_npz('temp_B.npz')
-            D = load_npz('temp_D.npz')
-            K = load_npz('temp_K.npz')
-            FNB = np.loadtxt('temp_F.txt')
+            B = load_npz('cache/temp_%s_%2.6g_B.npz' % (name,beta))
+            D = load_npz('cache/temp_%s_%2.6g_D.npz' % (name,beta))
+            K = load_npz('cache/temp_%s_%2.6g_K.npz' % (name,beta))
+            FNB = np.loadtxt('cache/temp_%s_%2.6g_F.txt' % (name,beta))
         except IOError:
             generate = True
             print("no files found, generating...")
@@ -228,10 +238,10 @@ def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,generate=True,discon
       FNB[-1] = beta
       FNB[-2] = N
       FNB[:-2] = F
-      np.savetxt('temp_F.txt',FNB)
-      save_npz('temp_B.npz',B)
-      save_npz('temp_K.npz',K)
-      save_npz('temp_D.npz',D)
+      np.savetxt('cache/temp_%s_%2.6g_F.txt' % (name,beta),FNB)
+      save_npz('cache/temp_%s_%2.6g_B.npz' % (name,beta),B)
+      save_npz('cache/temp_%s_%2.6g_K.npz' % (name,beta),K)
+      save_npz('cache/temp_%s_%2.6g_D.npz' % (name,beta),D)
 
     beta = FNB[-1]
     N = int(FNB[-2])

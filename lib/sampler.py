@@ -268,7 +268,7 @@ class sampler:
 			r_initial_states = self.sys.selB[~self.sys.selI]
 			r_final_states = self.sys.selA[~self.sys.selI]
 			gtBAB =( rB[r_final_states,:].tocsr()[:,r_initial_states].dot(oneB)).sum()
-			print("GT:",gtBAB)
+			print("\nGT BAB:",gtBAB)
 
 		iDI = sp.diags(1.0 / kt[selI], format='csr')
 		iDB = sp.diags(1.0 / kt[selB], format='csr')
@@ -283,7 +283,10 @@ class sampler:
 		BAIB = np.ravel(BAI.dot(x)).sum()
 
 		print("MATRIX:",BAB+BAIB)
-		return BAB+BAIB
+		if gt_check:
+			return BAB+BAIB, abs(gtBAB-BAIB-BAB)/(BAIB+BAB)
+		else:
+			return BAB+BAIB
 
 
 	def estimated_branching_probability(self):

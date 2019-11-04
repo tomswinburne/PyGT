@@ -105,7 +105,7 @@ def gt_seq(N,rm_reg,B,trmb=4,condThresh=1.0e10,order=None):
 
     if has_tqdm:
         print("GT regularization removing %d states:" % NI)
-        pbar = tqdm(total=NI)
+        pbar = tqdm(total=NI-1)
 
     while NI>0:
         rm = np.zeros(N,bool)
@@ -129,5 +129,5 @@ def gt_seq(N,rm_reg,B,trmb=4,condThresh=1.0e10,order=None):
         else:
             rmb = 1
             retry += 1
-
+    #pbar.update(NI)
     return B,N,retry

@@ -1,5 +1,7 @@
 import os,time,sys,timeit
+os.system('mkdir -p cache')
 os.path.insert(0,'./lib')
+
 from ktn_io import * # tqdm / hacked scipy test
 
 # load_save_mat, timer, gt, direct_solve, gt_seq, make_fastest_path,
