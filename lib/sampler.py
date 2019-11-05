@@ -5,7 +5,7 @@ import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 
 sys.path.insert(0,"./lib")
-from gt_tools import gt_seq
+from gt_tools import *
 
 class sampler:
 	def __init__(self,sys,max_d=20):

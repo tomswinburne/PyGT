@@ -1,73 +1,48 @@
-import os,sys
+import os,time,sys,timeit
+from mat_tools import *#load_save_mat, timer, gt, direct_solve, gt_seq, make_fastest_path,
+
 import numpy as np
-#from scipy.sparse import csr_matrix, eye, save_npz, load_npz, diags
-#import scipy.sparse.linalg as spla
-np.set_printoptions(linewidth=160)
+from scipy.sparse import csr_matrix, eye, save_npz, load_npz, diags
+import scipy.sparse.linalg as spla
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 
-os.system('mkdir -p cache')
-sys.path.insert(0,'./lib')
-from ktn_io import * # tqdm / hacked scipy test
-from gt_tools import *
+generate = False
+beta = 10.0
+
+print("\n\nGT REGULARIZATION + SAMPLING TESTS\n")
+
+beta, B, K, D, N, f, kt, kcon = load_save_mat(path="../../data/LJ13",beta=beta,Nmax=5000,generate=generate)
 
 
-print("\n\nGT REGULARIZATION TESTS\n")
-
-
-generate = True # Do we generate the KTN from data, or read in the "cache"
-
-beta = 15.0 # overwritten if generate = False
-
-beta, B, K, D, N, f, kt, kcon = load_save_mat(path="KTN_data/LJ13/",beta=beta,Nmax=15000,generate=generate)
 
 print("beta: ",beta,"N: ",N)
 
-"""
-Find fastest path from state_state to end_state, then returns all states on path and 'depth' connections away
-depth=1 => path_region =  all direct connections to the path
-"""
-start_state = f.argmin() # free energy minimum
-end_state = f.argmax() # free energy maximum
-path, path_region = make_fastest_path(K,start_state,end_state,depth=1)
+path, path_region = make_fastest_path(K,f.argmin(),f.argmax(),depth=1) # K, i, f
 
-
-"""
-Boolean vectors selecting A and/or B regions
-"""
 initial_states, final_states = np.zeros(N,bool), np.zeros(N,bool)
 initial_states[path[0]] = True
 final_states[path[-1]] = True
+
+pi = np.ones(initial_states.sum())/initial_states.sum()
 basins = initial_states + final_states
 inter_region = ~basins
-
 
 print("\n%d INITIAL STATES -> %d FINAL STATES\n" % (initial_states.sum(),final_states.sum()))
 
 
-""" First, try a brute solve. cond variable !=1 iff using hacked scipy """
 BABI, BAB,cond = direct_solve(B,initial_states,final_states)
 
 out = output_str()
 out(["\nBRUTE SOLVE:","B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI,"COND:",cond,"\n"])
 out(["\n%d PATH+ENV STATES\n" % (path_region.sum())])
 
-
-
-""" ikcon estimates the local condition number and orders the GT removal process accordingly """
+inter_region[path_region] = False
 ikcon = kcon.copy()
 ikcon[path_region] = ikcon.max()
 
+np.set_printoptions(linewidth=160)
 
-"""
-Test of numerical stability of various extended GT removal protocols
-
-remove all states with inter_region == True
-
-Try exact same protocol with in blocks of 40,10 or 1
-
-blocks of 1 is exactly the normal GT process
-"""
-
-inter_region[path_region] = False
 final_print = ""
 for trmb in [40,10,1]:
     # remove trmb states at a time by GT
@@ -78,6 +53,8 @@ for trmb in [40,10,1]:
     r_initial_states = initial_states[~inter_region]
     r_final_states = final_states[~inter_region]
     BABI, BAB, cond = direct_solve(rB,r_initial_states,r_final_states)
+
+
 
     out(["\nGT[%d] justpath:" % trmb,"B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI, "RESCANS: ",retry,"COND:",cond,"max(diag(BII))):",rB.diagonal().max(),"\n"])
 

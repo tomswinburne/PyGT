@@ -1,9 +1,9 @@
 import sys,os
-os.system('mkdir -p cache')
-os.system('mkdir -p output')
-sys.path.insert(0,"./lib")
 import numpy as np
 import matplotlib.pyplot as plt
+
+os.system('mkdir -p output')
+sys.path.insert(0,"./lib")
 from sampler import sampler
 from aib_system import AIB_system
 

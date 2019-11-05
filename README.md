@@ -3,7 +3,7 @@
 >swinburne@cinam.univ-mrs.fr
 
 ## packages
-1. It is nice to install the [`tqdm`](https://pypi.org/project/tqdm/) package to having loading bars, using e.g.
+1. It is nice to install the [`tqdm`](https://pypi.org/project/tqdm/) package to have loading bars, using e.g.
 ```
 pip install tqdm
 ```

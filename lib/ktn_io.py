@@ -1,38 +1,8 @@
 import os,time,sys
 import numpy as np
 from scipy.sparse import csgraph, csr_matrix, eye, save_npz, load_npz, diags
-
 os.system('mkdir -p cache')
 os.system('mkdir -p output')
-
-
-""" test for custom umfpack_hack """
-try:
-    from linalgcond import spsolvecond
-    try:
-        b = np.ones(4)
-        A = diags(np.r_[[0.1,0.3,0.4,0.5]],format="csr")
-        x,cond = spsolvecond(A,b,giveCond=True)
-        print("Using custom UMFPACK with condition number calculation")
-        has_umfpack_hack=True
-    except TypeError or ImportError:
-        from scipy.sparse.linalg import spsolve
-        print("Using standard UMFPACK, no condition number calculation")
-        has_umfpack_hack=False
-except ModuleNotFoundError:
-    from scipy.sparse.linalg import spsolve
-    print("Using standard UMFPACK, no condition number calculation")
-    has_umfpack_hack=False
-
-""" test for tqdm progress bars """
-
-try:
-    from tqdm import tqdm
-    has_tqdm=True
-except:
-    has_tqdm=False
-
-
 import warnings
 
 class timer:
