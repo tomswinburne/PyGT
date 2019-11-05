@@ -1,13 +1,8 @@
-import os,sys
 import numpy as np
-#from scipy.sparse import csr_matrix, eye, save_npz, load_npz, diags
-#import scipy.sparse.linalg as spla
 np.set_printoptions(linewidth=160)
 
-os.system('mkdir -p cache')
-sys.path.insert(0,'./lib')
-from ktn_io import * # tqdm / hacked scipy test
-from gt_tools import *
+from lib.ktn_io import * # tqdm / hacked scipy test
+from lib.gt_tools import *
 
 
 print("\n\nGT REGULARIZATION TESTS\n")

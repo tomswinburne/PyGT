@@ -1,11 +1,16 @@
-import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 
-sys.path.insert(0,"./lib")
-from gt_tools import *
+from lib.gt_tools import *
+""" test for tqdm progress bars """
+try:
+    from tqdm import tqdm
+    has_tqdm=True
+except:
+    has_tqdm=False
+
 
 class sampler:
 	def __init__(self,sys,max_d=20):
@@ -22,6 +27,7 @@ class sampler:
 		n_b = np.arange(self.sys.N)[self.sys.selB]
 		self.probed[self.sys.selA,:][:,self.sys.selA] = True
 		self.probed[self.sys.selB,:][:,self.sys.selB] = True
+		Np = self.sys.remaining_pairs()
 		n_aib = []
 		for t_i in n_a:
 			n_aib.append(t_i)
@@ -36,7 +42,6 @@ class sampler:
 					for ff in fa:
 						n_aib.append(ff)
 					self.sys.add_connections(ia,fa,ka)
-		print("AB SAMPLE DONE : %d" % self.sys.remaining_pairs())
 		n_aib = list(set(n_aib))
 
 		for t_i in n_aib[:10]:
@@ -46,8 +51,52 @@ class sampler:
 					self.probed[t_i,t_f]=True
 					self.probed[t_f,t_i]=True
 					self.sys.add_connections(ia,fa,ka)
+		dNp = Np-self.sys.remaining_pairs()
+		print("INITIAL SAMPLE DONE : found %d/%d pairs" % (dNp,Np))
 
-		print("INITIAL SAMPLE DONE : %d remaining pairs" % self.sys.remaining_pairs())
+	def initial_sample_path(self,path):
+		# do a DNEB, find some paths to start from
+		n_a = np.arange(self.sys.N)[self.sys.selA]
+		n_b = np.arange(self.sys.N)[self.sys.selB]
+		self.probed[self.sys.selA,:][:,self.sys.selA] = True
+		self.probed[self.sys.selB,:][:,self.sys.selB] = True
+		Np = self.sys.remaining_pairs()
+
+		if has_tqdm:
+			pbar = tqdm(total=len(path)*(len(path)-1)//2)
+		print(len(path))
+		for t_i in path:
+			for t_f in path:
+				if t_i<t_f:
+					ia,fa,ka = self.sys.DNEB(t_i,t_f,pM=sp.csr_matrix(self.probed))
+					self.probed[t_i,t_f]=True
+					self.probed[t_f,t_i]=True
+					self.sys.add_connections(ia,fa,ka)
+					pbar.update(1)
+
+		dNp = Np-self.sys.remaining_pairs()
+		print("INITIAL SAMPLE DONE : found %d/%d pairs" % (dNp,Np))
+
+	def initial_sample_path_region(self,path_region,ncs=1):
+		# do a DNEB, find some paths to start from
+		n_a = np.arange(self.sys.N)[self.sys.selA]
+		n_b = np.arange(self.sys.N)[self.sys.selB]
+		self.probed[self.sys.selA,:][:,self.sys.selA] = True
+		self.probed[self.sys.selB,:][:,self.sys.selB] = True
+		Np = self.sys.remaining_pairs()
+
+		if has_tqdm:
+			pbar = tqdm(total=len(path_region))
+
+		for t_i in path_region:
+			ia,fa,ka = self.sys.SaddleSearch(t_i)
+			#self.probed[t_i,t_f]=True
+			#self.probed[t_f,t_i]=True
+			self.sys.add_connections(ia[:ncs],fa[:ncs],ka[:ncs])
+			pbar.update(1)
+
+		dNp = Np-self.sys.remaining_pairs()
+		print("INITIAL SAMPLE DONE : found %d/%d pairs" % (dNp,Np))
 
 
 
@@ -217,7 +266,7 @@ class sampler:
 		sens[0] = c_tot.max()
 		sens[1] = c_tot.min()
 
-		sens[7] = np.exp(-0.001*Na) + (1.0 - np.exp(-0.001*Na))*ed
+		sens[7] = np.exp(-0.0001*Na) + (1.0 - np.exp(-0.0001*Na))*ed
 
 		sens[8] = int(len(c_tot)*sens[7])*0.5
 		sens[2] = c_tot[c_tot.argsort()[-int(sens[8]):]].sum()

@@ -4,7 +4,7 @@ import numpy as np
 
 name='LJ13'
 
-smoothing_window = 4
+smoothing_window = 1
 
 savefig = False
 

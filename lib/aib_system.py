@@ -1,13 +1,11 @@
-import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
-sys.path.insert(0,"./lib")
-from ktn_io import load_save_mat
+from lib.ktn_io import load_save_mat
 
 
-class AIB_system:
+class aib_system:
 	def __init__(self,path="../../data/LJ13",beta=5.0,Nmax=5000,generate=True):
 		print(path)
 
@@ -105,7 +103,7 @@ class AIB_system:
 		return i_a,f_a,k_a
 
 	# fake Saddle Search from i_s and f_s
-	def SaddleSearch(self,i_s,f_s):
+	def SaddleSearch(self,i_s,f_s=None):
 		i_a = []
 		f_a = []
 		k_a = []
@@ -115,12 +113,12 @@ class AIB_system:
 			i_a.append(i_s)
 			f_a.append(n_s)
 			k_a.append([self.K[n_s,i_s],self.K[i_s,n_s]])
-
-		ki = np.ravel(self.K[:,f_s].todense())
-		for _f_s in np.arange(self.N)[ki>0.0]:
-			i_a.append(f_s)
-			f_a.append(n_s)
-			k_a.append([self.K[n_s,f_s],self.K[f_s,n_s]])
+		if not f_s is None:
+			ki = np.ravel(self.K[:,f_s].todense())
+			for _f_s in np.arange(self.N)[ki>0.0]:
+				i_a.append(f_s)
+				f_a.append(n_s)
+				k_a.append([self.K[n_s,f_s],self.K[f_s,n_s]])
 		return i_a,f_a,k_a
 
 	def ConnectingStates(self,i_s):

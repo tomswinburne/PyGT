@@ -1,11 +1,11 @@
-import sys,os
+import os
+os.system('mkdir -p output')
+
 import numpy as np
 import matplotlib.pyplot as plt
 
-os.system('mkdir -p output')
-sys.path.insert(0,"./lib")
-from sampler import sampler
-from aib_system import AIB_system
+from lib.sampler import sampler
+from lib.aib_system import aib_system
 
 gt_check = False
 generate = False
@@ -15,7 +15,7 @@ Load KTN data. generate=False looks for cache
 """
 data_dir = "KTN_data/LJ13/"
 
-sys = AIB_system(path=data_dir,beta=8.0,Nmax=5000,generate=generate)
+sys = aib_system(path=data_dir,beta=8.0,Nmax=5000,generate=generate)
 
 
 """ Build B -> A regions via boolean vectors"""

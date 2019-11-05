@@ -2,6 +2,7 @@ import os,time
 import numpy as np
 os.system('mkdir -p cache')
 os.system('mkdir -p output')
+
 from scipy.sparse import csgraph, csr_matrix, eye, save_npz, load_npz, diags
 
 
@@ -51,7 +52,7 @@ def direct_solve(B,initial_states,final_states):
     BABI = BAI.dot(x)
     return BABI,BAB,cond
 
-def make_fastest_path(K,i,f,depth=1):
+def make_fastest_path(K,i,f,depth=1,limit=10):
     d,cspath = csgraph.shortest_path(csgraph=K, indices=[f,i],\
                                     directed=True, method='D', return_predecessors=True)
     path = [i]
@@ -72,7 +73,7 @@ def make_fastest_path(K,i,f,depth=1):
         indscan = np.arange(N)[path_region]
     for scan in range(depth):
         for path_ind in indscan:
-            for sub_path_ind in K[:,path_ind].indices:
+            for sub_path_ind in K[:,path_ind].indices[:limit]:
                 path_region[sub_path_ind] = True
     return path, path_region
 
@@ -124,7 +125,7 @@ def gt_seq(N,rm_reg,B,trmb=4,condThresh=1.0e10,order=None):
 
     if has_tqdm:
         print("GT regularization removing %d states:" % NI)
-        pbar = tqdm(total=NI-1)
+        pbar = tqdm(total=NI)
 
     while NI>0:
         rm = np.zeros(N,bool)
