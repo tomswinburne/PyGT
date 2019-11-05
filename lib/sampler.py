@@ -266,7 +266,7 @@ class sampler:
 		sens[0] = c_tot.max()
 		sens[1] = c_tot.min()
 
-		sens[7] = np.exp(-0.0001*Na) + (1.0 - np.exp(-0.0001*Na))*ed
+		sens[7] = np.exp(-0.001*Na) + (1.0 - np.exp(-0.001*Na))*ed
 
 		sens[8] = int(len(c_tot)*sens[7])*0.5
 		sens[2] = c_tot[c_tot.argsort()[-int(sens[8]):]].sum()
