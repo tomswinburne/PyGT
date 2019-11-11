@@ -47,7 +47,7 @@ class output_str:
     def summary(self):
         print("SUMMARY:\n",self.print_str)
 
-def load_mat(path='../data/LJ38/raw/',Nmax=None,beta=1.0,mytype=np.float64,discon=False,histo=False):
+def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,mytype=np.float64,discon=False,histo=False):
 
     """ load data """
     GSD = np.loadtxt(os.path.join(path,'min.data'),\
@@ -67,7 +67,15 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,beta=1.0,mytype=np.float64,disco
     N = max(TSD['I'].max()+1,TSD['F'].max()+1)
     N = min(Nmax,N)
 
+    Efilter = GSD['E']<GSD['E'].max()+1.0
+
     sels = (TSD['I']<N) * (TSD['F']<N) * (TSD['I']!=TSD['F'])
+
+    if not Emax is None:
+        sels *= GSD['E'][TSD['I']]<Emax
+        sels *= GSD['E'][TSD['F']]<Emax
+        sels *= TSD['E']<Emax
+
 
 
     TSD = TSD[sels]
@@ -75,6 +83,7 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,beta=1.0,mytype=np.float64,disco
     Emin = GSD['E'].min().copy()
     GSD['E'] -= Emin
     TSD['E'] -= Emin
+    print("E[0]=%1.4g,E[6]=%1.4g" % (GSD['E'][0],GSD['E'][6]))
 
     """ Calculate rates """
     BF = beta*GSD['E']-GSD['S']
@@ -126,7 +135,7 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,beta=1.0,mytype=np.float64,disco
         dU = dU.tocsc()[sel,:].tocsr()[:,sel]
 
     GSD = GSD[sel]
-
+    print("E[0]=%1.4g,E[6]=%1.4g" % (GSD['E'][0],GSD['E'][6]))
     kt = np.ravel(K.sum(axis=0))
     iD = csr_matrix((1.0/kt,(np.arange(N),np.arange(N))),shape=(N,N),dtype=mytype)
     D = csr_matrix((kt,(np.arange(N),np.arange(N))),shape=(N,N),dtype=mytype)
@@ -137,11 +146,11 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,beta=1.0,mytype=np.float64,disco
     else:
         return B, K, D, N, GSD['E']-GSD['S']/beta
 
-def load_mat_discon(path="../../data/LJ38",Nmax=8000):
-    dU, dS, U, S = load_mat(path,beta=1.0,Nmax=Nmax,discon=True)
+def load_mat_discon(path="../../data/LJ38",Nmax=8000,Emax=None):
+    dU, dS, U, S = load_mat(path,beta=1.0,Nmax=Nmax,Emax=Emax,discon=True)
     return dU, dS, U, S, U.shape[0]
 
-def load_save_mat_histo(path="../../data/LJ38",Nmax=8000,generate=True):
+def load_save_mat_histo(path="../../data/LJ38",Nmax=8000,Emax=None,generate=True):
     name = path.split("/")[-1]
     if len(name)==0:
         name = path.split("/")[-2]
@@ -154,13 +163,13 @@ def load_save_mat_histo(path="../../data/LJ38",Nmax=8000,generate=True):
             print("no files found, generating...")
     if generate:
           print("Generating....")
-          dU, dS = load_mat(path,beta=1.0,Nmax=Nmax,histo=True)
+          dU, dS = load_mat(path,beta=1.0,Nmax=Nmax,Emax=Emax,histo=True)
           np.savetxt('cache/temp_%s_dU.txt' % name,dU)
           np.savetxt('cache/temp_%s_dS.txt' % name,dS)
 
     return dU,dS
 
-def load_save_mat_discon(path="../../data/LJ38",Nmax=8000,generate=True):
+def load_save_mat_discon(path="../../data/LJ38",Nmax=8000,Emax=None,generate=True):
     name = path.split("/")[-1]
     if len(name)==0:
         name = path.split("/")[-2]
@@ -177,7 +186,7 @@ def load_save_mat_discon(path="../../data/LJ38",Nmax=8000,generate=True):
 
     if generate:
           print("Generating....")
-          dU, dS, U, S = load_mat(path,beta=1.0,Nmax=Nmax,discon=True)
+          dU, dS, U, S = load_mat(path,beta=1.0,Nmax=Nmax,Emax=Emax,discon=True)
           US = np.zeros((U.shape[0],2))
           US[:,0] = U
           US[:,1] = S
@@ -187,7 +196,7 @@ def load_save_mat_discon(path="../../data/LJ38",Nmax=8000,generate=True):
 
     return dU,dS,US[:,0],US[:,1]
 
-def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,generate=True,discon=False):
+def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,Emax=None,generate=True,discon=False):
     name = path.split("/")[-1]
     if len(name)==0:
         name = path.split("/")[-2]
@@ -203,7 +212,7 @@ def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,generate=True,discon
 
     if generate:
       print("Generating....")
-      B, K, D, N, F= load_mat(path,beta=beta,Nmax=Nmax)
+      B, K, D, N, F= load_mat(path,beta=beta,Nmax=Nmax,Emax=Emax)
       FNB = np.zeros(F.shape[0]+2)
       FNB[-1] = beta
       FNB[-2] = N

@@ -6,10 +6,10 @@ from scipy.sparse.linalg import spsolve
 from lib.gt_tools import *
 """ test for tqdm progress bars """
 try:
-    from tqdm import tqdm
-    has_tqdm=True
+	from tqdm import tqdm
+	has_tqdm=True
 except:
-    has_tqdm=False
+	has_tqdm=False
 
 
 class sampler:
@@ -77,7 +77,7 @@ class sampler:
 		dNp = Np-self.sys.remaining_pairs()
 		print("INITIAL SAMPLE DONE : found %d/%d pairs" % (dNp,Np))
 
-	def initial_sample_path_region(self,path_region,ncs=1):
+	def initial_sample_path_region(self,path_region,ncs=4):
 		# do a DNEB, find some paths to start from
 		n_a = np.arange(self.sys.N)[self.sys.selA]
 		n_b = np.arange(self.sys.N)[self.sys.selB]
@@ -90,8 +90,9 @@ class sampler:
 
 		for t_i in path_region:
 			ia,fa,ka = self.sys.SaddleSearch(t_i)
-			#self.probed[t_i,t_f]=True
-			#self.probed[t_f,t_i]=True
+			for t_f in fa:
+				self.probed[t_i,t_f]=True
+				self.probed[t_f,t_i]=True
 			self.sys.add_connections(ia[:ncs],fa[:ncs],ka[:ncs])
 			pbar.update(1)
 
@@ -197,17 +198,11 @@ class sampler:
 		bab = (BAI.dot(x)).sum() + (BAB.dot(oneB)).sum()
 		yBIB = BIB.transpose().dot(y)
 
-
-
-
 		mM = sp.csr_matrix(M[selI,:][:,selI])/2.0
 		mM += mM.transpose() # i.e. take largest ij rate to ~ remove state Boltzmann factor
 		mMm = np.log(mM.data).mean()
-		mix = np.exp(-np.log(mM.data).var()/np.abs(mMm)+1.0)
-		mink = np.exp(-3.0)*(1.0-mix) + np.exp(mMm) * mix
-
-		#np.exp(np.log(mM.data).mean()) * 5.0 * (1.0-np.exp(-0.001*Na)) + np.exp(-0.001*Na)*np.exp(-3.0)
-		# ~ mean of current energy barriers == geometric mean of rates * 5
+		mix = np.exp(-np.log(mM.data).var()/(mMm*mMm))
+		mink = np.exp(-4.0)*(1.0-mix) + np.exp(mMm) * mix
 
 		# TODO- compact on A?
 		cAI = np.outer(np.ones(nA),(1.0-y)*iDx)
@@ -217,38 +212,18 @@ class sampler:
 			kf[kf>1.0] = 1.0
 			cAI[m,:] *= kf * mink
 
-
-		cIB = np.outer(y,iDB.dot(piB))-np.outer(np.ones(nI),yBIB*(iDB.dot(piB))) - np.outer(y*iDx,1.0)
+		cIB = np.outer(y,iDB.dot(oneB))-np.outer(np.ones(nI),yBIB*(iDB.dot(oneB))) - np.outer(y*iDx,1.0)
 		for l in range(cIB.shape[1]):
 			# k_ml = 0.1 * min(1.0,pi_m/pi_l)
 			kf = piI/piB[l]
 			kf[kf>1.0] = 1.0
 			cIB[:,l] *= kf * mink
 
-		"""
-		filterI = (y*piI).argsort()[-100:] # actual indicies....
-		y = y[filterI]
-		iDx = iDx[filterI]
-		piI = piI[filterI]
-		fmapI = mapI[filterI]
-		"""
+
 		nnI = piI.shape[0]
 		fmapI = mapI
 		cII = np.outer(y,iDx)-np.outer(np.ones(nnI),y*iDx)
 
-		#print(len(cII))
-
-		"""
-		if not ignore_distance:
-			for iII in range(len(cII)):
-				cII[iII] *= float(np.abs(mapI[iII//nI]-mapI[iII%nI])<=self.max_d) # not too far
-		"""
-
-		"""
-		k_ml = min(1.0,pi_m/pi_l)*k_Uk_
-		bcII_ml = (y_m-y_l)*iDx_l
-		cII_ml = k_ml * bcII_ml + transpose
-		"""
 		for l in np.arange(nnI):
 			# k_ml = 0.1 * min(1.0,pi_m/pi_l)
 			kf = piI[l]/piI
@@ -313,9 +288,9 @@ class sampler:
 		if gt_check:
 			ikcon = self.sys.kcon.copy()
 			ikcon[~self.sys.selI] = ikcon.max()
-			rB, rN, retry = gt_seq(N=self.sys.N,rm_reg=self.sys.selI,B=self.sys.B,trmb=1,order=ikcon)
-			r_initial_states = self.sys.selB[~self.sys.selI]
-			r_final_states = self.sys.selA[~self.sys.selI]
+			rB, rN, retry = gt_seq(N=self.sys.N,rm_reg=selI,B=self.sys.B,trmb=1,order=ikcon)
+			r_initial_states = self.sys.selB[~selI]
+			r_final_states = self.sys.selA[~selI]
 			gtBAB =( rB[r_final_states,:].tocsr()[:,r_initial_states].dot(oneB)).sum()
 			print("\nGT BAB:",gtBAB)
 
@@ -337,6 +312,37 @@ class sampler:
 		else:
 			return BAB+BAIB
 
+	def new_true_branching_probability(self,gt_check=True):
+		BAIB, BAB, cond = direct_solve(self.sys.B,self.sys.selB,self.sys.selA)
+		print("DIRECT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
+		res = (BAIB+BAB)*1.0
+		if gt_check:
+			rB, rN, retry = gt_seq(N=self.sys.N,rm_reg=self.sys.selI,B=self.sys.B,trmb=1)#,condThresh=1.0e10,order=ikcon)
+			print(rB)
+			DD = rB.diagonal()
+			r_initial_states = self.sys.selB[~self.sys.selI]
+			r_final_states = self.sys.selA[~self.sys.selI]
+			BAIB, BAB, cond = direct_solve(rB,r_initial_states,r_final_states)
+			print("GT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
+			gtBAB = BAB+BAIB
+			return res,abs(gtBAB-res)/res
+		else:
+			return res
+
+	def new_estimated_branching_probability(self,gt_check=True):
+		kt = np.ravel(self.sys.rK.sum(axis=0))
+		N,selA,selI,selB=(kt>0.0).sum(),self.sys.selA[kt>0.0],self.sys.selI[kt>0.0],self.sys.selB[kt>0.0]
+		B = sp.csr_matrix(self.sys.rK[(kt>0.0),:][:,(kt>0.0)]).dot(sp.diags(1.0/kt[kt>0.0],format='csr'))
+		print("Bxx.max=",B.diagonal().min())
+		BAIB, BAB, cond = direct_solve(B,selB,selA)
+		print("EST DIRECT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
+		rB, rN, retry = gt_seq(N=N,rm_reg=selI,B=B,trmb=1)#,condThresh=1.0e10,order=ikcon)
+		print(rB)
+		DD = rB.diagonal()
+		r_initial_states = selB[~selI]
+		r_final_states = selA[~selI]
+		BAIB, BAB, cond = direct_solve(rB,r_initial_states,r_final_states)
+		print("GT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
 
 	def estimated_branching_probability(self):
 		kt = np.ravel(self.sys.rK.sum(axis=0))

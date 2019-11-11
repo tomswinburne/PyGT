@@ -37,19 +37,22 @@ def direct_solve(B,initial_states,final_states):
     B=B.tocsc()
     basins = initial_states+final_states
     inter_region = ~basins
-    pi = np.ones(initial_states.sum()) / initial_states.sum()
-    NI, BI = inter_region.sum(), B[inter_region,:].tocsr()[:,inter_region]
-    BAI = B[final_states,:].tocsr()[:,inter_region].transpose().dot(np.ones(final_states.sum()))
-    BIB = B[inter_region,:].tocsr()[:,initial_states].dot(pi)
+    pi = np.ones(initial_states.sum()) #/ initial_states.sum()
     BAB = (B[final_states,:].tocsr()[:,initial_states].dot(pi)).sum()
-    iGI = eye(NI,format="csr") - BI
-    if has_umfpack_hack:
-        x,cond = spsolvecond(iGI,BIB,giveCond=True)
+    cond = 1.0
+    NI = inter_region.sum()
+    if NI>0:
+        BI = B[inter_region,:].tocsr()[:,inter_region]
+        BAI = B[final_states,:].tocsr()[:,inter_region].transpose().dot(np.ones(final_states.sum()))
+        BIB = B[inter_region,:].tocsr()[:,initial_states].dot(pi)
+        iGI = eye(NI,format="csr") - BI
+        if has_umfpack_hack:
+            x,cond = spsolvecond(iGI,BIB,giveCond=True)
+        else:
+            x = spsolve(iGI,BIB)
+        BABI = BAI.dot(x)
     else:
-        x = spsolve(iGI,BIB)
-        cond = 1.0
-
-    BABI = BAI.dot(x)
+        BABI = 0.0
     return BABI,BAB,cond
 
 def make_fastest_path(K,i,f,depth=1,limit=10):

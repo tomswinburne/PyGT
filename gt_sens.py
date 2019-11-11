@@ -16,13 +16,13 @@ generate=False looks for cache.
 gt_check=True verifies linear algebra is stable
 Nmax = maximum size of KTN
 """
-data_dir = "KTN_data/LJ13/"
+data_dir = "KTN_data/LJ38/"
 
-gt_check = False
-generate = True
-beta = 20.0 # overwritten if generate = False
-
-sys = aib_system(path=data_dir,beta=beta,Nmax=15000,generate=generate)
+gt_check = True
+generate = False
+beta = 10.0 # overwritten if generate = False
+Emax = -169.5
+sys = aib_system(path=data_dir,beta=beta,Emax=Emax,Nmax=150000,generate=generate)
 
 print("beta: ",sys.beta,"N: ",sys.N)
 
@@ -30,8 +30,9 @@ print("beta: ",sys.beta,"N: ",sys.N)
 Find fastest path from state_state to end_state, then returns all states on path and 'depth' connections away
 depth=1 => path_region =  all direct connections to the path
 """
-path, path_region = make_fastest_path(sys.K,sys.f.argmin(),sys.f.argmax(),depth=1,limit=2)
-
+#path, path_region = make_fastest_path(sys.K,sys.f.argmin(),sys.f.argmax(),depth=1,limit=2)
+path, path_region = make_fastest_path(sys.K,0,6,depth=3,limit=3)
+print("NPathRegion=",path_region.sum())
 """
 Boolean vectors selecting A and/or B regions
 """
@@ -39,23 +40,26 @@ selB = np.zeros(sys.N,bool)
 selA = np.zeros(sys.N,bool)
 selB[path[0]] = True
 selA[path[-1]] = True
+
+
 sys.define_AB_regions(selA,selB)
 
 sampler = sampler(sys)
-sampler.initial_sample_path_region(np.arange(sys.N)[path_region])
+#sampler.initial_sample()
 
+sampler.initial_sample_path_region(np.arange(sys.N)[path_region],ncs=10)
 
-""" get "exact" answer by linear algebra and GT. They need to match to trust the linear algebra! """
 if gt_check:
-	bab,gtdiff = sampler.true_branching_probability(gt_check=True)
-	print("GT/MATRIX DIFFERENCE: %2.4g%%" % (100.0*gtdiff))
+	bab, gterr = sampler.new_true_branching_probability()
 
-	if gtdiff>0.001: # i.e. 0.1%
-		print("MATRIX METHOD UNSTABLE! NEED TO PRE-GT BEFORE SENSITIVITY!")
-		""" Need to implement preGT in this repo """
+	if gterr>0.1: # 10%
+		print("MATRIX TOO ILL CONDITIONED! ERROR=%2.2g" % gterr)
 		exit()
-else:
-	bab = sampler.true_branching_probability(gt_check=False)
+
+#sampler.new_estimated_branching_probability()
+
+
+#bab = sampler.true_branching_probability(gt_check=True)
 
 
 """ open output file """
@@ -70,10 +74,18 @@ ncycles = number of cycles
 npairs = number of DNEBS per cycle
 ssnpairs = number of single ended searches per cycle, if performed
 """
-ncycles = 300
-npairs = 1
-ssnpairs = 1
+ncycles = 3000
+npairs = 10
+ssnpairs = 2
 ss = 0 # >0 if we do single eneded search
+
+rK = sampler.sys.rK.copy()
+sampler.sys.rK = sampler.sys.K
+pp,sens,ebab = sampler.sample(npairs=npairs,ss=ss,ignore_distance=True) # sampling process. Returns
+print("SENS: ",ebab)
+sampler.sys.rK = rK
+
+
 
 for ii in range(ncycles):
 
@@ -102,8 +114,8 @@ for ii in range(ncycles):
 		ss = 0
     """
 	#print('{:04d :04d :04d :04d :02.4f :02.4f :02.4f :02.4f :02.4f :02.4f :02.4f :02.4f :02.4f :02.4f}'.format(ii,orp,orp-nrp,ss,ebab/bab,sens[0],sens[1],sens[2],sens[3],sens[4],sens[5],sens[6],sens[7],true_dense))
-	print("{: <4} {: <10} {: <10} {: <10} {: <10} {: <10}".format(
-	"%d" % ii,"%1.4g" % (ebab/bab),"%1.4g" % sens[6],"%1.4g" % sens[4],"%1.4g" % sens[5],"%d" % ss))
+	print("{: <4} {: <10} {: <10} {: <10} {: <10} {: <10} {: <10}".format(
+	"%d" % ii,"%1.4g" % (ebab/bab),"%1.4g" % sens[6],"%1.4g" % sens[4],"%1.4g" % sens[5],"%d" % ss,"%1.4g" % bab))
 	#print("{: <4} {: <4} {: <4} {: <4} {: <4} {: <4} {: <4} {: <4} {: <4} {: <4} {: <4} {: <4} {: <4}".format(*["%d" % ii,"%d" % orp,"%d" % orp-nrp,"%d" % ss,"%3.3g" % ebab/bab,"%3.3g" % sens[0],"%3.3g" % sens[1],"%3.3g" % sens[2],"%3.3g" % sens[3],"%3.3g" % sens[4],"%3.3g" % sens[5],"%3.3g" % sens[6],"%3.3g" % sens[7],"%3.3g" % true_dense]))
 ff.close()
 

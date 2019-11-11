@@ -10,9 +10,9 @@ print("\n\nGT REGULARIZATION TESTS\n")
 
 generate = True # Do we generate the KTN from data, or read in the "cache"
 
-beta = 15.0 # overwritten if generate = False
+beta = 10.0 # overwritten if generate = False
 
-beta, B, K, D, N, f, kt, kcon = load_save_mat(path="KTN_data/LJ13/",beta=beta,Nmax=15000,generate=generate)
+beta, B, K, D, N, f, kt, kcon = load_save_mat(path="KTN_data/LJ38/",beta=beta,Emax=-169.5,Nmax=15000,generate=generate)
 
 print("beta: ",beta,"N: ",N)
 
@@ -20,8 +20,8 @@ print("beta: ",beta,"N: ",N)
 Find fastest path from state_state to end_state, then returns all states on path and 'depth' connections away
 depth=1 => path_region =  all direct connections to the path
 """
-start_state = f.argmin() # free energy minimum
-end_state = f.argmax() # free energy maximum
+start_state = 0#f.argmin() # free energy minimum
+end_state = 6#f.argmax() # free energy maximum
 path, path_region = make_fastest_path(K,start_state,end_state,depth=1)
 
 

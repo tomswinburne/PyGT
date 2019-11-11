@@ -6,11 +6,11 @@ from lib.ktn_io import load_save_mat
 
 
 class aib_system:
-	def __init__(self,path="../../data/LJ13",beta=5.0,Nmax=5000,generate=True):
+	def __init__(self,path="../../data/LJ13",beta=5.0,Nmax=5000,Emax=None,generate=True):
 		print(path)
 
 		self.beta, self.B, self.K, self.D, self.N, self.f, self.kt, self.kcon = \
-			load_save_mat(path=path,beta=beta,Nmax=Nmax,generate=generate)
+			load_save_mat(path=path,beta=beta,Nmax=Nmax,Emax=Emax,generate=generate)
 
 		""" connected components for matrix """
 		nc,cc = sp.csgraph.connected_components(self.K)
