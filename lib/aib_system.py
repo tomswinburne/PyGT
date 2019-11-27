@@ -2,46 +2,92 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
-from lib.ktn_io import load_save_mat
+from lib.ktn_io import load_save_mat,load_save_mat_gt
+from lib.gt_tools import gt_seq
 
 
 class aib_system:
-	def __init__(self,path="../../data/LJ13",beta=5.0,Nmax=5000,Emax=None,generate=True):
-		print(path)
+	def __init__(self,path="../../data/LJ13",beta=5.0,Nmax=None,\
+		Emax=None,generate=True,coco=False,selA=None,selB=None):
+		self.gtmap = None
+		if (selA is None) or (selB is None):
+			self.beta, self.B, self.K, self.D, self.N, self.u, self.s, self.kt, self.kcon, self.Emin = \
+				load_save_mat(path=path,beta=beta,Nmax=Nmax,Emax=Emax,generate=generate)
+			if coco:
+				""" connected components for matrix """
+				nc,cc = sp.csgraph.connected_components(self.K)
+				mc = 0
+				for j in range(nc):
+					sc = (cc==j).sum()
+					if sc > mc:
+						mc = sc
+						sel = cc==j
 
-		self.beta, self.B, self.K, self.D, self.N, self.f, self.kt, self.kcon = \
-			load_save_mat(path=path,beta=beta,Nmax=Nmax,Emax=Emax,generate=generate)
+				self.B = self.B.tocsc()[sel,:].tocsr()[:,sel]
+				self.K = self.K.tolil()[:,sel][sel,:]
+				self.N = sel.sum()
+				self.u = self.u[sel]
+				self.s = self.s[sel]
+				self.kt = np.ravel(self.K.sum(axis=0))
+				self.D = sp.diags(self.kt,format='csr')
+			self.f = self.u - self.s / self.beta
+		else:
+			self.beta = beta
+			self.B,self.D,self.f,self.gtmap = \
+				load_save_mat_gt(selA,selB,path=path,beta=beta,
+										Nmax=Nmax,Emax=Emax,generate=generate)
+			self.N = self.B.shape[0]
+			self.K = self.B.dot(self.D)
 
-		""" connected components for matrix """
-		nc,cc = sp.csgraph.connected_components(self.K)
-		mc = 0
-		for j in range(nc):
-			sc = (cc==j).sum()
-			if sc > mc:
-				mc = sc
-				sel = cc==j
 
 
-		self.B = self.B.tocsc()[sel,:].tocsr()[:,sel]
-		self.K = self.K.tolil()[:,sel][sel,:]
-		self.N = sel.sum()
-		self.f = self.f[sel]
-
-		#self.map = self.map[sel]
-		self.kt = np.ravel(self.K.sum(axis=0))
-
-		self.iD = sp.diags(1.0/self.kt,format='csr')
-		self.D = sp.diags(self.kt,format='csr')
-
+		""" B,K,D,N,f defined by this point """
 		self.pi = np.exp(-beta*self.f)
+		self.tG = self.K.tocsr() * sp.diags(self.pi,format='csr')
+		self.tG.data = 1.0 / self.tG.data
 		self.pi /= self.pi.sum()
-
+		self.kt = np.ravel(self.K.sum(axis=0))
 		self.udG = sp.csr_matrix(self.K.copy())
 		self.udG.data[:] = 1.0
-
 		self.rK = sp.diags(np.zeros(self.N),format='lil')
-
 		self.regions = False
+
+		if not self.gtmap is None:
+			gtselA = np.zeros(self.N,bool)
+			gtselB = np.zeros(self.N,bool)
+			gtselA[self.gtmap[selA]] = True
+			gtselB[self.gtmap[selB]] = True
+			self.define_AB_regions(gtselA,gtselB)
+
+	def find_path(self,i,f,depth=1,limit=10,strategy="RATE"):
+		if strategy == "DNEB":
+			G = self.udG
+		else:
+			G = self.tG
+		d, cspath = sp.csgraph.shortest_path(csgraph=G, indices=[f,i],\
+										directed=False, method='D', return_predecessors=True)
+		path = [i]
+		s = "\npath: "
+		while path[-1] != f:
+			s += str(path[-1])+" -> "
+			path.append(cspath[0][path[-1]])
+		s += str(path[-1])+"\n"
+		print(s)
+		N = self.tG.shape[0]
+		path_region = np.zeros(N,bool)
+		# path +
+		G=G.tocsc()
+		for path_ind in path:
+			path_region[path_ind] = True
+			indscan = np.arange(N)[path_region]
+		for scan in range(depth):
+			for path_ind in indscan:
+				for sub_path_ind in G[:,path_ind].indices[:limit]:
+					path_region[sub_path_ind] = True
+		return path, path_region
+
+
+
 
 	def define_AB_regions(self,selA,selB):
 		# input vector of bools
@@ -65,12 +111,14 @@ class aib_system:
 		return (self.K.nnz-self.rK.nnz)//2
 
 	def add_connections(self,i_a,f_a,k_a):
+		self.rK = self.rK.tolil()
 		c=0
 		for ifk in zip(i_a,f_a,k_a):
 			if self.rK[ifk[1],ifk[0]]==0.0:
 				self.rK[ifk[1],ifk[0]] = ifk[2][0]
 				self.rK[ifk[0],ifk[1]] = ifk[2][1]
 				c+=1
+		self.rK = self.rK.tocsr()
 		return c
 
 	# fake DNEB search between i_s, f_s

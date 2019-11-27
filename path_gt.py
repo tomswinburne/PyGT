@@ -4,20 +4,15 @@ np.set_printoptions(linewidth=160)
 from lib.ktn_io import * # tqdm / hacked scipy test
 from lib.gt_tools import *
 
-from scipy.sparse import save_npz,load_npz
 
 print("\n\nGT REGULARIZATION TESTS\n")
 
 
-# Do we generate the KTN from data, or read in the "cache"
-generate = False#True
-
-# Do we try a brute solve?
-brute = False
+generate = True # Do we generate the KTN from data, or read in the "cache"
 
 beta = 10.0 # overwritten if generate = False
-Emax = None#-167.5
-beta, B, K, D, N, u, s, kt, kcon, Emin = load_save_mat(path="KTN_data/LJ38/",beta=beta,Emax=Emax,Nmax=150000,generate=generate)
+Emax = 0.0#-169.5
+beta, B, K, D, N, u, s, kt, kcon, Emin = load_save_mat(path="KTN_data/LJ13/",beta=beta,Emax=Emax,Nmax=15000,generate=generate)
 f = u - s/beta
 print("beta: ",beta,"N: ",N)
 
@@ -25,17 +20,10 @@ print("beta: ",beta,"N: ",N)
 Find fastest path from state_state to end_state, then returns all states on path and 'depth' connections away
 depth=1 => path_region =  all direct connections to the path
 """
-start_state = 0#f.argmin() # free energy minimum
-end_state = 6#f.argmax() # free energy maximum
+start_state = f.argmin() # free energy minimum 0
+end_state = f.argmax() # free energy maximum 6
+path, path_region = make_fastest_path(K,start_state,end_state,depth=1)
 
-
-piM = D.copy()
-piM.data = np.exp(f)
-TE = K.copy().tocsr() * piM
-TE.data = 1.0/TE.data
-
-path, path_region = make_fastest_path(TE,start_state,end_state,depth=3,limit=10)
-print(path_region.sum())
 
 """
 Boolean vectors selecting A and/or B regions
@@ -50,12 +38,12 @@ inter_region = ~basins
 print("\n%d INITIAL STATES -> %d FINAL STATES\n" % (initial_states.sum(),final_states.sum()))
 
 
+""" First, try a brute solve. cond variable !=1 iff using hacked scipy """
+BABI, BAB,cond = direct_solve(B,initial_states,final_states)
+
 out = output_str()
-if brute:
-    """ First, try a brute solve. cond variable !=1 iff using hacked scipy """
-    BABI, BAB,cond = direct_solve(B,initial_states,final_states)
-    out(["\nBRUTE SOLVE:","B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI,"COND:",cond,"\n"])
-    out(["\n%d PATH+ENV STATES\n" % (path_region.sum())])
+out(["\nBRUTE SOLVE:","B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI,"COND:",cond,"\n"])
+out(["\n%d PATH+ENV STATES\n" % (path_region.sum())])
 
 
 
@@ -73,37 +61,29 @@ Try exact same protocol with in blocks of 40,10 or 1
 
 blocks of 1 is exactly the normal GT process
 """
-import time
 
 inter_region[path_region] = False
 final_print = ""
-for trmb in [500,40]:
-    t = time.time()
+for trmb in [40,10,1]:
     # remove trmb states at a time by GT
-    rB, rD, rN, retry = gt_seq(N=N,rm_reg=inter_region,B=B,D=D.data,trmb=trmb)
-    #rB, rN, retry = gt_seq(N=N,rm_reg=inter_region,B=B,D=None,trmb=trmb,condThresh=1.0e10,order=None)
-    #rD=None
-    #save_npz('output/rB.npz',rB)
-    #np.savetxt('output/rD.txt',rD)
-    #retry = 0
-    #rB = load_npz('output/rB.npz')
-    #rD = np.loadtxt('output/rD.txt')
-    #rN = rD.size
-    print("is it dense?: N=",rN,"N^2=",rN*rN,"rB.data.size=",rB.data.size,"sparsity:",float(rB.data.size)/float(rN)/float(rN))
+
+    rB, rN, retry = gt_seq(N=N,rm_reg=inter_region,B=B,trmb=trmb,condThresh=1.0e10,order=ikcon)
     DD = rB.diagonal()
+
     r_initial_states = initial_states[~inter_region]
     r_final_states = final_states[~inter_region]
     BABI, BAB, cond = direct_solve(rB,r_initial_states,r_final_states)
+
     out(["\nGT[%d] justpath:" % trmb,"B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI, "RESCANS: ",retry,"COND:",cond,"max(diag(BII))):",rB.diagonal().max(),"\n"])
+
     basins = r_initial_states + r_final_states
-    rB, rD, rN, retry = gt_seq(N=rN,rm_reg=(~basins),B=rB,D=rD,trmb=40)
-    #rB, rN, retry = gt_seq(N=rN,rm_reg=(~basins),B=rB,D=rD,trmb=1,condThresh=1.0e10,order=None)
+    rB, rN, retry = gt_seq(N=rN,rm_reg=(~basins),B=rB,trmb=1,condThresh=1.0e10,order=None)
     r_initial_states = r_initial_states[basins]
     r_final_states = r_final_states[basins]
     BAB = (rB[r_final_states,:].tocsr()[:,r_initial_states]).sum()
     BABI = 0.0
 
-    out(["\nGT[%d] complete:" % trmb,"B(A<-B):",BAB,"RESCANS: ",retry,"TIME:",time.time()-t,"\n"])
+    out(["\nGT[%d] complete:" % trmb,"B(A<-B):",BAB,"RESCANS: ",retry,"\n"])
 
 
 out.summary()
