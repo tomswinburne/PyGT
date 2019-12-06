@@ -195,34 +195,47 @@ class sampler:
 		y = spsolve(iGI.transpose(),BAI.transpose().dot(np.ones(selA.sum())))
 
 		iDx = iDI.dot(x)
-		bab = (BAI.dot(x)).sum() + (BAB.dot(oneB)).sum()
-		yBIB = BIB.transpose().dot(y)
+		bab = (BAI.dot(x)).sum()+(BAB.dot(oneB)).sum()
+		yBIB = np.ravel(BIB.transpose().dot(y))
 
-		mM = sp.csr_matrix(M[selI,:][:,selI])/2.0
-		mM += mM.transpose() # i.e. take largest ij rate to ~ remove state Boltzmann factor
-		mMm = np.log(mM.data).mean()
-		mix = np.exp(-np.log(mM.data).var()/(mMm*mMm))
-		mink = np.exp(-4.0)*(1.0-mix) + np.exp(mMm) * mix
+		# i.e. take largest ij rate to ~ remove state Boltzmann factor
+		mM = rK[selI,:][:,selI]
+		mMt = rK[selI,:][:,selI].transpose()
+		mM.data = np.vstack((mMt.data,mM.data)).max(axis=0)
+		lM = -np.log(mM.data)
+		mmm = np.percentile(mM.data,50)
+		
+		mix = np.exp(-lM.var()/lM.mean()/lM.mean())
+		ko = 5.0*np.exp(-3.0)
+		mink = ko*(1.0-mix) + mix*np.exp(-lM.mean())
+		
+		nnI = piI.shape[0]
+		fmapI = mapI
+		iDBs = np.ravel(iDB.dot(oneB))
 
-		# TODO- compact on A?
-		cAI = np.outer(np.ones(nA),(1.0-y)*iDx)
+		yvB = np.zeros(yBIB.shape[0])
+		for i in range(yBIB.shape[0]):
+			yvB[i] = yBIB[i]*iDBs[i]
+
+		yvI = np.zeros(nnI)
+		for i in range(nnI):
+			yvI = y[i] * iDx[i]
+
+		cII = np.outer(y,iDx)-np.outer(np.ones(nnI),yvI)
+		cAI = np.outer(np.ones(nA),iDx-yvI)
+		cIB = np.outer(y,iDBs)-np.outer(np.ones(nnI),yvB)-np.outer(yvI,np.ones(nB))
+
 		for m in range(cAI.shape[0]):
 			# k_ml = 0.1 * min(1.0,pi_m/pi_l)
 			kf = piA[m]/piI
 			kf[kf>1.0] = 1.0
 			cAI[m,:] *= kf * mink
 
-		cIB = np.outer(y,iDB.dot(oneB))-np.outer(np.ones(nI),yBIB*(iDB.dot(oneB))) - np.outer(y*iDx,1.0)
 		for l in range(cIB.shape[1]):
 			# k_ml = 0.1 * min(1.0,pi_m/pi_l)
 			kf = piI/piB[l]
 			kf[kf>1.0] = 1.0
 			cIB[:,l] *= kf * mink
-
-
-		nnI = piI.shape[0]
-		fmapI = mapI
-		cII = np.outer(y,iDx)-np.outer(np.ones(nnI),y*iDx)
 
 		for l in np.arange(nnI):
 			# k_ml = 0.1 * min(1.0,pi_m/pi_l)
@@ -230,7 +243,6 @@ class sampler:
 			kf[kf>1.0] = 1.0
 			cII[l,:] *= kf * mink
 
-		#cII[self.probed[selI,:][:,selI].todense().astype(bool)] = 0.0
 		cAI *= 1.0 - self.probed[selA,:][:,selI].todense()
 		cII *= 1.0 - self.probed[selI,:][:,selI].todense()
 		cIB *= 1.0 - self.probed[selI,:][:,selB].todense()
@@ -250,10 +262,6 @@ class sampler:
 		sens[4] = c_tot[c_tot>0.0].sum()
 		sens[5] = c_tot[c_tot<0.0].sum()
 		sens[6] = c_tot.sum()
-
-		#sens[4] *= sens[7]/(1.0-sens[7])
-		#sens[5] *= sens[7]/(1.0-sens[7])
-		#sens[6] *= sens[7]/(1.0-sens[7])
 
 
 		# nNI*nNI, NA*NI, NI*NB
