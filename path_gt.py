@@ -39,7 +39,7 @@ print("\n%d INITIAL STATES -> %d FINAL STATES\n" % (initial_states.sum(),final_s
 
 
 """ First, try a brute solve. cond variable !=1 iff using hacked scipy """
-BABI, BAB,cond = direct_solve(B,initial_states,final_states)
+BABI, BAB = direct_solve(B,initial_states,final_states)
 
 out = output_str()
 out(["\nBRUTE SOLVE:","B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI,"COND:",cond,"\n"])
@@ -72,7 +72,7 @@ for trmb in [40,10,1]:
 
     r_initial_states = initial_states[~inter_region]
     r_final_states = final_states[~inter_region]
-    BABI, BAB, cond = direct_solve(rB,r_initial_states,r_final_states)
+    BABI, BAB = direct_solve(rB,r_initial_states,r_final_states)
 
     out(["\nGT[%d] justpath:" % trmb,"B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI, "RESCANS: ",retry,"COND:",cond,"max(diag(BII))):",rB.diagonal().max(),"\n"])
 

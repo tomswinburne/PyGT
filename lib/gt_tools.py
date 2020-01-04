@@ -17,7 +17,7 @@ class timer:
 			return t
 
 
-""" test for custom umfpack_hack """
+""" test for custom umfpack_hack
 try:
 	from linalgcond import spsolvecond
 	try:
@@ -34,17 +34,20 @@ except ModuleNotFoundError:
 	from scipy.sparse.linalg import spsolve,inv
 	print("Using standard UMFPACK, no condition number calculation")
 	has_umfpack_hack=False
+"""
+from scipy.sparse.linalg import spsolve,inv
 
 """ test for tqdm progress bars """
 try:
 	from tqdm import tqdm
 	has_tqdm=True
 except:
+	print("Install tqdm package for pretty progress bars!")
 	has_tqdm=False
 
 
 
-def direct_solve(B,initial_states,final_states):
+def direct_solve(B,initial_states,final_states,D=None):
 	B=B.tocsc()
 	basins = initial_states+final_states
 	inter_region = ~basins
@@ -57,14 +60,21 @@ def direct_solve(B,initial_states,final_states):
 		BAI = B[final_states,:].tocsr()[:,inter_region].transpose().dot(np.ones(final_states.sum()))
 		BIB = B[inter_region,:].tocsr()[:,initial_states].dot(pi)
 		iGI = eye(NI,format="csr") - BI
+		"""
 		if has_umfpack_hack:
 			x,cond = spsolvecond(iGI,BIB,giveCond=True)
 		else:
 			x = spsolve(iGI,BIB)
+		"""
+		x = spsolve(iGI,BIB)
 		BABI = BAI.dot(x)
 	else:
 		BABI = 0.0
-	return BABI,BAB,cond
+	if iD is None:
+		return BABI,BAB
+	#else:
+
+
 
 def make_fastest_path(G,i,f,depth=1,limit=None):
 	d, cspath = csgraph.shortest_path(csgraph=G, indices=[f,i],\
@@ -112,15 +122,16 @@ def gt(B,sel,condThresh=1.0e8):
 		Bs[Bd<0.99] = 1.0-Bd[Bd<0.99]
 		iGxx = diags(Bs,format="csr") - Bxxnd
 		I = eye(sel.sum(),format=iGxx.format)
-
+		"""
 		if has_umfpack_hack:
 			Gxx,cond = spsolvecond(iGxx,I,giveCond=True)
 		else:
 			Gxx = spsolve(iGxx,I)
 			cond = 1.0
-
 		if cond>condThresh:
 			return B,False
+		"""
+		Gxx = spsolve(iGxx,I)
 	else:
 		_b_xx = Bxx.data.sum()
 		if _b_xx>0.99:

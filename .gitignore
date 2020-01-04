@@ -4,3 +4,5 @@
 cache/*
 output/*
 lib/__pycache__/*
+KTN_data/LJ38/*
+KTN_data/*tar.gz

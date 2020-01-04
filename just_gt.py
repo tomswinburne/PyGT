@@ -53,7 +53,7 @@ print("\n%d INITIAL STATES -> %d FINAL STATES\n" % (initial_states.sum(),final_s
 out = output_str()
 if brute:
     """ First, try a brute solve. cond variable !=1 iff using hacked scipy """
-    BABI, BAB,cond = direct_solve(B,initial_states,final_states)
+    BABI, BAB = direct_solve(B,initial_states,final_states)
     out(["\nBRUTE SOLVE:","B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI,"COND:",cond,"\n"])
     out(["\n%d PATH+ENV STATES\n" % (path_region.sum())])
 
@@ -93,7 +93,7 @@ for trmb in [500,40]:
     DD = rB.diagonal()
     r_initial_states = initial_states[~inter_region]
     r_final_states = final_states[~inter_region]
-    BABI, BAB, cond = direct_solve(rB,r_initial_states,r_final_states)
+    BABI, BAB = direct_solve(rB,r_initial_states,r_final_states)
     out(["\nGT[%d] justpath:" % trmb,"B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI, "RESCANS: ",retry,"COND:",cond,"max(diag(BII))):",rB.diagonal().max(),"\n"])
     basins = r_initial_states + r_final_states
     rB, rD, rN, retry = gt_seq(N=rN,rm_reg=(~basins),B=rB,D=rD,trmb=40)

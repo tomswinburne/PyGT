@@ -100,9 +100,21 @@ M^T M .x +
 """
 import scipy.sparse as sp
 
-
 iG = sp.diags(np.ones(sys.N),format='csr')-sys.B
+K = iG * sp.diags(sys.D,format='csr')
+
+print(K.shape,iG.shape,sys.D.shape)
+
+evals ,evecs = sp.linalg.eigs(iG,k=3,which='SR')
+print(evals)
+np.savetxt("evecs",evecs)
+
+exit()
+
 iy = np.zeros(sys.N)
+
+
+
 for i in range(sys.N):
 	iy[i] = sys.D[i] * sys.pi[i]
 
@@ -116,16 +128,20 @@ print(np.abs(sys.pi/x-1.0).max())
 K = sp.diags(sys.D,format='csr')-sys.K
 print((K.dot(sys.pi)).sum(),(K.dot(x)).sum())
 import matplotlib.pyplot as plt
-dd = np.abs(np.outer(x,1.0/x) - np.outer(sys.pi,1.0/sys.pi)).flatten()
-d = np.abs(x/sys.pi-1.0)
-plt.plot(d[d.argsort()],'o')
+new_phi = np.outer(x,1.0/x).flatten()
+old_phi = np.outer(sys.pi,1.0/sys.pi).flatten()
+select = (old_phi>0.0) * (old_phi<1.0)
+dd = new_phi[select] / old_phi[select] - 1.0
+
+print(dd.min(),dd.max(),dd.mean())
 
 #plt.hist(np.log(dd[dd>0.0]),bins=140,histtype='step')
-plt.show()
 #K = sp.diags(sys.D,format='csr')-sys.K
 #x = sp.linalg.lgmres(K,np.zeros(sys.pi.shape),x0=sys.pi,atol=1e-18)[0]
 #x /= x.sum()
 #print(np.abs(x-sys.pi).max())
+
+
 exit()
 
 

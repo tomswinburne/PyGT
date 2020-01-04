@@ -266,7 +266,6 @@ class sampler:
 
 		iDx = iDI.dot(x)
 		bab = (BAI.dot(x)).sum()+(BAB.dot(oneB)).sum()
-
 		yBIB = np.ravel(BIB.transpose().dot(y))
 
 		# i.e. take largest ij rate to ~ remove state Boltzmann factor
@@ -457,7 +456,7 @@ class sampler:
 			return BAB+BAIB
 
 	def new_true_branching_probability(self,gt_check=True):
-		BAIB, BAB, cond = direct_solve(self.sys.B,self.sys.selB,self.sys.selA)
+		BAIB, BAB = direct_solve(self.sys.B,self.sys.selB,self.sys.selA)
 		print("DIRECT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
 		res = (BAIB+BAB)*1.0
 		if gt_check:
@@ -465,7 +464,7 @@ class sampler:
 			#print(rB)
 			r_initial_states = self.sys.selB[~self.sys.selI]
 			r_final_states = self.sys.selA[~self.sys.selI]
-			BAIB, BAB, cond = direct_solve(rB,r_initial_states,r_final_states)
+			BAIB, BAB = direct_solve(rB,r_initial_states,r_final_states)
 			print("GT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
 			gtBAB = BAB+BAIB
 			return res,abs(gtBAB-res)/res
@@ -477,14 +476,14 @@ class sampler:
 		N,selA,selI,selB=(kt>0.0).sum(),self.sys.selA[kt>0.0],self.sys.selI[kt>0.0],self.sys.selB[kt>0.0]
 		B = sp.csr_matrix(self.sys.rK[(kt>0.0),:][:,(kt>0.0)]).dot(sp.diags(1.0/kt[kt>0.0],format='csr'))
 		print("Bxx.max=",B.diagonal().min())
-		BAIB, BAB, cond = direct_solve(B,selB,selA)
+		BAIB, BAB = direct_solve(B,selB,selA)
 		print("EST DIRECT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
 		rB, rN, retry = gt_seq(N=N,rm_reg=selI,B=B,trmb=1)#,condThresh=1.0e10,order=ikcon)
 		print(rB)
 		DD = rB.diagonal()
 		r_initial_states = selB[~selI]
 		r_final_states = selA[~selI]
-		BAIB, BAB, cond = direct_solve(rB,r_initial_states,r_final_states)
+		BAIB, BAB = direct_solve(rB,r_initial_states,r_final_states)
 		print("GT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
 
 	def estimated_branching_probability(self,direct=True):

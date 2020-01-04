@@ -17,9 +17,13 @@ generate = 0
 brute = True
 
 beta = 10.0 # overwritten if generate = False
-Emax = None#-167.5
-beta, B, K, D, N, u, s, kt, kcon, Emin = load_save_mat(path="KTN_data/LJ38/",beta=_beta,Emax=Emax,Nmax=5000,generate=generate)
-f = u - s/beta
+betar = [5.0] # range(1,16)
+for _beta in betar:
+
+    Emax = None#-167.5
+    beta, B, K, D, N, u, s, kt, kcon, Emin = load_save_mat(path="KTN_data/LJ38/",beta=_beta,Emax=Emax,Nmax=5000,generate=generate)
+    f = u - s/beta
+
 print("beta: ",beta,"N: ",N)
 
 piM = D.copy()
@@ -31,8 +35,8 @@ TE.data = 1.0/TE.data
 Boolean vectors selecting A and/or B regions
 """
 initial_states, final_states = np.zeros(N,bool), np.zeros(N,bool)
-initial_states[np.loadtxt('KTN_data/LJ38/min_oct').astype(int)-1] = True
-final_states[np.loadtxt('KTN_data/LJ38/min_ico').astype(int)-1] = True
+initial_states[np.loadtxt('min_oct').astype(int)-1] = True
+final_states[np.loadtxt('min_ico').astype(int)-1] = True
 basins = initial_states + final_states
 inter_region = ~basins
 
@@ -43,6 +47,13 @@ out(["\n%d PATH+ENV STATES\n" % ((~inter_region).sum())])
 
 
 if brute:
+    """ First, try a brute solve. cond variable !=1 iff using hacked scipy """
+    aK = (D-K)[~final_states,:][:,~final_states]
+    #print(aK.sum(axis=1).min())
+    evals_small, evecs_small = eigs(aK, 1, sigma=0, which='LM')
+    print(evals_small.real)
+    exit()
+
     BABI, BAB = direct_solve(B,initial_states,final_states)
     out(["\nBRUTE SOLVE:","B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI,"\n"]) #,"COND:",cond,
 
