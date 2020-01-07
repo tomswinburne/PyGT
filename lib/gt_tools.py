@@ -49,6 +49,7 @@ except:
 
 def direct_solve(B,initial_states,final_states,D=None):
 	B=B.tocsc()
+
 	basins = initial_states+final_states
 	inter_region = ~basins
 	pi = np.ones(initial_states.sum()) #/ initial_states.sum()
@@ -70,7 +71,7 @@ def direct_solve(B,initial_states,final_states,D=None):
 		BABI = BAI.dot(x)
 	else:
 		BABI = 0.0
-	if iD is None:
+	if D is None:
 		return BABI,BAB
 	#else:
 
@@ -209,7 +210,7 @@ def gtD(B,iD,sel,timeit=False,dense=False):
 
 	#res = Bij,Dij #+ (Bix*Gxx*Bxj), Djj + csr_matrix(Dxx)*Gxx*Bxj
 
-def gt_seq(N,rm_reg,B,D=None,trmb=1,condThresh=1.0e10,order=None,Ndense=5000,force_sparse=True):
+def gt_seq(N,rm_reg,B,D=None,trmb=1,condThresh=1.0e10,order=None,Ndense=5000,force_sparse=True,screen=False):
 	rmb=trmb
 	retry=0
 	NI = rm_reg.sum()
@@ -217,9 +218,9 @@ def gt_seq(N,rm_reg,B,D=None,trmb=1,condThresh=1.0e10,order=None,Ndense=5000,for
 		iD = 1.0/np.ravel(D)
 
 	#B.tolil()
-
-	if has_tqdm:
+	if screen:
 		print("GT regularization removing %d states:" % NI)
+	if has_tqdm:
 		pbar = tqdm(total=NI,leave=False,mininterval=0.0)
 	tst = 0.0
 	tmt = 0.0
@@ -280,13 +281,15 @@ def gt_seq(N,rm_reg,B,D=None,trmb=1,condThresh=1.0e10,order=None,Ndense=5000,for
 				pobar = tqdm(total=rm.sum(),leave=False,mininterval=0.0,desc="STATE-BY-STATE GT")
 	if has_tqdm:
 		pbar.close()
-	if dense:
+	if dense and screen:
 		print("GT BECAME DENSE AT N=%d, density=%f" % (dense_onset,density))
 	if force_sparse:
-		print("casting to csr_matrix")
+		if screen:
+			print("casting to csr_matrix")
 		B = csr_matrix(B)
 		B.eliminate_zeros()
-	print("GT done, %d rescans due to LinAlgError" % retry)
+	if screen:
+		print("GT done, %d rescans due to LinAlgError" % retry)
 	if not D is None:
 		D = 1.0/iD
 		return B,np.ravel(D).flatten(),N,retry

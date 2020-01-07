@@ -237,7 +237,7 @@ def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,Emax=None,generate=T
 	Emin = int(USEB[-1][1])
 	U = USEB[:-1,0]
 	S = USEB[:-1,1]
-	print("%d states, beta=%f, emin=%f" % (N,beta,Emin))
+	#print("%d states, beta=%f, emin=%f" % (N,beta,Emin))
 
 	kt = np.ravel(K.sum(axis=0)).copy()
 	K.data = 1.0/K.data
