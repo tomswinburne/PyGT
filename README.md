@@ -2,15 +2,19 @@
 >Tom Swinburne, CNRS, 2019
 >swinburne@cinam.univ-mrs.fr
 
-## packages
-1. It is nice to install the [`tqdm`](https://pypi.org/project/tqdm/) package to have loading bars, using e.g.
+## Packages / Requirements
+1. You need Python 3.* . Check by running
 ```
-pip install tqdm
+`python --version
 ```
+2. Also need `numpy`, `scipy` and `matplotlib`, and it is nice to have the [`tqdm`](https://pypi.org/project/tqdm/) package to have loading bars. These can all be installed with
+```
+pip install -r requirements.txt
+```
+with the included `requirements.txt` file
 
-## files
+## Code
 1. `lib/*.py` i/o tools, matrix manipulations, GT renormalizations
-2. `just_gt.py` numerical tests of observable extraction with varying degrees of path-based renormalization. All provably identical up to floating point error- therefore tests floating point error
-3. `fake_sample_no_path_gt.py` fake sampling to test for convergence. No path GT yet, to keep things simple!
-4. `plot.py` run after `no_sample_test.py` to see results!
-5. `gt_sens.py` fake sampling with generation of initial trial path as in `just_gt.py` path GT will be added here....
+2. `just_gt_scripts/*.py` numerical tests of observable extraction with varying degrees of path-based renormalization. All provably identical up to floating point error- therefore tests floating point error
+3. `fake_sample_scripts/*.py` fake sampling to tests for convergence. No path GT yet, to keep things simple!
+4. `gt_rate_calc.py` and `graph_transformation_notebook.ipynb` look at rate calculations following various GTs this is where numerical issues are particularly notable!
