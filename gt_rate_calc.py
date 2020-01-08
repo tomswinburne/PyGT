@@ -22,7 +22,7 @@ observables = []
 
 # inverse temperature range
 for beta in np.linspace(0.01,5.,10):#np.linspace(0.01,5.0,30):#np.linspace(2.5,9.0,2):#np.linspace(0.01,5.0,30):#
-    beta, B, K, D, N, u, s, kt, kcon, Emin = load_save_mat(path=data_path,beta=beta,Emax=None,Nmax=2000,generate=generate)
+    beta, B, K, D, N, u, s, kt, kcon, Emin = load_save_mat(path=data_path,beta=beta,Emax=None,Nmax=4000,generate=generate)
     D = np.ravel(K.sum(axis=0))
     BF = beta*u+s
 
@@ -41,7 +41,7 @@ for beta in np.linspace(0.01,5.,10):#np.linspace(0.01,5.0,30):#np.linspace(2.5,9
     print("\n\tbeta:",beta," N:",N,"N_TS:",K.data.size,"\n\n")
 
     """
-        graph transformation
+        graph transformation to remove intermediate states
     """
 
     trmb = 10
@@ -59,11 +59,14 @@ for beta in np.linspace(0.01,5.,10):#np.linspace(0.01,5.0,30):#np.linspace(2.5,9
     res[0] = beta
 
 
-
+    """
+        calculate rates from direct matrix,
+    """
 
     for si,s_r_s in enumerate([[A_states,r_A_states],[B_states,r_B_states]]):
         print(s_r_s[0].sum(),"STATES ->",rN-s_r_s[0].sum(),"STATES")
 
+        """ with no GT """
         n_r_s = np.zeros(N,bool)
         n_r_s[s_r_s[0]] = True
         n_r_s[inter_region] = True
@@ -73,22 +76,24 @@ for beta in np.linspace(0.01,5.,10):#np.linspace(0.01,5.0,30):#np.linspace(2.5,9
         rho = rho[n_r_s]
         rho /= rho.sum()
 
-        dtau = np.ravel(spsolve((diags(D)-K)[n_r_s,:][:,n_r_s].transpose(),np.ones(n_r_s.sum())))
+        dtau = np.ravel(spsolve((eye(N)-B)[n_r_s,:][:,n_r_s].transpose(),1.0/kt[n_r_s]))
+
         res[1+2*si+0] = (1.0/dtau).dot(rho)
         res[1+2*si+1] = 1.0/(dtau.dot(rho))
-        print("direct:",res[2*si+1:2*(si+1)+1])
+        print("no GT,  :",res[2*si+1:2*(si+1)+1])
 
         r_s = s_r_s[1]
         rho = np.exp(-r_BF[r_s])
         rho /= rho.sum()
 
-        """ explicit A,B states """
+        """ with intermediate states GT'ed away """
         dtau = np.ravel(spsolve(rK[r_s,:][:,r_s].transpose(),np.ones(r_s.sum())))
         res[1+2*si+0] = (1.0/dtau).dot(rho)
         res[1+2*si+1] = 1.0/(dtau.dot(rho))
-        print("GT-direct:",res[2*si+1:2*(si+1)+1])
+        print("GT-I, kF, 1/tau:",res[2*si+1:2*(si+1)+1])
 
-        """ GT'ed away target states"""
+
+        """ with final states GT'ed to a single state """
         rm_reg = np.ones(rN,bool)
         rm_reg[(~r_s).nonzero()[0][0]] = False
         rm_reg[r_s.nonzero()[0]] = False
@@ -97,7 +102,7 @@ for beta in np.linspace(0.01,5.,10):#np.linspace(0.01,5.0,30):#np.linspace(2.5,9
         dtau = np.ravel(spsolve(rrK[rr_s,:][:,rr_s].transpose(),np.ones(rr_s.sum())))
         res[1+2*si+0] = (1.0/dtau).dot(rho)
         res[1+2*si+1] = 1.0/(dtau.dot(rho))
-        print("GT-GT-direct:",res[2*si+1:2*(si+1)+1])
+        print("GT-(I+final), kF, 1/tau:",res[2*si+1:2*(si+1)+1])
 
 
         """ GT'ed to 2 state system"""
@@ -116,12 +121,8 @@ for beta in np.linspace(0.01,5.,10):#np.linspace(0.01,5.0,30):#np.linspace(2.5,9
                 pbar.update(1)
 
             pbar.close()
-            #res[1+2*si+0] = (1.0/tau).dot(rho)
-            #res[1+2*si+1] = 1.0/(tau.dot(rho))
-            print("GT-GT-GT-direct:",res[2*si+1:2*(si+1)+1])
 
-        #"""
-
+            print("GT-> 2 state, kF, 1/tau:",res[2*si+1:2*(si+1)+1])
         print("\n---\n")
     print("\n*******\n")
     observables.append(res)
