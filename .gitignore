@@ -1,6 +1,7 @@
 *.npz
 *.txt
 *.pdf
+arx/*
 cache/*
 output/*
 lib/__pycache__/*
