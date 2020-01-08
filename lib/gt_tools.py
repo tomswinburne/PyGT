@@ -148,16 +148,21 @@ def gtD(B,iD,sel,timeit=False,dense=False):
 		t=timer()
 
 	""" seems crazy but isn't the bottleneck ... """
+	"""
 	Bxx = B[sel,:].transpose()[sel,:].transpose()
 	Bxj = B[sel,:].transpose()[~sel,:].transpose()
 	Bix = B[~sel,:].transpose()[sel,:].transpose()
 	Bij = B[~sel,:].transpose()[~sel,:].transpose()
-
+	"""
+	Bxx = B[sel,:][:,sel]
+	Bxj = B[sel,:][:,~sel]
+	Bix = B[~sel,:][:,sel]
+	Bij = B[~sel,:][:,~sel]
 	iDjj = iD[~sel]
 	iDxx = iD[sel]
+
 	if timeit:
 		t("slicing")
-
 	if sel.sum()>1:
 		# Get Bxx
 		Bd = np.ravel(Bxx.diagonal())
@@ -174,6 +179,7 @@ def gtD(B,iD,sel,timeit=False,dense=False):
 			return B,iD,False
 		iDG = Gxx.transpose().dot(iDxx).transpose()
 		iDjj += np.ravel(Bxj.transpose().dot(iDG)).flatten()
+
 		if timeit:
 			t("Gxx inv + iD mult.")
 
@@ -188,7 +194,7 @@ def gtD(B,iD,sel,timeit=False,dense=False):
 		return Bij,iDjj,True
 	else:
 		Bxx = Bxx.sum()
-		#print(Bxx,Bix.sum(),Bxx+Bix.sum())
+		#print("HHH",Bxx,Bix.sum(),Bxx+Bix.sum())
 		if Bxx>0.99:
 			b_xx = Bix.sum()
 		else:
@@ -207,10 +213,10 @@ def gtD(B,iD,sel,timeit=False,dense=False):
 		return Bij,iDjj,True#,ts,tm
 
 
+def gt_seq(N,rm_reg,B,D=None,trmb=1,condThresh=1.0e10,order=None,Ndense=500,force_sparse=True,screen=False,retK=False):
+	if D is None:
+		retK=False
 
-	#res = Bij,Dij #+ (Bix*Gxx*Bxj), Djj + csr_matrix(Dxx)*Gxx*Bxj
-
-def gt_seq(N,rm_reg,B,D=None,trmb=1,condThresh=1.0e10,order=None,Ndense=5000,force_sparse=True,screen=False):
 	rmb=trmb
 	retry=0
 	NI = rm_reg.sum()
@@ -292,6 +298,20 @@ def gt_seq(N,rm_reg,B,D=None,trmb=1,condThresh=1.0e10,order=None,Ndense=5000,for
 		print("GT done, %d rescans due to LinAlgError" % retry)
 	if not D is None:
 		D = 1.0/iD
-		return B,np.ravel(D).flatten(),N,retry
+		D = np.ravel(D).flatten()
+		if retK:
+			Bd = np.ravel(B.diagonal())
+			Bn = B - diags(Bd)
+			Bn.eliminate_zeros()
+			Bnd = np.ravel(Bn.sum(axis=0))
+
+			nBd = np.zeros(N)
+			nBd[Bd>0.99] = Bnd[Bd>0.99]
+			nBd[Bd<0.99] = 1.0-Bd[Bd<0.99]
+			omB = diags(nBd) - Bn
+			K = omB.dot(diags(D))
+			return B,D,K,N,retry
+		return B,D,N,retry
+
 	else:
 		return B,N,retry

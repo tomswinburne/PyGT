@@ -5,6 +5,7 @@ os.system('mkdir -p cache')
 os.system('mkdir -p output')
 import warnings
 from lib.gt_tools import gt_seq, make_fastest_path
+from scipy.special import factorial
 
 class timer:
 	def __init__(self):
@@ -59,7 +60,7 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,mytype=np.flo
 		dtype={'names': ('E','S','DD','F','I','RX','RY','RZ'),\
 		'formats': (float,float,int,int,int,float,float,float)})
 
-	TSD = TSD[TSD['I']!=TSD['F']] # remove self transitions??
+	#TSD = TSD[TSD['I']!=TSD['F']] # remove self transitions??
 
 
 	TSD['I'] = TSD['I']-1
@@ -69,7 +70,6 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,mytype=np.flo
 	if not Nmax is None:
 		N = min(Nmax,N)
 
-	Efilter = GSD['E']<GSD['E'].max()+1.0
 
 	sels = (TSD['I']<N) * (TSD['F']<N) * (TSD['I']!=TSD['F'])
 	if not Emax is None:
@@ -79,6 +79,7 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,mytype=np.flo
 	TSD = TSD[sels]
 	GSD = GSD[:N]
 
+	print("N,N_TS:",GSD.size,TSD.size)
 	Emin = GSD['E'].min().copy()
 	GSD['E'] -= Emin
 	TSD['E'] -= Emin
@@ -89,6 +90,12 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,mytype=np.flo
 	f = np.hstack((TSD['F'],TSD['I']))
 	du = np.hstack((TSD['E']-GSD[TSD['I']]['E'],TSD['E']-GSD[TSD['F']]['E']))
 	ds = np.hstack((TSD['S']-GSD[TSD['I']]['S'],TSD['S']-GSD[TSD['F']]['S']))
+	dc = np.hstack((
+	factorial(GSD[TSD['I']]['DD'])/factorial(TSD['DD']),
+	factorial(GSD[TSD['F']]['DD'])/factorial(TSD['DD'])
+	))
+
+
 	if TE:
 		te = np.hstack((TSD['E'],TSD['E']))
 
@@ -98,17 +105,33 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,mytype=np.flo
 	f = f[sel]
 	du = du[sel]
 	ds = ds[sel]
+	dc = dc[sel]
+
+
 	if TE:
 		te = te[sel]
+
 
 	if histo:
 		return du,ds
 
 	"""+ds Fill matricies: K_ij = rate(j->i), K_ii==0. iD_jj = 1/(sum_iK_ij) """
 	data = np.zeros(du.shape,dtype=mytype)
-	data[:] = np.exp(-beta*du+ds)
+	data[:] = np.exp(-beta*du-ds)
 	K = csr_matrix((data,(f,i)),shape=(N,N),dtype=mytype)
-	data[:] = np.exp(-beta*du+ds)
+
+	"""
+	i_f = i+N*f
+	u_i_f = np.unique(i_f)
+	n_data = np.zeros(u_i_f.shape,dtype=mytype)
+	for ii,nif in enumerate(u_i_f):
+		n_data[ii] = data[i_f==nif].min()
+	K = csr_matrix((n_data,(u_i_f//N,u_i_f%N)),shape=(N,N),dtype=mytype)
+	"""
+
+	#K.eliminate_zeros()
+
+	#data[:] = np.exp(-beta*du+ds)
 
 	if discon:
 		# take min value, i.e. crank it....
@@ -140,7 +163,7 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,mytype=np.flo
 		dU = dU.tocsc()[sel,:].tocsr()[:,sel]
 
 	GSD = GSD[sel]
-	#print("E[0]=%1.4g,E[6]=%1.4g" % (GSD['E'][0],GSD['E'][6]))
+
 	kt = np.ravel(K.sum(axis=0))
 	iD = csr_matrix((1.0/kt,(np.arange(N),np.arange(N))),shape=(N,N),dtype=mytype)
 	D = csr_matrix((kt,(np.arange(N),np.arange(N))),shape=(N,N),dtype=mytype)
