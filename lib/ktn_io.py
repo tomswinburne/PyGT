@@ -83,30 +83,29 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,screen=False)
 
 	#print("N,N_TS:",GSD.size,TSD.size)
 	Emin = GSD['E'].min().copy()
+	Smin = min(GSD['S'].min().copy(),TSD['S'].min().copy())
 	GSD['E'] -= Emin
 	TSD['E'] -= Emin
+	GSD['S'] -= Smin
+	TSD['S'] -= Smin
+
 
 	""" Calculate rates """
-	BF = beta*GSD['E']-GSD['S']
 	i = np.hstack((TSD['I'],TSD['F']))
 	f = np.hstack((TSD['F'],TSD['I']))
 	du = np.hstack((TSD['E']-GSD[TSD['I']]['E'],TSD['E']-GSD[TSD['F']]['E']))
-	ds = np.hstack((TSD['S']-GSD[TSD['I']]['S'],TSD['S']-GSD[TSD['F']]['S']))
-	dc = np.hstack((GSD[TSD['I']]['DD']/TSD['DD'],GSD[TSD['F']]['DD']/TSD['DD']))
 
-	"""
-	sel = i!=f
-	i = i[sel]
-	f = f[sel]
-	du = du[sel]
-	ds = ds[sel]
-	dc = dc[sel]
-	"""
+	ds = np.hstack((GSD[TSD['I']]['S']-TSD['S'],GSD[TSD['F']]['S']-TSD['S']))/2.0
+
+	dc = np.hstack((GSD[TSD['I']]['DD']/TSD['DD'],GSD[TSD['F']]['DD']/TSD['DD']))/2.0/np.pi
+	ds += np.log(dc)
+
+	s = GSD['S']/2.0 + np.log(GSD['DD'])
 
 	"""+ds Fill matricies: K_ij = rate(j->i), K_ii==0. iD_jj = 1/(sum_iK_ij) """
 	data = np.zeros(du.shape)
-	data[:] = np.exp(-beta*du+ds) * dc
-
+	data[:] = np.exp(-beta*du+ds)
+	data[i==f] *= 2.0
 	fNi = f*N+i
 	fNi_u = np.unique(fNi)
 	d_u = np.r_[[data[fNi==fi_ind].sum() for fi_ind in fNi_u]]
@@ -116,6 +115,7 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,screen=False)
 
 
 	""" connected components """
+	K.eliminate_zeros()
 	nc,cc = csgraph.connected_components(K)
 	sum = np.zeros(nc,int)
 	mc = 0
@@ -126,16 +126,20 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,screen=False)
 		print("Connected Clusters: %d, 1st 400 states in largest cluster: %d" % (nc,sel[:400].min()))
 	oN=N.copy()
 	K,N = K.tocsc()[sel,:].tocsr()[:,sel], sel.sum()
-	#print("cc: N: %d->%d" % (oN,N))
+
+	if screen:
+		print("cc: N: %d->%d" % (oN,N))
 
 
 	GSD = GSD[sel]
+	s = -GSD['S']/2.0 - np.log(GSD['DD'])
+
 	kt = np.ravel(K.sum(axis=0))
 	iD = csr_matrix((1.0/kt,(np.arange(N),np.arange(N))),shape=(N,N))
 	D = csr_matrix((kt,(np.arange(N),np.arange(N))),shape=(N,N))
 
 	B = K.dot(iD)
-	return B, K, D, N, GSD['E'],GSD['S'], Emin, sel
+	return B, K, D, N, GSD['E'], s, Emin, sel
 
 
 def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,Emax=None,generate=True,TE=False,screen=False):
