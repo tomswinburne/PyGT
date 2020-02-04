@@ -8,7 +8,7 @@ from lib.gt_tools import gt_seq
 
 class aib_system:
 	def __init__(self,path="../../data/LJ13",beta=5.0,Nmax=None,Emax=None,generate=True):
-		self.beta, self.B, self.K, self.D, self.N, self.u, self.s, self.kt, self.kcon, self.Emin = \
+		self.beta, self.B, self.K, self.D, self.N, self.u, self.s, self.kt, self.kcon, self.Emin, self.index_sel = \
 			load_save_mat(path=path,beta=beta,Nmax=Nmax,Emax=Emax,generate=generate)
 		self.f = self.u-self.s/self.beta
 		self.oN = self.N

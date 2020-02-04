@@ -49,7 +49,7 @@ class output_str:
 	def summary(self):
 		print("SUMMARY:\n",self.print_str)
 
-def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0):
+def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,screen=False):
 
 	""" load data """
 	GSD = np.loadtxt(os.path.join(path,'min.data'),\
@@ -122,7 +122,8 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0):
 	for j in range(nc):
 		sum[j] = (cc==j).sum()
 	sel = cc==sum.argmax()
-
+	if screen:
+		print("Connected Clusters: %d, 1st 400 states in largest cluster: %d" % (nc,sel[:400].min()))
 	oN=N.copy()
 	K,N = K.tocsc()[sel,:].tocsr()[:,sel], sel.sum()
 	#print("cc: N: %d->%d" % (oN,N))
@@ -134,7 +135,7 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0):
 	D = csr_matrix((kt,(np.arange(N),np.arange(N))),shape=(N,N))
 
 	B = K.dot(iD)
-	return B, K, D, N, GSD['E'],GSD['S'],Emin
+	return B, K, D, N, GSD['E'],GSD['S'], Emin, sel
 
 
 def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,Emax=None,generate=True,TE=False,screen=False):
@@ -147,6 +148,7 @@ def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,Emax=None,generate=T
 			D = load_npz('cache/temp_%s_%2.6g_D.npz' % (name,beta))
 			K = load_npz('cache/temp_%s_%2.6g_K.npz' % (name,beta))
 			USEB = np.loadtxt('cache/temp_%s_%2.6g_USEB.txt' % (name,beta))
+			sel = np.loadtxt('cache/temp_%s_%2.6g_sel.txt' % (name,beta)).astype(bool)
 		except IOError:
 			generate = True
 			if screen:
@@ -155,13 +157,14 @@ def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,Emax=None,generate=T
 	if generate:
 		if screen:
 			print("Generating....")
-		B, K, D, N, U, S, Emin = load_mat(path,beta=beta,Nmax=Nmax,Emax=Emax)
+		B, K, D, N, U, S, Emin, sel = load_mat(path,beta=beta,Nmax=Nmax,Emax=Emax,screen=screen)
 		USEB = np.zeros((U.shape[0]+1,2))
 		USEB[-1][0] = beta
 		USEB[-1][1] = Emin
 		USEB[:-1,0] = U
 		USEB[:-1,1] = S
 		np.savetxt('cache/temp_%s_%2.6g_USEB.txt' % (name,beta),USEB)
+		np.savetxt('cache/temp_%s_%2.6g_sel.txt' % (name,beta),sel)
 		save_npz('cache/temp_%s_%2.6g_B.npz' % (name,beta),B)
 		save_npz('cache/temp_%s_%2.6g_K.npz' % (name,beta),K)
 		save_npz('cache/temp_%s_%2.6g_D.npz' % (name,beta),D)
@@ -178,4 +181,4 @@ def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,Emax=None,generate=T
 	kcon = kt * np.ravel(K.sum(axis=0)).copy()
 	K.data = 1.0/K.data
 
-	return beta, B, K, D, N, U, S, kt, kcon, Emin
+	return beta, B, K, D, N, U, S, kt, kcon, Emin, sel

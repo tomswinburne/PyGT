@@ -17,7 +17,7 @@ brute = True
 
 beta = 18.0 # overwritten if generate = False
 Emax = None#-167.5
-beta, B, K, D, N, u, s, kt, kcon, Emin = load_save_mat(path="KTN_data/LJ38/10k/",beta=beta,Emax=Emax,Nmax=150000,generate=generate)
+beta, B, K, D, N, u, s, kt, kcon, Emin, index_sel = load_save_mat(path="KTN_data/LJ38/10k/",beta=beta,Emax=Emax,Nmax=150000,generate=generate)
 f = u - s/beta
 print("beta: ",beta,"N: ",N)
 

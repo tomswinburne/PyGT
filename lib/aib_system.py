@@ -11,7 +11,7 @@ class aib_system:
 		Emax=None,generate=True,coco=False,selA=None,selB=None):
 		self.gtmap = None
 		if (selA is None) or (selB is None):
-			self.beta, self.B, self.K, self.D, self.N, self.u, self.s, self.kt, self.kcon, self.Emin = \
+			self.beta, self.B, self.K, self.D, self.N, self.u, self.s, self.kt, self.kcon, self.Emin, sel.index_sel = \
 				load_save_mat(path=path,beta=beta,Nmax=Nmax,Emax=Emax,generate=generate)
 			if coco:
 				""" connected components for matrix """

@@ -23,17 +23,20 @@ betar = [10.0]#range(1,16)
 for _beta in betar:
 
     Emax = None#-167.5
-    beta, B, K, D, N, u, s, kt, kcon, Emin = load_save_mat(path="KTN_data/LJ38/",\
+    beta, B, K, D, N, u, s, kt, kcon, Emin, index_sel = load_save_mat(path="KTN_data/LJ38/",\
         beta=_beta,Emax=Emax,Nmax=3000,generate=generate)
     f = u - s/beta
 
     """
     Boolean vectors selecting A and/or B regions
     """
-    initial_states, final_states = np.zeros(N,bool), np.zeros(N,bool)
+    keep = np.zeros(index_sel.size,bool)
+    keep[np.loadtxt(os.path.join(data_path,'min_ico')).astype(int)-1] = True
+    final_states = keep[index_sel]
 
-    initial_states[np.loadtxt('KTN_data/LJ38/min_oct').astype(int)-1] = True
-    final_states[np.loadtxt('KTN_data/LJ38/min_ico').astype(int)-1] = True
+    keep = np.zeros(index_sel.size,bool)
+    keep[np.loadtxt(os.path.join(data_path,'min_oct')).astype(int)-1] = True
+    initial_states = keep[index_sel]
 
     basins = initial_states + final_states
     inter_region = ~basins

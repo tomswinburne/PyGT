@@ -23,16 +23,21 @@ observables = []
 
 # inverse temperature range
 for beta in np.linspace(0.01,5.,10):#np.linspace(0.01,5.0,30):#np.linspace(2.5,9.0,2):#np.linspace(0.01,5.0,30):#
-    beta, B, K, D, N, u, s, kt, kcon, Emin = load_save_mat(path=data_path,beta=beta,Emax=None,Nmax=4000,generate=generate)
+    beta, B, K, D, N, u, s, kt, kcon, Emin, index_sel = load_save_mat(path=data_path,beta=beta,Emax=None,Nmax=4000,generate=generate)
     D = np.ravel(K.sum(axis=0))
     BF = beta*u+s
 
     """
     Boolean vectors selecting A and/or B regions
     """
-    B_states, A_states = np.zeros(N,bool), np.zeros(N,bool)
-    A_states[np.loadtxt(os.path.join(data_path,'min_oct')).astype(int)-1] = True
-    B_states[np.loadtxt(os.path.join(data_path,'min_ico')).astype(int)-1] = True
+    keep = np.zeros(index_sel.size,bool)
+    keep[np.loadtxt(os.path.join(data_path,'min_ico')).astype(int)-1] = True
+    B_states = keep[index_sel]
+
+    keep = np.zeros(index_sel.size,bool)
+    keep[np.loadtxt(os.path.join(data_path,'min_oct')).astype(int)-1] = True
+    A_states = keep[index_sel]
+
 
     basins = B_states + A_states
 
