@@ -92,10 +92,7 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0):
 	f = np.hstack((TSD['F'],TSD['I']))
 	du = np.hstack((TSD['E']-GSD[TSD['I']]['E'],TSD['E']-GSD[TSD['F']]['E']))
 	ds = np.hstack((TSD['S']-GSD[TSD['I']]['S'],TSD['S']-GSD[TSD['F']]['S']))
-	dc = np.hstack((
-	factorial(GSD[TSD['I']]['DD'])/factorial(TSD['DD']),
-	factorial(GSD[TSD['F']]['DD'])/factorial(TSD['DD'])
-	))
+	dc = np.hstack((GSD[TSD['I']]['DD']/TSD['DD'],GSD[TSD['F']]['DD']/TSD['DD']))
 
 	"""
 	sel = i!=f
@@ -108,11 +105,11 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0):
 
 	"""+ds Fill matricies: K_ij = rate(j->i), K_ii==0. iD_jj = 1/(sum_iK_ij) """
 	data = np.zeros(du.shape)
-	data[:] = np.exp(-beta*du+ds)
+	data[:] = np.exp(-beta*du+ds) * dc
 
 	fNi = f*N+i
 	fNi_u = np.unique(fNi)
-	d_u = np.r_[[data[fNi==i].sum() for i in fNi_u]]
+	d_u = np.r_[[data[fNi==fi_ind].sum() for fi_ind in fNi_u]]
 	f_u = fNi_u//N
 	i_u = fNi_u%N
 	K = csr_matrix((d_u,(f_u,i_u)),shape=(N,N))
