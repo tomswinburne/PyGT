@@ -300,16 +300,15 @@ def gt_seq(N,rm_reg,B,D=None,trmb=1,condThresh=1.0e10,order=None,Ndense=500,forc
 		D = 1.0/iD
 		D = np.ravel(D).flatten()
 		if retK:
-			Bd = np.ravel(B.diagonal())
-			Bn = B - diags(Bd)
+			Bd = np.ravel(B.diagonal()) # only the diagonal (Bd_x = B_xx)
+			Bn = B - diags(Bd) # B with no diagonal (Bn_xx = 0, Bn_xy = B_xy)
 			Bn.eliminate_zeros()
-			Bnd = np.ravel(Bn.sum(axis=0))
-
+			Bnd = np.ravel(Bn.sum(axis=0)) # Bnd_x = sum_x!=y B_yx = 1-B_xx
 			nBd = np.zeros(N)
-			nBd[Bd>0.99] = Bnd[Bd>0.99]
+			nBd[Bd>0.99] = Bnd[Bd>0.99] 
 			nBd[Bd<0.99] = 1.0-Bd[Bd<0.99]
-			omB = diags(nBd) - Bn
-			K = omB.dot(diags(D))
+			omB = diags(nBd) - Bn # 1-B
+			K = omB.dot(diags(D)) # (1-B).D = K ( :) )
 			return B,D,K,N,retry
 		return B,D,N,retry
 

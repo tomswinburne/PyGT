@@ -1,5 +1,6 @@
 import numpy as np
-import time,os,tqdm
+import time,os
+from tqdm import tqdm
 np.set_printoptions(linewidth=160)
 from lib.ktn_io import *
 from lib.gt_tools import *

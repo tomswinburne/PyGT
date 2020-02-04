@@ -13,11 +13,11 @@ print("\n\nGT REGULARIZATION TESTS\n")
 generate = False#True
 
 # Do we try a brute solve?
-brute = False
+brute = True
 
-beta = 10.0 # overwritten if generate = False
+beta = 18.0 # overwritten if generate = False
 Emax = None#-167.5
-beta, B, K, D, N, u, s, kt, kcon, Emin = load_save_mat(path="KTN_data/LJ38/",beta=beta,Emax=Emax,Nmax=150000,generate=generate)
+beta, B, K, D, N, u, s, kt, kcon, Emin = load_save_mat(path="KTN_data/LJ38/10k/",beta=beta,Emax=Emax,Nmax=150000,generate=generate)
 f = u - s/beta
 print("beta: ",beta,"N: ",N)
 
@@ -26,7 +26,7 @@ Find fastest path from state_state to end_state, then returns all states on path
 depth=1 => path_region =  all direct connections to the path
 """
 start_state = 0#f.argmin() # free energy minimum
-end_state = 6#f.argmax() # free energy maximum
+end_state = 5#f.argmax() # free energy maximum
 
 
 piM = D.copy()
@@ -34,7 +34,7 @@ piM.data = np.exp(f)
 TE = K.copy().tocsr() * piM
 TE.data = 1.0/TE.data
 
-path, path_region = make_fastest_path(TE,start_state,end_state,depth=3,limit=10)
+path, path_region = make_fastest_path(TE,start_state,end_state,depth=4,limit=10)
 print(path_region.sum())
 
 """
@@ -54,7 +54,7 @@ out = output_str()
 if brute:
     """ First, try a brute solve. cond variable !=1 iff using hacked scipy """
     BABI, BAB = direct_solve(B,initial_states,final_states)
-    out(["\nBRUTE SOLVE:","B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI,"COND:",cond,"\n"])
+    out(["\nBRUTE SOLVE:","B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI,"\n"])
     out(["\n%d PATH+ENV STATES\n" % (path_region.sum())])
 
 
@@ -94,7 +94,7 @@ for trmb in [500,40]:
     r_initial_states = initial_states[~inter_region]
     r_final_states = final_states[~inter_region]
     BABI, BAB = direct_solve(rB,r_initial_states,r_final_states)
-    out(["\nGT[%d] justpath:" % trmb,"B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI, "RESCANS: ",retry,"COND:",cond,"max(diag(BII))):",rB.diagonal().max(),"\n"])
+    out(["\nGT[%d] justpath:" % trmb,"B(A<-B):",BABI+BAB,"B(AB):",BAB,"B(AIB):",BABI, "RESCANS: ",retry,"max(diag(BII))):",rB.diagonal().max(),"\n"])
     basins = r_initial_states + r_final_states
     rB, rD, rN, retry = gt_seq(N=rN,rm_reg=(~basins),B=rB,D=rD,trmb=40)
     #rB, rN, retry = gt_seq(N=rN,rm_reg=(~basins),B=rB,D=rD,trmb=1,condThresh=1.0e10,order=None)

@@ -57,30 +57,19 @@ for [ax,sw] in zip(axs,sws):
 	if sw>1:
 		data = raw_data.copy()[sw-1:,:]
 		for _sw in range(1,sw):
-		  for ii in [3,6,7,8,9,10,11,12,13,14,15]:
-		    data[:,ii] = np.vstack((
-			np.abs(data[:,ii]),
-			np.abs(raw_data.copy()[sw-1-_sw:-_sw,ii]))
-			).T.min(axis=1)
+			for ii in [3,6,7,8,9,10,11,12,13,14,15]:
+				data[:,ii] = np.vstack((
+				np.abs(data[:,ii]),
+				np.abs(raw_data.copy()[sw-1-_sw:-_sw,ii]))).T.min(axis=1)
 		for ii in [7,9,12,14]:
 			data[:,ii] *= -1.0 # for sign
 	else:
 		data = raw_data.copy()
 
 	for i in [3,6,7,8,9,10,11,12,13,14,15]:
-	    data[:,i] *= 1.0/data[:,4]
+		data[:,i] *= 1.0/data[:,4]
 
-	#for i in [8,9,10,11,12]:
-	#    data[:,i] *= 1.0/data[:,5]
-
-
-	#xa = (data[:,2]-0.0*data[:,2][0])*100.0
-	#xa = np.arange(len(data[:,2])) * 20.0*100.0/1250.0/1250.0
 	xa = (sNEB + np.arange(len(data[:,2])) * 2.0 * npairs)*100.0/Nt/Nt
-	#rxa = (1608. + np.arange(len(raw_data[:,2])) * 20.0)*100.0/1506./1506.
-#(data[:,2][1]-data[:,2][0])*100.0
-	#shift=0.0
-	#data[:,3] -= shift
 
 	sl = r"${\rm C}^\mathcal{A}_\mathcal{B}$ (Est.)"
 
@@ -106,40 +95,27 @@ for [ax,sw] in zip(axs,sws):
 	sgl = r"${\rm C}^\mathcal{A}_\mathcal{B}+\exp(\langle\log\sigma\rangle)$"
 
 	st, = ax.plot(xa,data[:,3]+data[:,11]+data[:,12],'C1-',lw=2)
-
 	sxt, = ax.plot(xa,data[:,3]+(data[:,11]+data[:,12])*data[:,5],'C4-',lw=2)
 	sh, = ax.plot(xa,data[:,3]+data[:,10],'C2-',lw=2)
 	so, = ax.plot(xa,data[:,3]+data[:,6]+data[:,7],'C3-',lw=2)
-
 	s, = ax.plot(xa,data[:,3],'k-',lw=2)
-	#sg, = ax.plot(xa,data[:,3]+data[:,15],'C4o-',lw=2)
 
-
-
-	#ax.set_xscale('log')
 	ax.set_yscale('log')
 	ax.set_ylim(ymin=1.0e-1,ymax=1.0e5)
 	ax.set_xlim(xa.min(),xa.max())
 	if sw==1:
-	  sstring = "No Smoothing"
+		sstring = "No Smoothing"
 	else:
 		sstring = "Smoothing Window=%d" % sw
 	ax.text(0.99,0.1,sstring,fontsize=10, horizontalalignment='right',verticalalignment='top',
 			transform=ax.transAxes,bbox={'facecolor':'white', 'alpha':0.5, 'pad':1, 'edgecolor':'white'})
 
-#h, l = axs[1].get_legend_handles_labels()
-#print(l)
-#ord = [5,4,1,3,2,0,8,7,6]
-#ord = [4,3,0,2,1,0,7,6]
-
 axs[1].legend([s,t,sxt,sxtb,st,stb,sh,shb,so,sob],[sl,tl,sxtl,sxtbl,stl,stbl,shl,shbl,sol,sobl],
 				bbox_to_anchor=(-.1, .825, 1.1, .75), loc='center',
-     			ncol=5, mode="expand", borderaxespad=0.,fontsize=10)
-#fontsize=10,ncol=4,bbox_to_anchor=(1., -0.25),loc='lower middle')
-
-#axs[1].legend(loc='lower center', bbox_to_anchor=(0.5, -.4),ncol=2)
+				ncol=5, mode="expand", borderaxespad=0.,fontsize=10)
 
 plt.tight_layout()
+
 fig.subplots_adjust(hspace=0.4)
 
 if savefig:
