@@ -11,7 +11,7 @@ class aib_system:
 		Emax=None,generate=True,coco=False,selA=None,selB=None):
 		self.gtmap = None
 		if (selA is None) or (selB is None):
-			self.beta, self.B, self.K, self.D, self.N, self.u, self.s, self.kt, self.kcon, self.Emin, sel.index_sel = \
+			self.beta, self.B, self.K, self.D, self.N, self.u, self.s, self.kt, self.kcon, self.Emin, self.index_sel = \
 				load_save_mat(path=path,beta=beta,Nmax=Nmax,Emax=Emax,generate=generate)
 			if coco:
 				""" connected components for matrix """
@@ -49,7 +49,7 @@ class aib_system:
 		self.kt = np.ravel(self.K.sum(axis=0))
 		self.udG = sp.csr_matrix(self.K.copy())
 		self.udG.data[:] = 1.0
-		self.rK = sp.diags(np.zeros(self.N),format='lil')
+		self.rK = sp.csr_matrix((self.N,self.N))
 		self.regions = False
 
 		if not self.gtmap is None:
@@ -94,6 +94,7 @@ class aib_system:
 		self.selA = selA
 		self.selB = selB
 		self.selI = ~self.selA * ~self.selB
+		selI = ~self.selA * ~self.selB
 
 		self.NA = self.selA.sum()
 		self.NB = self.selB.sum()
@@ -102,53 +103,59 @@ class aib_system:
 		print("NA, NB, NI:",self.NA,self.NB,self.NI)
 
 		# fill A.B regions
-		self.rK[selA,:][:,selA] = self.K[selA,:][:,selA].copy()
-		self.rK[selB,:][:,selB] = self.K[selB,:][:,selB].copy()
-
+		self.rK = self.rK.tolil()
+		self.rK[np.ix_(selA,selA)] = self.K[np.ix_(selA,selA)].copy()
+		self.rK[np.ix_(selB,selB)] = self.K[np.ix_(selB,selB)].copy()
+		self.rK[np.ix_(selB,selA)] = self.K[np.ix_(selB,selA)].copy()
+		self.rK[np.ix_(selA,selB)] = self.K[np.ix_(selA,selB)].copy()
+		
+		self.rK = self.rK.tocsr()
 		self.regions = True
 
 	def remaining_pairs(self):
 		return (self.K.nnz-self.rK.nnz)//2
 
 	def add_connections(self,i_a,f_a,k_a):
+		nn = -self.rK.nnz
 		self.rK = self.rK.tolil()
-		c=0
 		for ifk in zip(i_a,f_a,k_a):
-			if self.rK[ifk[1],ifk[0]]==0.0:
-				self.rK[ifk[1],ifk[0]] = ifk[2][0]
-				self.rK[ifk[0],ifk[1]] = ifk[2][1]
-				c+=1
+			self.rK[ifk[1],ifk[0]] = ifk[2][0]
+			self.rK[ifk[0],ifk[1]] = ifk[2][1]
 		self.rK = self.rK.tocsr()
-		return c
-
+		nn += self.rK.nnz
+		return (nn//2)
+	def tolil(self):
+		self.rK = self.rK.tolil()
+		self.K = self.K.tolil()
+	def tocsr(self):
+		self.rK = self.rK.tocsr()
+		self.K = self.K.tocsr()
 	# fake DNEB search between i_s, f_s
 	def DNEB(self,i_s,f_s,pM=None):
 		i_a = []
 		f_a = []
 		k_a = []
 
-		havepM = sp.isspmatrix_csr(pM)
+		havepM = sp.isspmatrix(pM)
 		if self.K[i_s,f_s]==0.0 or havepM:
 			# if no direct route, find shortest_path for undirected, unweighted graph with Dijkstra
 			if havepM:
 				G = pM*3000.0 + self.udG
 			else:
 				G = self.udG
-			d,path = sp.csgraph.shortest_path(G,indices=[f_s,i_s],\
-											directed=False,method='D',return_predecessors=True)
+			d,path = sp.csgraph.shortest_path(G,indices=[f_s,i_s],directed=False,method='D',return_predecessors=True)
 			f = i_s
 			while f != f_s:
 				i_a.append(f)
 				f_a.append(path[0][f])
 				k_a.append([self.K[path[0][f],f],self.K[f,path[0][f]]])
-				#print(f,"->",path[0][f])
 				f = path[0][f]
 		else:
 			i_a.append(i_s)
 			f_a.append(f_s)
 			k_a.append([self.K[f_s,i_s],self.K[i_s,f_s]])
 			#print(i_s,"->",f_s,k_a[-1])
-		return i_a,f_a,k_a
+		return np.r_[i_a].astype(int),np.r_[f_a].astype(int),np.r_[k_a]
 
 	# fake Saddle Search from i_s and f_s
 	def SaddleSearch(self,i_s,f_s=None):

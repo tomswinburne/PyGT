@@ -107,15 +107,8 @@ for ii in range(ncycles):
 
 	sens[:-2] += ebab
 	sens[:-2] /= bab
-	print("{: <4} {: <10} {: <10} {: <10} {: <10} {: <10} {: <10}".format(
-	"%d" % ii,"%1.4g" % (ebab/bab),"%1.4g" % sens[6],"%1.4g" % sens[4],"%1.4g" % sens[5],"%d" % ss,"%1.4g" % bab))
-
-	"""
-	if orp==nrp:
-		ss = ssnpairs
-	else:
-		ss = 0
-	"""
+	print("{: <4} {: <10} {: <10} {: <10} {: <10} {: <10} {: <10}".format(\
+		"%d" % ii,"%1.4g" % (ebab/bab),"%1.4g" % sens[6],"%1.4g" % sens[4],"%1.4g" % sens[5],"%d" % ss,"%1.4g" % bab))
 
 ff.close()
 

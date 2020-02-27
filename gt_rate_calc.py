@@ -16,27 +16,21 @@ from matplotlib.colors import LogNorm
 generate = True
 
 # where is the data
-data_path = "KTN_data/LJ38/10k/"
+data_path = "KTN_data/LJ38/4k/"
 
 observables = []
 
 
 # inverse temperature range
-for beta in np.linspace(0.01,5.,10):#np.linspace(0.01,5.0,30):#np.linspace(2.5,9.0,2):#np.linspace(0.01,5.0,30):#
-    beta, B, K, D, N, u, s, kt, kcon, Emin, index_sel = load_save_mat(path=data_path,beta=beta,Emax=None,Nmax=4000,generate=generate)
+for beta in np.linspace(1.0,20.,20):#np.linspace(0.01,5.0,30):#np.linspace(2.5,9.0,2):#np.linspace(0.01,5.0,30):#
+    beta, B, K, D, N, u, s, kt, kcon, Emin, index_sel = load_save_mat(path=data_path,beta=beta,Emax=None,Nmax=None,generate=generate,screen=True)
     D = np.ravel(K.sum(axis=0))
-    BF = beta*u+s
+    BF = beta*u-s
 
     """
     Boolean vectors selecting A and/or B regions
     """
-    keep = np.zeros(index_sel.size,bool)
-    keep[np.loadtxt(os.path.join(data_path,'min_ico')).astype(int)-1] = True
-    B_states = keep[index_sel]
-
-    keep = np.zeros(index_sel.size,bool)
-    keep[np.loadtxt(os.path.join(data_path,'min_oct')).astype(int)-1] = True
-    A_states = keep[index_sel]
+    A_states,B_states = load_AB(data_path,index_sel)
 
 
     basins = B_states + A_states
@@ -88,11 +82,12 @@ for beta in np.linspace(0.01,5.,10):#np.linspace(0.01,5.0,30):#np.linspace(2.5,9
         res[1+2*si+1] = 1.0/(dtau.dot(rho))
         print("no GT,  :",res[2*si+1:2*(si+1)+1])
 
+
+
+        """ with intermediate states GT'ed away """
         r_s = s_r_s[1]
         rho = np.exp(-r_BF[r_s])
         rho /= rho.sum()
-
-        """ with intermediate states GT'ed away """
         dtau = np.ravel(spsolve(rK[r_s,:][:,r_s].transpose(),np.ones(r_s.sum())))
         res[1+2*si+0] = (1.0/dtau).dot(rho)
         res[1+2*si+1] = 1.0/(dtau.dot(rho))
@@ -101,34 +96,43 @@ for beta in np.linspace(0.01,5.,10):#np.linspace(0.01,5.0,30):#np.linspace(2.5,9
 
         """ with final states GT'ed to a single state """
         rm_reg = np.ones(rN,bool)
-        rm_reg[(~r_s).nonzero()[0][0]] = False
-        rm_reg[r_s.nonzero()[0]] = False
-        rrB, rrD, rrK, rrN, retry = gt_seq(N=rN,rm_reg=rm_reg,B=rB,D=rD,trmb=10,Ndense=1,retK=True)
+        rm_reg[(~r_s).nonzero()[0][0]] = False # (~r_s).nonzero()[0] == final states, don't remove only the first
+        rm_reg[r_s.nonzero()[0]] = False # (~r_s).nonzero()[0] == initial states, keep all
+        rrB, rrD, rrK, rrN, retry = gt_seq(N=rN,rm_reg=rm_reg,B=rB,D=rD,trmb=1,Ndense=1,retK=True)
         rr_s = r_s[~rm_reg]
+
         dtau = np.ravel(spsolve(rrK[rr_s,:][:,rr_s].transpose(),np.ones(rr_s.sum())))
+
         res[1+2*si+0] = (1.0/dtau).dot(rho)
         res[1+2*si+1] = 1.0/(dtau.dot(rho))
         print("GT-(I+final), kF, 1/tau:",res[2*si+1:2*(si+1)+1])
 
 
-        """ GT'ed to 2 state system"""
-        if rr_s.sum()<10:
-            tau = np.zeros(rr_s.sum())
-            pbar = tqdm(total=rr_s.sum(),leave=False,mininterval=0.0)
 
-            for ii,ib in enumerate(rr_s.nonzero()[0]):
-                rm_reg = np.ones(rrN,bool)
-                rm_reg[(~rr_s).nonzero()[0][0]] = False
-                rm_reg[ib] = False
-                rrrB, rrrD, rrrK, rrrN, retry = gt_seq(N=rrN,rm_reg=rm_reg,B=rrB,D=rrD,trmb=10,Ndense=1,retK=True)
-                rrr_s = rr_s[~rm_reg]
-                tau[ii] = 1.0 / np.ravel(rrrK.diagonal()[rrr_s])
-                #print(ii,1.0/rrrD[rrr_s]/(1.0-rrrB.diagonal()[rrr_s]))
-                pbar.update(1)
 
-            pbar.close()
+        """ GT'ed to 2 state system for each initial state:"""
+        tau_gt = np.zeros(r_s.nonzero()[0].size)
+        pbar = tqdm(total=tau_gt.size,leave=False,mininterval=0.0)
+        for str in range(tau_gt.size):
+            rm_reg = np.ones(rN,bool)
+            rm_reg[(~r_s).nonzero()[0][0]] = False # (~r_s).nonzero()[0] == final states, don't remove only the first
+            rm_reg[r_s.nonzero()[0][str]] = False # (~r_s).nonzero()[0] == initial states, don't remove only the "strth"
+            bs=1
+            if rm_reg.sum()>10:
+                bs=10
+            rrB, rrD, rrK, rrN, retry = gt_seq(N=rN,rm_reg=rm_reg,B=rB,D=rD,trmb=bs,Ndense=1,retK=True)
+            rr_s = r_s[~rm_reg]
+            print(rr_s)
+            print(rrK.todense())
+            tau_gt[str] = np.ravel(spsolve(rrK[rr_s,:][:,rr_s].transpose(),np.ones(rr_s.sum())))
+            print(tau_gt[str])
+            pbar.update(1)
+        pbar.close()
+        res[1+2*si+0] = rho.dot(1.0/tau_gt)
+        res[1+2*si+1] = 1.0/(tau_gt.dot(rho))
+        print("GT-(I+final+initial), kF, 1/tau:",res[2*si+1:2*(si+1)+1])
 
-            print("GT-> 2 state, kF, 1/tau:",res[2*si+1:2*(si+1)+1])
+
         print("\n---\n")
     print("\n*******\n")
     observables.append(res)
@@ -137,6 +141,7 @@ for beta in np.linspace(0.01,5.,10):#np.linspace(0.01,5.0,30):#np.linspace(2.5,9
 
 ob = np.r_[observables]
 
+
 fig, ax = plt.subplots(1,1,figsize=(8,6),dpi=100)
 
 ll = [r"$k^F_\mathcal{A\leftarrow B}$",r"$k^*_\mathcal{A\leftarrow B}$",\
@@ -144,7 +149,7 @@ ll = [r"$k^F_\mathcal{A\leftarrow B}$",r"$k^*_\mathcal{A\leftarrow B}$",\
         r"$k^F_\mathcal{B\leftarrow A}$",r"$k^*_\mathcal{B\leftarrow A}$"]
 
 for j in range(4):
-    ax.plot(ob[:,0],np.log(ob[:,1+j]),'o-',label=ll[j])
+    ax.semilogy(ob[:,0],ob[:,1+j],'o-',label=ll[j])
 ax.legend()
 plt.show()
 

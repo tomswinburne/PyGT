@@ -17,8 +17,9 @@ class sampler:
 		self.sparse=True
 		self.sys = sys
 		self.max_d = max_d
+		self.sys.rK.eliminate_zeros()
 		probed=self.sys.rK.copy()
-		self.probed = probed.astype(bool).copy() + sp.diags(np.ones(self.sys.N),format="csr").astype(bool).copy()
+		self.probed = (probed.astype(bool).copy() + sp.diags(np.ones(self.sys.N),format="csr").astype(bool).copy()).tolil(copy=True)
 		del probed
 		self.sparseFactor = [.9,1.0] # assume v dense
 
@@ -26,11 +27,14 @@ class sampler:
 		# do a DNEB, find some paths to start from
 		n_a = np.arange(self.sys.N)[self.sys.selA]
 		n_b = np.arange(self.sys.N)[self.sys.selB]
+
+		#self.probed = self.probed.tolil()
 		self.probed[self.sys.selA,:][:,self.sys.selA] = True
 		self.probed[self.sys.selB,:][:,self.sys.selB] = True
 
 		Np = self.sys.remaining_pairs()
 		#n_aib = []
+		self.sys.tolil()
 
 		for t_i in n_a:
 			#n_aib.append(t_i)
@@ -46,6 +50,9 @@ class sampler:
 					#	n_aib.append(ff)
 					self.sys.add_connections(ia,fa,ka)
 		#n_aib = list(set(n_aib))
+		dNp = Np-self.sys.remaining_pairs()
+		print("INITIAL SADDLE SAMPLE DONE : found %d/%d pairs" % (dNp,Np))
+
 		for t_i in n_b:
 			for t_f in n_a:
 				if not self.probed[t_i,t_f]:
@@ -54,7 +61,8 @@ class sampler:
 					self.probed[t_f,t_i]=True
 					self.sys.add_connections(ia,fa,ka)
 		dNp = Np-self.sys.remaining_pairs()
-		print("INITIAL SAMPLE DONE : found %d/%d pairs" % (dNp,Np))
+		print("INITIAL DNEB SAMPLE DONE : found %d/%d pairs" % (dNp,Np))
+		self.sys.tocsr()
 
 	def initial_sample_path(self,path):
 		# do a DNEB, find some paths to start from
@@ -70,7 +78,7 @@ class sampler:
 		for t_i in path:
 			for t_f in path:
 				if t_i<t_f:
-					ia,fa,ka = self.sys.DNEB(t_i,t_f,pM=sp.csr_matrix(self.probed))
+					ia,fa,ka = self.sys.DNEB(t_i,t_f,pM=self.probed)
 					if self.dense:
 						self.probed[t_i][t_f]=True
 						self.probed[t_f][t_i]=True
@@ -112,7 +120,7 @@ class sampler:
 			self.probed = self.probed.tolil()
 		Np = self.sys.remaining_pairs()
 		if has_tqdm:
-			pbar = tqdm(total=len(path_region),leave=False)
+			pbar = tqdm(total=len(path_region),leave=False,miniters=0)
 		for t_i in path_region:
 			ia,fa,ka = self.sys.SaddleSearch(t_i)
 			for t_f in fa[:ncs]:
@@ -152,11 +160,11 @@ class sampler:
 		self.sys.make_dense()
 
 	def sample(self,ignore_distance=False,npairs=20,nfilter=10000,ss=False):
-		pairs,sens,ebp = self.sensitivity(ignore_distance=ignore_distance,npairs=4*npairs,nfilter=nfilter)
+		pairs,res = self.sensitivity(ignore_distance=ignore_distance,npairs=4*npairs,nfilter=nfilter)
 		c=0
 		pc=0
 		for p in pairs:
-			if ss>0:
+			if ss:
 				tia,tfa,tka = self.sys.SaddleSearch(p[0],p[1])
 				ia,fa,ka=[],[],[]
 				for i in range(len(tia)):
@@ -189,18 +197,11 @@ class sampler:
 			pc += int(self.probed[p[0],p[1]])
 			cc = self.sys.add_connections(ia,fa,ka)
 			c += cc
-			if ss>0 and c>=ss:
+			if c>=npairs:
 				break
-			elif c>=npairs:
-				break
-		#print(pc)
-		#self.sparseFactor[0] += pc
-		#self.sparseFactor[1] += len(pairs)
+		return len(pairs),res,c
 
-
-		return len(pairs),sens,ebp
-
-	def sensitivity(self,ignore_distance=True,npairs=20,nfilter=10000):
+	def sensitivity(self,ignore_distance=True,npairs=20,nfilter=10000,rho=None):
 		Nr = np.arange(self.sys.N)
 		if self.sparse:
 			rK = self.sys.rK.copy()# - sp.diags(self.sys.rK.diagonal(),format='csr')
@@ -211,15 +212,19 @@ class sampler:
 		selA,selI,selB=self.sys.selA*(kt>0.0),self.sys.selI*(kt>0.0),self.sys.selB*(kt>0.0)
 		nA,nI,nB = selA.sum(),selI.sum(),selB.sum()
 		mapA,mapI,mapB = Nr[selA], Nr[selI], Nr[selB]
+		if rho is None:
+			rho = np.ones(self.sys.N)
+		rhoB = rho[selB].copy() / rho[selB].sum()
 
 		if self.sparse:
 			iDI = sp.diags(1.0 / kt[selI], format='csr')
 			iDB = sp.diags(1.0 / kt[selB], format='csr')
-			BIB = rK[selI,:].transpose()[selB,:].transpose() * iDB
-			BAB = rK[selA,:].transpose()[selB,:].transpose() * iDB
-			BAI = rK[selA,:].transpose()[selI,:].transpose() * iDI
-			BII = rK[selI,:].transpose()[selI,:].transpose() * iDI
-			BBI = rK[selB,:].transpose()[selI,:].transpose() * iDI
+			rK = rK.tocsr()
+			BIB = rK[selI,:][:,selB]@iDB
+			BAB = rK[selA,:][:,selB]@iDB
+			BAI = rK[selA,:][:,selI]@iDI
+			BII = rK[selI,:][:,selI]@iDI
+			BBI = rK[selB,:][:,selI]@iDI
 		else:
 			iDI = np.diagflat(1.0/kt[selI])
 			iDB = np.diagflat(1.0/kt[selB])
@@ -231,12 +236,7 @@ class sampler:
 
 		pi = np.exp(-self.sys.beta*self.sys.f)
 		piA,piI,piB = pi[selA],pi[selI],pi[selB]
-
-		oneB = np.ones(nB)
 		oneA = np.ones(nA)
-
-		#print("OB",BIB.dot(oneB).min())
-
 		Nt = float(nA+nI+nB) * float(nA+nI+nB)
 		Na = float(self.probed.sum() // 2)
 		if self.sparse:
@@ -251,55 +251,44 @@ class sampler:
 		# inverse Green function
 		if self.sparse:
 			iGI = sp.diags(np.ones(nI), format='csr') - BII
-			x = spsolve(iGI,BIB.dot(oneB))
-			y = spsolve(iGI.transpose(),BAI.transpose().dot(oneA))
+			x = spsolve(iGI,BIB@rhoB)
+			y = spsolve(iGI.transpose(),oneA@BAI)
 		else:
 			iGI = np.identity(nI) - BII
 			try:
-				x = np.linalg.solve(iGI,BIB.dot(oneB))
+				x = np.linalg.solve(iGI,np.ravel(BIB@rhoB))
 			except np.linalg.LinAlgError as err:
-				x,resid,rank,s = np.linalg.lstsq(iGI,BIB.dot(oneB),rcond=None)
+				x,resid,rank,s = np.linalg.lstsq(iGI,np.ravel(BIB@rhoB),rcond=None)
 			try:
-				y = np.linalg.solve(iGI.transpose(),BAI.transpose().dot(oneA))
+				y = np.linalg.solve(iGI.transpose(),np.ravel(oneA@BAI))
 			except np.linalg.LinAlgError as err:
-				y = np.linalg.lstsq(iGI.transpose(),BAI.transpose().dot(oneA),rcond=None)[0]
+				y = np.linalg.lstsq(iGI.transpose(),np.ravel(oneA@BAI),rcond=None)[0]
 
-		iDx = iDI.dot(x)
-		bab = (BAI.dot(x)).sum()+(BAB.dot(oneB)).sum()
-		yBIB = np.ravel(BIB.transpose().dot(y))
+		iDx = iDI@x
+		bab = (BAI@x).sum()+(BAB@rhoB).sum()
+		yBIB = np.ravel(y@BIB)
 
 		# i.e. take largest ij rate to ~ remove state Boltzmann factor
 		if self.sparse:
-			mM = rK[selI,:][:,selI]
-			mMt = rK[selI,:][:,selI].transpose()
-			mM.data = np.vstack((mMt.data,mM.data)).max(axis=0)
+			mM = (rK+rK.transpose())/2.0
 			lM = -np.log(mM.data)
-			mmm = np.percentile(mM.data,50)
 		else:
-			mM = np.vstack((rK[selI,:][:,selI].flatten(),rK[selI,:][:,selI].transpose().flatten())).max(axis=0)
+			mM = np.vstack((rK.flatten(),rK.transpose().flatten())).max(axis=0)
 			lM = -np.log(mM[mM>0.0])
 
 		mix = min(1.0,np.exp(-lM.std()/lM.mean()))
-		ko = 5.0*np.exp(-3.0)
+		ko = 1.0*np.exp(-3.0)
 		mink = ko*(1.0-mix) + mix*np.exp(-lM.mean())
-		#print(np.exp(-lM.mean()),mM[mM>0.0].mean(),ko/(1.0+np.abs(lM.mean())),mink)
-		#mink = np.exp(np.log(ko)*(1.0-mix) -lM.mean() * mix)
-		#mink = ko/(1.0+np.abs(lM.mean()))
-		nnI = piI.shape[0]
+
 		fmapI = mapI
-		iDBs = np.ravel(iDB.dot(oneB))
+		iDBs = np.ravel(iDB@rhoB)
+		yvB = np.ravel(yBIB) * np.ravel(iDBs)
 
-		yvB = np.zeros(yBIB.shape[0])
-		for i in range(yBIB.shape[0]):
-			yvB[i] = yBIB[i]*iDBs[i]
+		yvI = np.ravel(y) * np.ravel(iDx)
 
-		yvI = np.zeros(nnI)
-		for i in range(nnI):
-			yvI = y[i] * iDx[i]
-
-		cII = np.outer(y,iDx)-np.outer(np.ones(nnI),yvI)
+		cII = np.outer(y,iDx)-np.outer(np.ones(nI),yvI)
 		cAI = np.outer(np.ones(nA),iDx-yvI)
-		cIB = np.outer(y,iDBs)-np.outer(np.ones(nnI),yvB)-np.outer(yvI,np.ones(nB)) # need phi.....
+		cIB = np.outer(y,iDBs)-np.outer(np.ones(nI),yvB)-np.outer(yvI,np.ones(nB)) # need phi.....
 
 
 		"""
@@ -318,145 +307,93 @@ class sampler:
 		=> cab = rate/Dpi
 		"""
 
-		mkf=1.0
-		for m in range(cAI.shape[1]):
-			# k_ml = 0.1 * min(1.0,pi_m/pi_l)
-			kf = piA/piI[m]
-			kf[kf>1.0] = 1.0
-			cAI[:,m] *= kf * mink
-			mkf = min(mkf,kf.min())
-		mkf=1.0
-		for l in range(cIB.shape[1]):
-			# k_ml = 0.1 * min(1.0,pi_m/pi_l)
-			kf = piI/piB[l]
-			kf[kf>1.0] = 1.0
-			cIB[:,l] *= kf * mink
-			mkf = min(mkf,kf.min())
+		kf = np.outer(piA,1.0/piI)
+		kf[kf>1.0] = 1.0
+		cAI *= kf * mink
 
-		mkf=1.0
-		mkfib=1.0
-		for l in np.arange(nnI):
-			# k_ml = 0.1 * min(1.0,pi_m/pi_l)
-			kf = piI/piI[l]
-			kf[kf>1.0] = 1.0
-			cII[:,l] *= kf * mink
-			mkf = min(mkf,kf.min())
+		kf = np.outer(piI,1.0/piI)
+		kf[kf>1.0] = 1.0
+		cII *= kf * mink
 
-		##cAI[cAI<-bab] = -bab
-		#cIB[cIB<-bab] = -bab
-		#cII[cII<-bab] = -bab
-		#cAI[cAI>1.0-bab] = 1.0-bab
-		#cIB[cIB>1.0-bab] = 1.0-bab
-		#cII[cII>1.0-bab] = 1.0-bab
-		#print("\nmax:",cII.max(),cIB.max(),cAI.max(),mink,ed,np.log(mM.data).var()/mMm,"\n")
+		kf = np.outer(piI,1.0/piB)
+		kf[kf>1.0] = 1.0
+		cIB *= kf * mink
 
-		#cII[self.probed[selI,:][:,selI].todense().astype(bool)] = 0.0
 		if self.sparse:
-			cAI *= 1.0 - self.probed[selA,:][:,selI].todense()
-			cII *= 1.0 - self.probed[selI,:][:,selI].todense()
-			cIB *= 1.0 - self.probed[selI,:][:,selB].todense()
+			cAI[self.probed[selA,:][:,selI].A] = 0.0
+			cII[self.probed[selI,:][:,selI].A] = 0.0
+			cIB[self.probed[selI,:][:,selB].A] = 0.0
 		else:
-			cAI[self.probed[selA,:][:,selI]] = 0.0
-			cII[self.probed[selI,:][:,selI]] = 0.0
-			cIB[self.probed[selI,:][:,selB]] = 0.0
-			#cII *= 1.0 - self.probed[selI,:][:,selI]
-			#cIB *= 1.0 - self.probed[selI,:][:,selB]
+			cAI[self.probed[selA,:][:,selI].A] = 0.0
+			cII[self.probed[selI,:][:,selI].A] = 0.0
+			cIB[self.probed[selI,:][:,selB].A] = 0.0
 
-
+		#print("\n----\n",cAI.max(),cAI.min(),cII.max(),cII.min(),cIB.max(),cIB.min(),"\n----")
 		c_tot = np.hstack(((np.triu(cII+cII.T)).flatten(),cAI.flatten(),cIB.flatten()))
 
 		#print("c_tot:",c_tot.max(),c_tot.min(),c_tot.mean(),cmp,cmn,cm)
 
-		sens = np.zeros(11)
+		res = {}
 
 		# sparsity
-		sens[0] = np.exp(-0.0001*Na) + (1.0 - np.exp(-0.0001*Na))*ed
+		res['Sparsity'] = 0.5*np.exp(-0.001*Na) + (1.0 - np.exp(-0.001*Na))*ed
+		em = res['Sparsity'] / (1.0-res['Sparsity'])
 
-		# sigma^1_\pm
-		sens[1] = c_tot.max()
-		sens[2] = c_tot.min()
+		res['SingleMaxMin'] = [c_tot.max(),c_tot.min()]
+		res['ExpectMaxMin'] = [c_tot[c_tot>0.0].mean() * em ,c_tot[c_tot<0.0].mean() * em]
+		res['TotalMaxMin'] = [c_tot[c_tot>0.0].sum(),c_tot[c_tot<0.0].sum()]
 
-		# <sigma>
-		sens[3] = c_tot[c_tot>0.0].mean() * sens[0] / (1.0-sens[0])
-		cmn=0.0
-		if (c_tot<0.0).sum()>0:
-			sens[4] = c_tot[c_tot<0.0].mean() * sens[0] / (1.0-sens[0])
-			sens[7] = c_tot[c_tot<0.0].sum() #* sens[0]
-			cmn = -np.exp(np.log(np.abs(c_tot[c_tot<0.0])).mean())#*(cneg).sum()
-		cmp = np.exp(np.log(np.abs(c_tot[c_tot>0.0])).mean())#cpos.sum()
-		cm = (cmp*(c_tot>0.0).sum() + cmn*(c_tot<0.0).sum()) / c_tot.size
-
-
-		sens[5] = c_tot.mean() * sens[0] / (1.0-sens[0])
-
-		# \sigma_\pm
-		sens[6] = c_tot[c_tot>0.0].sum() #* sens[0]
-
-		# gsigma
-		sens[8] = cmp
-		sens[9] = cmn
-		sens[10] = cm
-
-		#sens[8] = int(len(c_tot)*sens[7])*0.5
-
-		#c_tot[c_tot.argsort()[-int(sens[8]):]].sum()
-		#c_tot[c_tot.argsort()[:int(sens[8])]].sum()
+		res['SingleMaxMin'] = [c_tot.max(),c_tot.min()]
+		res['ExpectMaxMin'] = [c_tot[c_tot>0.0].mean() * em ,c_tot[c_tot<0.0].mean() * em]
+		res['TotalSparseMaxMin'] = [c_tot[c_tot>0.0].sum()*res['Sparsity'],c_tot[c_tot<0.0].sum()*res['Sparsity']]
+		res['ExpectMaxMaxMin'] = [c_tot[c_tot>0.0].max() * em ,c_tot[c_tot<0.0].min() * em]
 
 
 
+		res['ebab'] = bab
+		res['mink'] = mink
+		res['MaxInRegion'] = np.r_[[np.abs(cAI).max()/bab,np.abs(cII).max()/bab,np.abs(cIB).max()/bab]]
+		"""
+		pp = np.abs(c_tot).argsort()[-npairs:]#[::-1][:npairs]
+		fp_in = np.zeros((npairs,2),int)
+
+		nII = (pp<nI*nI).sum()
+		if nII>0:
+			fp = pp[pp<nI*nI]
+			fp_in[:nII] = np.vstack((fmapI[fp//nI],fmapI[fp%nI])).T
+
+		nAI = (pp<nI*nI+nA*nI).sum()
+		if nAI>nII:
+			fp = pp[(pp>nI*nI)*(pp<nI*nI+nA*nI)]-nI*nI
+			fp_in[nII:nAI] = np.vstack((fmapI[fp//nI],fmapI[fp%nI])).T
+		nIB = (pp>=nI*(nI+nA)).sum()
+		if nIB>nAI:
+			fp = pp[pp>=nI*(nI+nA)]-nI*(nI+nA)
+			fp_in[-nIB:] = np.vstack((fmapI[fp//nB],fmapI[fp%nB])).T
+		"""
 		fp_in = []
-		for fp in c_tot.argsort()[::-1]:
+		for fp in np.abs(c_tot).argsort()[::-1]:
 			if np.abs(c_tot[fp])>1.0e-9*bab:
 				fff = np.abs(c_tot[fp])
-				if fp<nnI*nnI:
-					p = [fmapI[fp//nnI],fmapI[fp%nnI]]
-				elif fp<nnI*nnI+nA*nI:
-					fp -= nnI*nnI
+				if fp<nI*nI:
+					p = [fmapI[fp//nI],fmapI[fp%nI]]
+				elif fp<nI*nI+nA*nI:
+					fp -= nI*nI
 					p = [mapA[fp//nI],mapI[fp%nI]]
 				else:
-					fp -= nnI*nnI+nA*nI
+					fp -= nI*nI+nA*nI
 					p = [mapI[fp//nB],mapB[fp%nB]]
-				#print("HH",fff,p,(fff>1.0e-9*bab),self.probed[p[0],p[1]])
 				if not self.probed[p[0],p[1]]:
 					fp_in.append(p)
+				else:
+					print("PROB")
 
 			if len(fp_in) >= npairs:
 				break
-		return fp_in,sens,bab
+		return fp_in,res
 
-	def true_branching_probability(self,gt_check=True):
-		kt = np.ravel(self.sys.K.sum(axis=0))
-		selA,selI,selB=self.sys.selA*(kt>0.0),self.sys.selI*(kt>0.0),self.sys.selB*(kt>0.0)
-		nA,nI,nB = selA.sum(),selI.sum(),selB.sum()
-		oneB = np.ones(selB.sum())
-		if gt_check:
-			ikcon = self.sys.kcon.copy()
-			ikcon[~self.sys.selI] = ikcon.max()
-			rB, rN, retry = gt_seq(N=self.sys.N,rm_reg=selI,B=self.sys.B,trmb=1,order=ikcon)
-			r_initial_states = self.sys.selB[~selI]
-			r_final_states = self.sys.selA[~selI]
-			gtBAB =( rB[r_final_states,:].tocsr()[:,r_initial_states].dot(oneB)).sum()
-			print("\nGT BAB:",gtBAB)
-
-		iDI = sp.diags(1.0 / kt[selI], format='csr')
-		iDB = sp.diags(1.0 / kt[selB], format='csr')
-		BIB = self.sys.K[selI,:][:,selB].dot(iDB)
-		BAI = sp.csr_matrix(self.sys.K[selA,:][:,selI]).dot(iDI)
-		BAB = np.ravel(self.sys.K[selA,:][:,selB].dot(iDB).dot(oneB)).sum()
-
-		# inverse Green function
-		iGI = sp.diags(np.ones(nI), format='csr')
-		iGI -= sp.csr_matrix(self.sys.K[selI,:][:,selI]).dot(iDI)
-		x = spsolve(iGI,BIB.dot(oneB))
-		BAIB = np.ravel(BAI.dot(x)).sum()
-		print("MATRIX:",BAB+BAIB)
-		if gt_check:
-			return BAB+BAIB, abs(gtBAB-BAIB-BAB)/(BAIB+BAB)
-		else:
-			return BAB+BAIB
-
-	def new_true_branching_probability(self,gt_check=True):
-		BAIB, BAB = direct_solve(self.sys.B,self.sys.selB,self.sys.selA)
+	def new_true_branching_probability(self,gt_check=True,rho=None):
+		BAIB, BAB = direct_solve(self.sys.B,self.sys.selB,self.sys.selA,rho=rho)
 		print("DIRECT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
 		res = (BAIB+BAB)*1.0
 		if gt_check:
@@ -464,46 +401,9 @@ class sampler:
 			#print(rB)
 			r_initial_states = self.sys.selB[~self.sys.selI]
 			r_final_states = self.sys.selA[~self.sys.selI]
-			BAIB, BAB = direct_solve(rB,r_initial_states,r_final_states)
+			BAIB, BAB = direct_solve(rB,r_initial_states,r_final_states,rho=rho)
 			print("GT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
 			gtBAB = BAB+BAIB
 			return res,abs(gtBAB-res)/res
 		else:
 			return res
-
-	def new_estimated_branching_probability(self,gt_check=True):
-		kt = np.ravel(self.sys.rK.sum(axis=0))
-		N,selA,selI,selB=(kt>0.0).sum(),self.sys.selA[kt>0.0],self.sys.selI[kt>0.0],self.sys.selB[kt>0.0]
-		B = sp.csr_matrix(self.sys.rK[(kt>0.0),:][:,(kt>0.0)]).dot(sp.diags(1.0/kt[kt>0.0],format='csr'))
-		print("Bxx.max=",B.diagonal().min())
-		BAIB, BAB = direct_solve(B,selB,selA)
-		print("EST DIRECT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
-		rB, rN, retry = gt_seq(N=N,rm_reg=selI,B=B,trmb=1)#,condThresh=1.0e10,order=ikcon)
-		print(rB)
-		DD = rB.diagonal()
-		r_initial_states = selB[~selI]
-		r_final_states = selA[~selI]
-		BAIB, BAB = direct_solve(rB,r_initial_states,r_final_states)
-		print("GT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
-
-	def estimated_branching_probability(self,direct=True):
-		kt = np.ravel(self.sys.rK.sum(axis=0))
-		selA,selI,selB=self.sys.selA*(kt>0.0),self.sys.selI*(kt>0.0),self.sys.selB*(kt>0.0)
-		nA,nI,nB = selA.sum(),selI.sum(),selB.sum()
-		oneB = np.ones(nB)
-
-		iDI = sp.diags(1.0 / kt[selI], format='csr')
-		iDB = sp.diags(1.0 / kt[selB], format='lil')
-		BIB = (self.sys.rK[selI,:][:,selB].dot(iDB))
-		BAB = (self.sys.rK[selA,:][:,selB].dot(iDB))
-		BAI = sp.csr_matrix(self.sys.rK[selA,:][:,selI]).dot(iDI)
-
-		# inverse Green function
-		iGI = sp.diags(np.ones(nI), format='csr')
-		iGI -= sp.csr_matrix(self.sys.rK[selI,:][:,selI]).dot(iDI)
-
-		x = spsolve(iGI,BIB.dot(oneB))
-		BAB = np.ravel(BAB.dot(oneB)).sum()
-		if not direct:
-			BAB=0.0
-		return np.ravel(BAI.dot(x)).sum() + BAB

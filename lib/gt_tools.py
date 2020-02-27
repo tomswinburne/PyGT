@@ -40,6 +40,7 @@ from scipy.sparse.linalg import spsolve,inv
 """ test for tqdm progress bars """
 try:
 	from tqdm import tqdm
+	print("Using tqdm package for pretty progress bars!")
 	has_tqdm=True
 except:
 	print("Install tqdm package for pretty progress bars!")
@@ -47,34 +48,22 @@ except:
 
 
 
-def direct_solve(B,initial_states,final_states,D=None):
-	B=B.tocsc()
-
+def direct_solve(B,initial_states,final_states,rho=None):
 	basins = initial_states+final_states
 	inter_region = ~basins
-	pi = np.ones(initial_states.sum()) #/ initial_states.sum()
-	BAB = (B[final_states,:].tocsr()[:,initial_states].dot(pi)).sum()
-	cond = 1.0
-	NI = inter_region.sum()
-	if NI>0:
-		BI = B[inter_region,:].tocsr()[:,inter_region]
-		BAI = B[final_states,:].tocsr()[:,inter_region].transpose().dot(np.ones(final_states.sum()))
-		BIB = B[inter_region,:].tocsr()[:,initial_states].dot(pi)
-		iGI = eye(NI,format="csr") - BI
-		"""
-		if has_umfpack_hack:
-			x,cond = spsolvecond(iGI,BIB,giveCond=True)
-		else:
-			x = spsolve(iGI,BIB)
-		"""
-		x = spsolve(iGI,BIB)
-		BABI = BAI.dot(x)
+	if rho is None:
+		rho = np.ones(B.shape[0])
+	myrho = rho[initial_states] / rho[initial_states].sum()
+	BAB = (B[final_states,:][:,initial_states]@myrho).sum()
+
+	if inter_region.sum()>0:
+		iGI = eye(inter_region.sum(),format="csr") - B[inter_region,:][:,inter_region].copy()
+		x = spsolve(iGI,B[inter_region,:][:,initial_states]@myrho)
+		BABI = (B[final_states,:][:,inter_region]@x).sum()
 	else:
 		BABI = 0.0
-	if D is None:
-		return BABI,BAB
-	#else:
-
+	return BABI,BAB
+	
 
 
 def make_fastest_path(G,i,f,depth=1,limit=None):
@@ -212,22 +201,93 @@ def gtD(B,iD,sel,timeit=False,dense=False):
 
 		return Bij,iDjj,True#,ts,tm
 
+def gtDD(B,iD,iDD,sel,timeit=False,dense=False):
+	if timeit:
+		t=timer()
 
-def gt_seq(N,rm_reg,B,D=None,trmb=1,condThresh=1.0e10,order=None,Ndense=500,force_sparse=True,screen=False,retK=False):
-	if D is None:
-		retK=False
+	""" seems crazy but isn't the bottleneck ... """
+	"""
+	Bxx = B[sel,:].transpose()[sel,:].transpose()
+	Bxj = B[sel,:].transpose()[~sel,:].transpose()
+	Bix = B[~sel,:].transpose()[sel,:].transpose()
+	Bij = B[~sel,:].transpose()[~sel,:].transpose()
+	"""
+	Bxx = B[sel,:][:,sel]
+	Bxj = B[sel,:][:,~sel]
+	Bix = B[~sel,:][:,sel]
+	Bij = B[~sel,:][:,~sel]
+	iDjj = iDD[~sel,:][:,~sel]
+	iDxx = iDD[sel,:][:,sel]
+
+	if timeit:
+		t("slicing")
+	if sel.sum()>1:
+		# Get Bxx
+		Bd = np.ravel(Bxx.diagonal())
+		# Get sum Bix for i not equal x
+		Bxxnd = Bxx - np.diag(Bd)
+		Bs = np.ravel(Bix.sum(axis=0))
+		Bs += np.ravel(Bxxnd.sum(axis=0))
+
+		Bs[Bd<0.99] = 1.0-Bd[Bd<0.99]
+		iGxx = np.diag(Bs) - Bxxnd
+		try:
+			Gxx = np.linalg.inv(iGxx)
+		except np.linalg.LinAlgError as err:
+			return B,iD,False
+
+		if timeit:
+			t("Gxx inv + iD mult.")
+
+		if not dense:
+			Gxx = csr_matrix(Gxx)
+		Bij += Bix@Gxx@Bxj # this is where the work is....
+		iDjj += Bix@Gxx@iDxx@Gxx@Bxj
+		if timeit:
+				t("B mult. (dense)")
+		return Bij,iDjj,True
+	else:
+		Bxx = Bxx.sum()
+		#print("HHH",Bxx,Bix.sum(),Bxx+Bix.sum())
+		if Bxx>0.99:
+			b_xx = Bix.sum()
+		else:
+			b_xx = 1.0-Bxx
+		if dense:
+			iDjj = iDjj.flatten()
+			Bxj = np.ravel(Bxj.flatten() / b_xx)
+			Bix = np.ravel(Bix.flatten())
+			Bij += np.outer(Bix,Bxj)
+			iDjj += np.outer(Bix,Bxj)/b_xx/b_xx * iDxx.sum()
+		else:
+			Bxj.data /= b_xx
+			Bij += kron(Bix,Bxj)
+			iDjj += kron(Bix,Bxj)/b_xx/b_xx * iDxx.sum()
+
+		return Bij,iDjj,True#,ts,tm
+
+
+def gt_seq(N,rm_reg,B,D=None,DD=None,trmb=1,condThresh=1.0e10,order=None,Ndense=500,force_sparse=True,screen=False,retK=False):
 
 	rmb=trmb
 	retry=0
 	NI = rm_reg.sum()
-	if not D is None:
-		iD = 1.0/np.ravel(D)
+
+	if not DD is None:
+		iD=np.zeros(NI)
+		iDD = DD.copy()
+		if DD.shape!=B.shape:
+			print("ERROR IN SIZE OF DD")
+			return -1
+	else:
+		if not D is None:
+			iD = 1.0/np.ravel(D)
 
 	#B.tolil()
 	if screen:
 		print("GT regularization removing %d states:" % NI)
-	if has_tqdm:
-		pbar = tqdm(total=NI,leave=False,mininterval=0.0)
+		if has_tqdm:
+			pbar = tqdm(total=NI,leave=False,mininterval=0.0)
 	tst = 0.0
 	tmt = 0.0
 	tc = 0
@@ -264,12 +324,16 @@ def gt_seq(N,rm_reg,B,D=None,trmb=1,condThresh=1.0e10,order=None,Ndense=500,forc
 			order[~rm_reg] = order.max()+1
 			rm[order.argsort()[:min(rmb,NI)]] = True
 
-		if not D is None:
-			B, iD, success = gtD(B,iD,rm,timeit=False,dense=dense)
+		if not DD is None:
+			B, iD, iDD, success = gtDD(B,iD,iDD,rm,timeit=False,dense=dense)
 		else:
-			B, success = gt(B,rm,condThresh=condThresh)
+			if not D is None:
+				B, iD, success = gtD(B,iD,rm,timeit=False,dense=dense)
+			else:
+				B, success = gt(B,rm,condThresh=condThresh)
+
 		if success:
-			if has_tqdm:
+			if screen and has_tqdm:
 				pbar.update(rm.sum())
 			N -= rm.sum()
 			NI -= rm.sum()
@@ -283,9 +347,9 @@ def gt_seq(N,rm_reg,B,D=None,trmb=1,condThresh=1.0e10,order=None,Ndense=500,forc
 			pass_over = rm
 			rmb = 1
 			retry += 1
-			if has_tqdm:
+			if screen and has_tqdm:
 				pobar = tqdm(total=rm.sum(),leave=False,mininterval=0.0,desc="STATE-BY-STATE GT")
-	if has_tqdm:
+	if screen and has_tqdm:
 		pbar.close()
 	if dense and screen:
 		print("GT BECAME DENSE AT N=%d, density=%f" % (dense_onset,density))
@@ -296,21 +360,27 @@ def gt_seq(N,rm_reg,B,D=None,trmb=1,condThresh=1.0e10,order=None,Ndense=500,forc
 		B.eliminate_zeros()
 	if screen:
 		print("GT done, %d rescans due to LinAlgError" % retry)
-	if not D is None:
-		D = 1.0/iD
-		D = np.ravel(D).flatten()
-		if retK:
-			Bd = np.ravel(B.diagonal()) # only the diagonal (Bd_x = B_xx)
-			Bn = B - diags(Bd) # B with no diagonal (Bn_xx = 0, Bn_xy = B_xy)
-			Bn.eliminate_zeros()
-			Bnd = np.ravel(Bn.sum(axis=0)) # Bnd_x = sum_x!=y B_yx = 1-B_xx
-			nBd = np.zeros(N)
-			nBd[Bd>0.99] = Bnd[Bd>0.99] 
-			nBd[Bd<0.99] = 1.0-Bd[Bd<0.99]
-			omB = diags(nBd) - Bn # 1-B
-			K = omB.dot(diags(D)) # (1-B).D = K ( :) )
-			return B,D,K,N,retry
-		return B,D,N,retry
 
+	Bd = np.ravel(B.diagonal()) # only the diagonal (Bd_x = B_xx)
+	Bn = B - diags(Bd) # B with no diagonal (Bn_xx = 0, Bn_xy = B_xy)
+	Bn.eliminate_zeros()
+	Bnd = np.ravel(Bn.sum(axis=0)) # Bnd_x = sum_x!=y B_yx = 1-B_xx
+	nBd = np.zeros(N)
+	nBd[Bd>0.99] = Bnd[Bd>0.99]
+	nBd[Bd<0.99] = 1.0-Bd[Bd<0.99]
+	omB = diags(nBd) - Bn # 1-B
+
+	if not DD is None:
+		if retK:
+			return B,iD,omB,N,retry
+		return B,N,iD,retry
 	else:
-		return B,N,retry
+		if not D is None:
+			D = 1.0/iD
+			D = np.ravel(D).flatten()
+			if retK:
+				K = omB.dot(diags(D)) # (1-B).D = K ( :) )
+				return B,D,K,N,retry
+			return B,D,N,retry
+		else:
+			return B,N,retry

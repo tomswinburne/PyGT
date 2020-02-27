@@ -1,4 +1,5 @@
 import os,time,sys
+from io import StringIO
 import numpy as np
 from scipy.sparse import csgraph, csr_matrix, csc_matrix, eye, save_npz, load_npz, diags
 os.system('mkdir -p cache')
@@ -49,6 +50,30 @@ class output_str:
 	def summary(self):
 		print("SUMMARY:\n",self.print_str)
 
+def load_AB(data_path,index_sel=None):
+	Aind = np.zeros(1).astype(int)
+	for line in open(os.path.join(data_path,'min.A')):
+	    Aind = np.append(Aind,np.genfromtxt(StringIO(line.strip())).astype(int)-1)
+	Aind = Aind[2:]
+
+	Bind = np.zeros(1).astype(int)
+	for line in open(os.path.join(data_path,'min.B')):
+	    Bind = np.append(Bind,np.genfromtxt(StringIO(line.strip())).astype(int)-1)
+	Bind = Bind[2:]
+
+	if index_sel is None:
+		return Aind,Bind
+
+	keep = np.zeros(index_sel.size,bool)
+	keep[Bind] = True
+
+	B_states = keep[index_sel]
+
+	keep = np.zeros(index_sel.size,bool)
+	keep[Aind] = True
+	A_states = keep[index_sel]
+	return A_states,B_states
+
 def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,screen=False):
 
 	""" load data """
@@ -68,20 +93,19 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,screen=False)
 
 	N = max(TSD['I'].max()+1,TSD['F'].max()+1)
 
-	if Nmax is None:
-		if not Nmax is None:
-			N = min(Nmax,N)
+	if not Nmax is None:
+		N = min(Nmax,N)
+
+	sels = (TSD['I']<N) * (TSD['F']<N) * (TSD['I']!=TSD['F'])
+	if not Emax is None:
+		sels *= GSD['E'][TSD['I']]<Emax
+		sels *= GSD['E'][TSD['F']]<Emax
+		sels *= TSD['E']<Emax
+	TSD = TSD[sels]
+	GSD = GSD[:N]
 
 
-		sels = (TSD['I']<N) * (TSD['F']<N) * (TSD['I']!=TSD['F'])
-		if not Emax is None:
-			sels *= GSD['E'][TSD['I']]<Emax
-			sels *= GSD['E'][TSD['F']]<Emax
-			sels *= TSD['E']<Emax
-		TSD = TSD[sels]
-		GSD = GSD[:N]
-
-	#print("N,N_TS:",GSD.size,TSD.size)
+	print("N,N_TS:",GSD.size,TSD.size)
 	Emin = GSD['E'].min().copy()
 	Smin = min(GSD['S'].min().copy(),TSD['S'].min().copy())
 	GSD['E'] -= Emin
@@ -122,13 +146,15 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,screen=False)
 	for j in range(nc):
 		sum[j] = (cc==j).sum()
 	sel = cc==sum.argmax()
+
 	if screen:
 		print("Connected Clusters: %d, 1st 400 states in largest cluster: %d" % (nc,sel[:400].min()))
-	oN=N.copy()
+	oN=N
+
 	K,N = K.tocsc()[sel,:].tocsr()[:,sel], sel.sum()
 
 	if screen:
-		print("cc: N: %d->%d" % (oN,N))
+		print("cc: N: %d->%d" % (oN,N),GSD.shape,sel.shape)
 
 
 	GSD = GSD[sel]
@@ -186,3 +212,127 @@ def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,Emax=None,generate=T
 	K.data = 1.0/K.data
 
 	return beta, B, K, D, N, U, S, kt, kcon, Emin, sel
+
+
+
+def load_save_mat_gt(selA,selB,beta=10.0,path="../../data/LJ38",Nmax=None,Emax=None,generate=True):
+	name = path.split("/")[-1]
+	if len(name)==0:
+		name = path.split("/")[-2]
+
+	if not generate:
+		try:
+			B = load_npz('cache/temp_%s_B.npz' % name)
+			D = load_npz('cache/temp_%s_D.npz' % name)
+			F = np.loadtxt('cache/temp_%s_F.txt' % name)
+			map = np.loadtxt('cache/temp_%s_M.txt' % name,dtype=int)
+		except IOError:
+			generate = True
+			print("no files found, generating...")
+
+
+	if generate:
+		print("Generating....")
+		B,D,F,map = load_mat_gt(selA,selB,path,beta=beta,Nmax=Nmax,Emax=Emax)
+		np.savetxt('cache/temp_%s_F.txt' % name,F)
+		np.savetxt('cache/temp_%s_M.txt' % name,map,fmt="%d")
+		save_npz('cache/temp_%s_B.npz' % name,B)
+		save_npz('cache/temp_%s_D.npz' % name,D)
+
+	return B,D,F,map
+
+
+def load_mat_gt(keep_ind,path='../data/LJ38/raw/',beta=10.0,Nmax=None,Emax=None):
+
+	""" load data """
+	GSD = np.loadtxt(os.path.join(path,'min.data'),\
+		dtype={'names': ('E','S','DD','RX','RY','RZ'),\
+		'formats': (float,float,int,float,float,float)})
+
+	TSD = np.loadtxt(os.path.join(path,'ts.data'),\
+		dtype={'names': ('E','S','DD','F','I','RX','RY','RZ'),\
+		'formats': (float,float,int,int,int,float,float,float)})
+
+	TSD = TSD[TSD['I']!=TSD['F']] # remove self transitions??
+	TSD['I'] = TSD['I']-1
+	TSD['F'] = TSD['F']-1
+
+	N = max(TSD['I'].max()+1,TSD['F'].max()+1)
+
+	Emin = GSD['E'].min().copy()
+	GSD['E'] -= Emin
+	TSD['E'] -= Emin
+	if not Emax is None:
+		Emax -= Emin
+
+	""" Build rate matrix """
+	i = np.hstack((TSD['I'],TSD['F']))
+	f = np.hstack((TSD['F'],TSD['I']))
+	du = np.hstack((TSD['E']-GSD[TSD['I']]['E'],TSD['E']-GSD[TSD['F']]['E']))
+	ds = np.hstack((TSD['S']-GSD[TSD['I']]['S'],TSD['S']-GSD[TSD['F']]['S']))
+
+	K = csr_matrix((np.exp(-beta*du+ds),(f,i)),shape=(N,N))
+	TE = csc_matrix((np.hstack((TSD['E'],TSD['E'])),(f,i)),shape=(N,N))
+	D = np.ravel(K.sum(axis=0)) # vector...
+
+	# oN -> N map : could be unit
+	oN = N.copy()
+	basins = np.zeros(N,bool)
+	basins[keep_ind] = True
+	print(D.min())
+
+	nc,cc = csgraph.connected_components(K)
+	mc = 0
+	if nc>1:
+		for j in range(nc):
+			sc = (cc==j).sum()
+			if sc > mc:
+				mc = sc
+				ccsel = cc==j
+		K = K.tocsc()[ccsel,:].tocsr()[:,ccsel]
+		N = ccsel.sum()
+		TE = TE.tocsc()[ccsel,:].tocsr()[:,ccsel]
+		D = D[ccsel]
+		Nb = basins[ccsel].sum()
+		print("removing unconnected states: N=%d -> %d, Nbasin=%d -> %d" % (oN,N,oNb,Nb))
+
+	map = -np.ones(oN,int)
+	map[ccsel] = np.arange(N)
+
+	""" select states to remove - find everything that jumps less than x high from every state in sel??"""
+	B = K.dot(diags(1.0/D,format="csr"))
+	F = GSD['E']-GSD['S']/beta
+
+	rm_reg = np.ones(N,bool) # remove all
+
+	f_keep = np.empty(0,int)
+
+	n_keep = map[obasins].copy()
+	n_keep = n_keep[n_keep>-1]
+
+	for depth in range(20):
+		nn_keep = np.empty(0,int)
+		for state in n_keep:
+			if n_keep in f_keep:
+				continue
+			ss = TE.indices[TE.indptr[state]:TE.indptr[state+1]]
+			ee = TE.data[TE.indptr[state]:TE.indptr[state+1]]
+			nn_keep = np.append(nn_keep,ss[ee<Emax])
+		f_keep = np.unique(np.append(f_keep,n_keep))
+		n_keep = np.unique(nn_keep.copy()) # for the next round....
+
+	f_keep = np.unique(np.append(f_keep,n_keep))
+
+	rm_reg[f_keep] = False # i.e. ~rm_reg survives
+
+	kept = np.zeros(oN,bool)
+	kept[ccsel] = ~rm_reg # i.e. selects those which were kept
+
+	map = -np.ones(oN,int)
+	map[kept] = np.arange(kept.sum())
+
+	B,D,N,retry = gt_seq(N=N,rm_reg=rm_reg,B=B,D=D,trmb=1,order=None)
+	if dense:
+		B = csr_matrix(B)
+
+	return B,diags(D,format='csr'),F[~rm_reg],map
