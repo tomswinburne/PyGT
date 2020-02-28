@@ -71,7 +71,7 @@ pp,res,ncp = sampler.sample(npairs=npairs,ss=ss) # sampling process. Returns
 bab = res['ebab'].copy()
 sampler.sys.rK = rK.copy()
 ebab=0.0
-
+tmm = [0.0,0.0]
 
 for jj in range(nscycles):
     npc=0
@@ -107,11 +107,12 @@ for jj in range(nscycles):
             gres[key][0] = min(gres[key][0],res[key][0])
             gres[key][1] = max(gres[key][1],res[key][1])
     pbar.close()
-    ebab = res['ebab']/bab
+    ebab = res['ebab']
 
-    print("\n{: <4} {: <5} ".format("%d" % ii,"%1.4g" % ebab),end="| ")
+    print("\n{: <4} {: <5} ".format("%d" % ii,"%1.4g" % (ebab/bab)),end="| ")
     for key in ['TotalSparseMaxMin','SingleMaxMin','ExpectMaxMaxMin']:
-        tmm = [gres[key][0]/bab,np.exp(gres[key][1]/bab)-1.0]
+        tmm[0] = (1.0-ebab)*(1.0-np.exp(-gres[key][0]/(1.0-ebab)))/bab
+        tmm[1] = ebab*(np.exp(gres[key][1]/ebab)-1.0)/bab
         print("{: <5} {: <5} {: <5}".format("%1.4g" % tmm[0],"%1.4g" % tmm[1],"%1.4g" % (tmm[0]+tmm[1])),end="| ")
     print("{: <5} {: <5} | {: <5} {: <5} {: <5} | {: <5} {: <5}".format(\
     "%1.4g" % res['Sparsity'],\
