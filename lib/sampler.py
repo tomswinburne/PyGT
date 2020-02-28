@@ -342,9 +342,6 @@ class sampler:
 		res['SingleMaxMin'] = [c_tot.max(),c_tot.min()]
 		res['ExpectMaxMin'] = [c_tot[c_tot>0.0].mean() * em ,c_tot[c_tot<0.0].mean() * em]
 		res['TotalMaxMin'] = [c_tot[c_tot>0.0].sum(),c_tot[c_tot<0.0].sum()]
-
-		res['SingleMaxMin'] = [c_tot.max(),c_tot.min()]
-		res['ExpectMaxMin'] = [c_tot[c_tot>0.0].mean() * em ,c_tot[c_tot<0.0].mean() * em]
 		res['TotalSparseMaxMin'] = [c_tot[c_tot>0.0].sum()*res['Sparsity'],c_tot[c_tot<0.0].sum()*res['Sparsity']]
 		res['ExpectMaxMaxMin'] = [c_tot[c_tot>0.0].max() * em ,c_tot[c_tot<0.0].min() * em]
 

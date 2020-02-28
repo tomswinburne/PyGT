@@ -30,9 +30,6 @@ selA,selB = kio.load_AB(data_dir,np.ones(sys.N,bool))
 
 
 sys.define_AB_regions(selA,selB)
-print("kk",selA.sum(),sys.selB.sum())
-
-
 
 """ true density """
 true_dense = float(sys.K.nnz) / float(sys.K.shape[0]*sys.K.shape[1])
@@ -50,11 +47,17 @@ sampler.initial_sample_path_region(np.arange(sys.N)[path_region+path_region_r],n
 
 
 bab,gterr = sampler.new_true_branching_probability()
+keylist = ['TotalMaxMin','TotalSparseMaxMin','ExpectMaxMin','ExpectMaxMaxMin','SingleMaxMin']
 
 if printout:
     """ open output file """
     name = data_dir.split("/")[-1-int(data_dir[-1]=="/")]
     ff = open('output/pab_converge_%s' % name,'w')
+    header = "#iteration\tnrp\tebab\t"
+    for key in keylist:
+        header += key+"\t"
+    header += "Sparsity\tbab\n"
+    ff.write(header)
 
 nscycles = 30
 ncycles = 100
@@ -95,9 +98,9 @@ for jj in range(nscycles):
 
         if printout:
             ff.write("%d %d %10.10g %10.10g " % (ii,nrp,probe_compl,res['ebab']))
-            for key in ['TotalMaxMin','SingleMaxMin','ExpectMaxMin']:
+            for key in keylist:
                 ff.write("%10.10g %10.10g " % (res[key][0],res[key][1]))
-            ff.write("%10.10g %10.10g %10.10g\n" % (res['Sparsity'],bab,probe_compl))
+            ff.write("%10.10g %10.10g\n" % (res['Sparsity'],bab))
 
         pbar.update(1)
         for key in ['TotalSparseMaxMin','SingleMaxMin','ExpectMaxMaxMin']:

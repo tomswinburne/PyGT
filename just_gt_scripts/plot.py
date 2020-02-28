@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-name='LJ13'
+name='4k_proc'
 beta=10
 
 sws = [1,4]
@@ -14,10 +14,10 @@ title = "LJ38 test"
 #raw_data = np.loadtxt('output/%s/dneb_ip' % name)
 filename = 'output/%s/dneb_ip_gs.pdf' % (name)
 
-sNEB = 1608.0
-npairs = 10
-Nt=1506
-title = r"LJ$_{13}$ cluster, $\beta=$%d, Initial Path: Simulated $\tt{DNEB}$" % (beta)
+sNEB = 0.0#1608.0
+npairs = 2
+Nt=0#1506
+title = r"LJ$_{38}$ cluster, $\beta=$%d, Initial Path: Simulated $\tt{DNEB}$" % (beta)
 
 #sNEB=200.
 #npairs=50
