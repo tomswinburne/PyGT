@@ -7,42 +7,23 @@ from lib.gt_tools import gt_seq
 
 
 class aib_system:
-	def __init__(self,path="../../data/LJ13",beta=5.0,Nmax=None,\
-		Emax=None,generate=True,coco=False,selA=None,selB=None):
-		self.gtmap = None
-		if (selA is None) or (selB is None):
-			self.beta, self.B, self.K, self.D, self.N, self.u, self.s, self.kt, self.kcon, self.Emin, self.index_sel = \
-				load_save_mat(path=path,beta=beta,Nmax=Nmax,Emax=Emax,generate=generate)
-			if coco:
-				""" connected components for matrix """
-				nc,cc = sp.csgraph.connected_components(self.K)
-				mc = 0
-				for j in range(nc):
-					sc = (cc==j).sum()
-					if sc > mc:
-						mc = sc
-						sel = cc==j
+	def __init__(self,path="../../data/LJ13",beta=5.0,Nmax=None,Emax=None,generate=True):
 
-				self.B = self.B.tocsc()[sel,:].tocsr()[:,sel]
-				self.K = self.K.tolil()[:,sel][sel,:]
-				self.N = sel.sum()
-				self.u = self.u[sel]
-				self.s = self.s[sel]
-				self.kt = np.ravel(self.K.sum(axis=0))
-				self.D = sp.diags(self.kt,format='csr')
-			self.f = self.u - self.s / self.beta
-		else:
-			self.beta = beta
-			self.B,self.D,self.f,self.gtmap = \
-				load_save_mat_gt(selA,selB,path=path,beta=beta,
-										Nmax=Nmax,Emax=Emax,generate=generate)
-			self.N = self.B.shape[0]
-			self.K = self.B.dot(self.D)
+		self.beta, self.B, self.K, self.D, self.N, self.u, self.s, self.kt, kcon, Emin, index_sel = \
+			load_save_mat(path=path,beta=beta,Nmax=Nmax,Emax=Emax,generate=generate)
+		self.f = self.u-self.s/self.beta
 
+	def gt(self,rm_reg,trmb=50):
 
+		self.B, self.kt, self.N, retry = gt_seq(N=self.N,rm_reg=rm_reg,B=self.B.copy(),D=self.kt,trmb=trmb,retK=False)
+		self.K = self.B@sp.diags(self.kt)
+		self.u = self.u[~rm_reg]
+		self.s = self.s[~rm_reg]
+		self.f = self.u-self.s/self.beta
 
+	def setup(self):
 		""" B,K,D,N,f defined by this point """
-		self.pi = np.exp(-beta*self.f)
+		self.pi = np.exp(-self.beta*self.f)
 		self.tG = self.K.tocsr() * sp.diags(self.pi,format='csr')
 		self.tG.data = 1.0 / self.tG.data
 		self.pi /= self.pi.sum()
@@ -52,12 +33,31 @@ class aib_system:
 		self.rK = sp.csr_matrix((self.N,self.N))
 		self.regions = False
 
-		if not self.gtmap is None:
-			gtselA = np.zeros(self.N,bool)
-			gtselB = np.zeros(self.N,bool)
-			gtselA[self.gtmap[selA]] = True
-			gtselB[self.gtmap[selB]] = True
-			self.define_AB_regions(gtselA,gtselB)
+
+
+	def define_AB_regions(self,selA,selB):
+		# input vector of bools
+		self.selA = selA
+		self.selB = selB
+		self.selI = ~self.selA * ~self.selB
+		selI = ~self.selA * ~self.selB
+
+		self.NA = self.selA.sum()
+		self.NB = self.selB.sum()
+		self.NI = self.selI.sum()
+
+		print("NA, NB, NI:",self.NA,self.NB,self.NI)
+
+		# fill A.B regions
+		self.rK = self.rK.tolil()
+		self.rK[np.ix_(selA,selA)] = self.K[np.ix_(selA,selA)].copy()
+		self.rK[np.ix_(selB,selB)] = self.K[np.ix_(selB,selB)].copy()
+		self.rK[np.ix_(selB,selA)] = self.K[np.ix_(selB,selA)].copy()
+		self.rK[np.ix_(selA,selB)] = self.K[np.ix_(selA,selB)].copy()
+
+		self.rK = self.rK.tocsr()
+		self.regions = True
+
 
 	def find_path(self,i,f,depth=1,limit=10,strategy="RATE"):
 		if strategy == "DNEB":
@@ -85,32 +85,6 @@ class aib_system:
 				for sub_path_ind in G[:,path_ind].indices[:limit]:
 					path_region[sub_path_ind] = True
 		return path, path_region
-
-
-
-
-	def define_AB_regions(self,selA,selB):
-		# input vector of bools
-		self.selA = selA
-		self.selB = selB
-		self.selI = ~self.selA * ~self.selB
-		selI = ~self.selA * ~self.selB
-
-		self.NA = self.selA.sum()
-		self.NB = self.selB.sum()
-		self.NI = self.selI.sum()
-
-		print("NA, NB, NI:",self.NA,self.NB,self.NI)
-
-		# fill A.B regions
-		self.rK = self.rK.tolil()
-		self.rK[np.ix_(selA,selA)] = self.K[np.ix_(selA,selA)].copy()
-		self.rK[np.ix_(selB,selB)] = self.K[np.ix_(selB,selB)].copy()
-		self.rK[np.ix_(selB,selA)] = self.K[np.ix_(selB,selA)].copy()
-		self.rK[np.ix_(selA,selB)] = self.K[np.ix_(selA,selB)].copy()
-		
-		self.rK = self.rK.tocsr()
-		self.regions = True
 
 	def remaining_pairs(self):
 		return (self.K.nnz-self.rK.nnz)//2

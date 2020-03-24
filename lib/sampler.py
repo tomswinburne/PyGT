@@ -394,7 +394,7 @@ class sampler:
 		print("DIRECT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
 		res = (BAIB+BAB)*1.0
 		if gt_check:
-			rB, rD, rN, retry = gt_seq(N=self.sys.N,rm_reg=self.sys.selI,B=self.sys.B,D=self.sys.D.data,trmb=1)
+			rB, rD, rN, retry = gt_seq(N=self.sys.N,rm_reg=self.sys.selI,B=self.sys.B,D=self.sys.kt,trmb=1)
 			#print(rB)
 			r_initial_states = self.sys.selB[~self.sys.selI]
 			r_final_states = self.sys.selA[~self.sys.selI]
