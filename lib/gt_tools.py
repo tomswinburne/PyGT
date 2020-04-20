@@ -315,6 +315,8 @@ def gt_seq(N,rm_reg,B,D=None,DD=None,trmb=1,condThresh=1.0e10,order=None,Ndense=
 		else:
 			if order is None:
 				if not dense:
+                    #order contains number of elements in each row
+                    #equivalent to node in-degree
 					order = B.indptr[1:]-B.indptr[:-1]
 				else:
 					order = np.linspace(0.,1.0,B.shape[0])

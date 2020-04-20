@@ -51,133 +51,174 @@ class output_str:
 		print("SUMMARY:\n",self.print_str)
 
 def load_AB(data_path,index_sel=None):
-	Aind = np.zeros(1).astype(int)
-	for line in open(os.path.join(data_path,'min.A')):
-	    Aind = np.append(Aind,np.genfromtxt(StringIO(line.strip())).astype(int)-1)
-	Aind = Aind[2:]
+    """ Read in A_states and B_states from min.A and min.B files, only keeping
+    the states that are part of the largest connected set, as specified by
+    index_sel.
+    
+    Parameters
+    ----------
+    data_path: str
+        path to location of min.A, min.B files
+    index_sel: array-like
+        selects out indices of the maximum connected set
 
-	Bind = np.zeros(1).astype(int)
-	for line in open(os.path.join(data_path,'min.B')):
-	    Bind = np.append(Bind,np.genfromtxt(StringIO(line.strip())).astype(int)-1)
-	Bind = Bind[2:]
+    Returns
+    -------
+    A_states : (index_sel.size, ) array-like
+        boolean array that selects out the A states
+    B_states : (index_sel.size, ) array-like
+        boolean array that selects out the B states
 
-	if index_sel is None:
-		return Aind,Bind
+    """
 
-	keep = np.zeros(index_sel.size,bool)
-	keep[Bind] = True
+    Aind = np.zeros(1).astype(int)
+    for line in open(os.path.join(data_path,'min.A')):
+        Aind = np.append(Aind,np.genfromtxt(StringIO(line.strip())).astype(int)-1)
+    Aind = Aind[2:]
 
-	B_states = keep[index_sel]
+    Bind = np.zeros(1).astype(int)
+    for line in open(os.path.join(data_path,'min.B')):
+        Bind = np.append(Bind,np.genfromtxt(StringIO(line.strip())).astype(int)-1)
+    Bind = Bind[2:]
 
-	keep = np.zeros(index_sel.size,bool)
-	keep[Aind] = True
-	A_states = keep[index_sel]
-	return A_states,B_states
+    if index_sel is None:
+        return Aind,Bind
+
+    keep = np.zeros(index_sel.size,bool)
+    keep[Bind] = True
+
+    B_states = keep[index_sel]
+
+    keep = np.zeros(index_sel.size,bool)
+    keep[Aind] = True
+    A_states = keep[index_sel]
+    return A_states,B_states
 
 def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,screen=False,discon=False):
+    """ Load in min.data and ts.data files, calculate rates, and find connected
+    components.
 
-	""" load data """
-	GSD = np.loadtxt(os.path.join(path,'min.data'),\
-		dtype={'names': ('E','S','DD','RX','RY','RZ'),\
-		'formats': (float,float,int,float,float,float)})
+    Parameters
+    ----------
+    path : str
+        path to data files
+    Nmax : int
+        maximum number of minima to include in KTN, defaults to None
+    Emax : float
+        maximum potential energy of minima/TS to include in KTN, defaults to None
+    beta : float
+        value for 1./kBT, defaults to 1
+    screen : bool
+        no idea
+    discon : bool
+        no clue
 
-	TSD = np.loadtxt(os.path.join(path,'ts.data'),\
-		dtype={'names': ('E','S','DD','F','I','RX','RY','RZ'),\
-		'formats': (float,float,int,int,int,float,float,float)})
+    """
 
-	#TSD = TSD[TSD['I']!=TSD['F']] # remove self transitions??
+    GSD = np.loadtxt(os.path.join(path,'min.data'), \
+                        dtype={'names': ('E','S','DD','RX','RY','RZ'),\
+                            'formats': (float,float,int,float,float,float)})
+    TSD = np.loadtxt(os.path.join(path,'ts.data'),\
+        dtype={'names': ('E','S','DD','F','I','RX','RY','RZ'),\
+        'formats': (float,float,int,int,int,float,float,float)})
+    #TSD = TSD[TSD['I']!=TSD['F']] # remove self transitions??
+    #make minima indices 0-indexed
+    TSD['I'] = TSD['I']-1
+    TSD['F'] = TSD['F']-1   
+    #number of minima
+    N = max(TSD['I'].max()+1,TSD['F'].max()+1)
 
+    if not Nmax is None:
+        N = min(Nmax,N)
+    #select out minima < Emax and < Nmax
+    sels = (TSD['I']<N) * (TSD['F']<N) * (TSD['I']!=TSD['F'])
+    if not Emax is None:
+        sels *= GSD['E'][TSD['I']]<Emax
+        sels *= GSD['E'][TSD['F']]<Emax
+        sels *= TSD['E']<Emax
+    TSD = TSD[sels]
+    GSD = GSD[:N]
+    #re-scale energies so Emin = 0, Smin=0
+    #print("N,N_TS:",GSD.size,TSD.size)
+    Emin = GSD['E'].min().copy()
+    Smin = min(GSD['S'].min().copy(),TSD['S'].min().copy())
+    GSD['E'] -= Emin
+    TSD['E'] -= Emin
+    GSD['S'] -= Smin
+    TSD['S'] -= Smin
 
-	TSD['I'] = TSD['I']-1
-	TSD['F'] = TSD['F']-1
+    """ Calculate rates """
+    i = np.hstack((TSD['I'],TSD['F']))
+    f = np.hstack((TSD['F'],TSD['I']))
+    #(emin - ets)
+    du = np.hstack((TSD['E']-GSD[TSD['I']]['E'],TSD['E']-GSD[TSD['F']]['E']))
+    #(fvibmin - fvibts)/2
+    ds = np.hstack((GSD[TSD['I']]['S']-TSD['S'],GSD[TSD['F']]['S']-TSD['S']))/2.0
+    #ordermin/(orderts*2pi)
+    dc = np.hstack((GSD[TSD['I']]['DD']/TSD['DD'],GSD[TSD['F']]['DD']/TSD['DD']))/2.0/np.pi
+    ds += np.log(dc)
 
-	N = max(TSD['I'].max()+1,TSD['F'].max()+1)
+    s = GSD['S']/2.0 + np.log(GSD['DD'])
 
-	if not Nmax is None:
-		N = min(Nmax,N)
+    """+ds Fill matricies: K_ij = rate(j->i), K_ii==0. iD_jj = 1/(sum_iK_ij) """
+    data = np.zeros(du.shape)
+    if discon:
+        ddu = du.copy()
+    #this is the rates, but data is horizontally stacked
+    data[:] = np.exp(-beta*du+ds)
+    data[i==f] *= 2.0
+    fNi = f*N+i
+    fNi_u = np.unique(fNi)
+    d_u = np.r_[[data[fNi==fi_ind].sum() for fi_ind in fNi_u]]
+    if discon:
+        d_du = np.r_[[ddu[fNi==fi_ind].sum() for fi_ind in fNi_u]]
+    f_u = fNi_u//N
+    i_u = fNi_u%N
+    K = csr_matrix((d_u,(f_u,i_u)),shape=(N,N))
+    if discon:
+        DU = csr_matrix((d_du,(f_u,i_u)),shape=(N,N))
 
-	sels = (TSD['I']<N) * (TSD['F']<N) * (TSD['I']!=TSD['F'])
-	if not Emax is None:
-		sels *= GSD['E'][TSD['I']]<Emax
-		sels *= GSD['E'][TSD['F']]<Emax
-		sels *= TSD['E']<Emax
-	TSD = TSD[sels]
-	GSD = GSD[:N]
+    """ connected components """
+    K.eliminate_zeros()
+    #nc is number of connected components, 
+    # cc is list of labels of size K
+    nc,cc = csgraph.connected_components(K)
+    sum = np.zeros(nc,int)
+    mc = 0
+    for j in range(nc):
+        #count number of minima in each connected component
+        sum[j] = (cc==j).sum()
+    #select largest connected component (value of j for which sum[j] is
+    # greatest)
+    sel = cc==sum.argmax()
 
+    if screen:
+        print("Connected Clusters: %d, 1st 400 states in largest cluster: %d" % (nc,sel[:400].min()))
+    oN=N
 
-	print("N,N_TS:",GSD.size,TSD.size)
-	Emin = GSD['E'].min().copy()
-	Smin = min(GSD['S'].min().copy(),TSD['S'].min().copy())
-	GSD['E'] -= Emin
-	TSD['E'] -= Emin
-	GSD['S'] -= Smin
-	TSD['S'] -= Smin
+    K,N = K[sel,:][:,sel], sel.sum()
 
+    if discon:
+        DU = DU[sel,:][:,sel]
 
-	""" Calculate rates """
-	i = np.hstack((TSD['I'],TSD['F']))
-	f = np.hstack((TSD['F'],TSD['I']))
-	du = np.hstack((TSD['E']-GSD[TSD['I']]['E'],TSD['E']-GSD[TSD['F']]['E']))
+    if screen:
+        print("cc: N: %d->%d" % (oN,N),GSD.shape,sel.shape)
 
-	ds = np.hstack((GSD[TSD['I']]['S']-TSD['S'],GSD[TSD['F']]['S']-TSD['S']))/2.0
+    GSD = GSD[sel]
+    #entropy of minima
+    s = -GSD['S']/2.0 - np.log(GSD['DD'])
 
-	dc = np.hstack((GSD[TSD['I']]['DD']/TSD['DD'],GSD[TSD['F']]['DD']/TSD['DD']))/2.0/np.pi
-	ds += np.log(dc)
+    if discon:
+        return N,GSD['E'],DU
 
-	s = GSD['S']/2.0 + np.log(GSD['DD'])
-
-	"""+ds Fill matricies: K_ij = rate(j->i), K_ii==0. iD_jj = 1/(sum_iK_ij) """
-
-	data = np.zeros(du.shape)
-	if discon:
-		ddu = du.copy()
-	data[:] = np.exp(-beta*du+ds)
-	data[i==f] *= 2.0
-	fNi = f*N+i
-	fNi_u = np.unique(fNi)
-	d_u = np.r_[[data[fNi==fi_ind].sum() for fi_ind in fNi_u]]
-	if discon:
-		d_du = np.r_[[ddu[fNi==fi_ind].sum() for fi_ind in fNi_u]]
-	f_u = fNi_u//N
-	i_u = fNi_u%N
-	K = csr_matrix((d_u,(f_u,i_u)),shape=(N,N))
-	if discon:
-		DU = csr_matrix((d_du,(f_u,i_u)),shape=(N,N))
-
-	""" connected components """
-	K.eliminate_zeros()
-	nc,cc = csgraph.connected_components(K)
-	sum = np.zeros(nc,int)
-	mc = 0
-	for j in range(nc):
-		sum[j] = (cc==j).sum()
-	sel = cc==sum.argmax()
-
-	if screen:
-		print("Connected Clusters: %d, 1st 400 states in largest cluster: %d" % (nc,sel[:400].min()))
-	oN=N
-
-	K,N = K[sel,:][:,sel], sel.sum()
-
-	if discon:
-		DU = DU[sel,:][:,sel]
-
-	if screen:
-		print("cc: N: %d->%d" % (oN,N),GSD.shape,sel.shape)
-
-
-	GSD = GSD[sel]
-	s = -GSD['S']/2.0 - np.log(GSD['DD'])
-
-	if discon:
-		return N,GSD['E'],DU
-
-	kt = np.ravel(K.sum(axis=0))
-	iD = csr_matrix((1.0/kt,(np.arange(N),np.arange(N))),shape=(N,N))
-	D = csr_matrix((kt,(np.arange(N),np.arange(N))),shape=(N,N))
-
-	B = K.dot(iD)
-	return B, K, D, N, GSD['E'], s, Emin, sel
+    kt = np.ravel(K.sum(axis=0))
+    #inverse of D
+    iD = csr_matrix((1.0/kt,(np.arange(N),np.arange(N))),shape=(N,N))
+    #D_i = sum_i K_ij
+    D = csr_matrix((kt,(np.arange(N),np.arange(N))),shape=(N,N))
+    #branching probability matrix B_ij = k_ij/(sum_i k_ij)
+    B = K.dot(iD)
+    return B, K, D, N, GSD['E'], s, Emin, sel
 
 
 def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,Emax=None,generate=True,TE=False,screen=False):
