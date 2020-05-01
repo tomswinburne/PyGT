@@ -188,6 +188,69 @@ def compute_escape_stats(BS, BF, Q, tau_escape=None, dopdf=True):
     else:
         return tau
 
+def choose_nodes_to_remove(rm_type, percent_retained, region, rm_reg=None):
+    """Return an array rm_reg selecting out nodes to remove from
+    the `region`.
+
+    Parameters
+    ----------
+    rm_type : str
+        heuristic used to remove nodes, 'escape_time', 'free_energy',
+        'node_degree', 'hybrid', or 'combined'
+    percent_retained : float
+        percent of nodes to keep in reduced network
+    region : (N,) array
+        boolean array that specifies region in which to remove nodes.
+        Ex: region should be IS for computing A->B stats,
+        region should be BS for basin escape from B, etc.
+    rm_reg : (N,) array
+        boolean array with nodes to remove. Defaults to None.
+        if not None, overwrites rm_reg[region] using rm_type
+        and percent_retained.
+
+    Returns
+    -------
+    rm_reg : (N,) array
+        boolean array that specifies nodes to remove within region.
+        Note that rm_reg[~region] = False (doesn't remove nodes outside
+        of specified region)
+
+    """
+    if rm_reg is None:
+        rm_reg = np.zeros(N, bool)
+    
+    if rm_type == 'node_degree':
+        rm_reg[node_degree < 2] = True
+        #keep nodes that are not in the removal region
+        rm_reg[~region] = False 
+    elif rm_type == 'escape_time':
+        #remove nodes with the smallest escape times
+        #retain nodes in the top percent_retained percentile of escape time
+        rm_reg[region] = escape_time[region] < np.percentile(escape_time[region], 100.0 - percent_retained)
+    elif rm_type == 'free_energy':
+        #retain nodes in the bottom percent_retained percentile of free energy
+        rm_reg[region] = BF[region] > np.percentile(BF[region], percent_retained)   
+    elif rm_type == 'hybrid':
+        #remove nodes in the top percent_retained percentile of escape time
+        time_sel = (escape_time[region] < np.percentile(escape_time[region], 100.0 - percent_retained))
+        bf_sel = (BF[region]>np.percentile(BF[region],percent_retained))
+        sel = np.bitwise_and(time_sel, bf_sel)
+        #that are also in the lowest percent_retained percentile of free energy
+        rm_reg[region] = sel
+    elif rm_type == 'combined':
+        #multiple escape_time by occupation probability e^-BF
+        #high free energy nodes have a small occupation probability 
+        #we want to remove nodes with low occupation probability AND small escape time
+        #if we multiply together, should make sense to remove the smallest values
+        rho = np.exp(-BF)[region] #stationary probabilities
+        rho /= rho.sum()
+        combo_metric = escape_time[region] * rho
+        rm_reg[region] = combo_metric < np.percentile(combo_metric, 100.0 - percent_retained)
+    else:
+        raise ValueError('Choose a valid GT removal strategy for `rm_type`.')
+
+    return rm_reg  
+
 def prune_intermediate_nodes(beta, data_path, rm_type='hybrid', 
                              percent_retained=10, dopdf=True, screen=True):
     """ Prune nodes only in the intermediate region using the heuristic 
@@ -238,37 +301,7 @@ def prune_intermediate_nodes(beta, data_path, rm_type='hybrid',
     tau, pt = compute_passage_stats(AS, BS, BF, Q)
         
     """Now calculate <tau>, <tau^2>, p(t) after graph transformation"""
-    rm_reg = np.zeros(N, bool)
-    
-    if rm_type == 'node_degree':
-        rm_reg[node_degree < 2] = True
-        rm_reg[(AS+BS)] = False #only remove the intermediate nodes
-    elif rm_type == 'escape_time':
-        #remove nodes with the smallest escape times
-        #retain nodes in the top percent_retained percentile of escape time
-        rm_reg[IS] = escape_time[IS] < np.percentile(escape_time[IS], 100.0 - percent_retained)
-    elif rm_type == 'free_energy':
-        #retain nodes in the bottom percent_retained percentile of free energy
-        rm_reg[IS] = BF[IS] > np.percentile(BF[IS], percent_retained)   
-    elif rm_type == 'hybrid':
-        #remove nodes in the top percent_retained percentile of escape time
-        time_sel = (escape_time[IS] < np.percentile(escape_time[IS], 100.0 - percent_retained))
-        bf_sel = (BF[IS]>np.percentile(BF[IS],percent_retained))
-        sel = np.bitwise_and(time_sel, bf_sel)
-        #that are also in the lowest percent_retained percentile of free energy
-        rm_reg[IS] = sel
-    elif rm_type == 'combined':
-        #multiple escape_time by occupation probability e^-BF
-        #high free energy nodes have a small occupation probability 
-        #we want to remove nodes with low occupation probability AND small escape time
-        #if we multiply together, should make sense to remove the
-        rho = np.exp(-BF) #stationary probabilities
-        rho /= rho.sum()
-        combo_metric = escape_time * rho
-        rm_reg[IS] = combo_metric[IS] < np.percentile(combo_metric[IS], 100.0 - percent_retained)
-    else:
-        print('Choose a valid GT removal strategy.')
-        return   
+    rm_reg = choose_nodes_to_remove(rm_type, percent_retained, IS)   
     #free energies of retained states
     r_BF = BF[~rm_reg]
     if screen:
@@ -285,7 +318,7 @@ def prune_intermediate_nodes(beta, data_path, rm_type='hybrid',
         return beta, tau, gttau
 
 def prune_source(beta, data_path, rm_type='hybrid', percent_retained_in_B=90.,
-                 dopdf=True, BS=None):
+                 dopdf=True, BS=None, screen=True):
     """ Prune nodes in the source community and compute escape time distribution
     using the heuristic specified by `rm_type`.
 
@@ -329,42 +362,18 @@ def prune_source(beta, data_path, rm_type='hybrid', percent_retained_in_B=90.,
         AS, BS = kio.load_AB(data_path,index_sel)
         IS = np.zeros(N, bool)
         IS[~(AS+BS)] = True
-        print(f'A: {AS.sum()}, B: {BS.sum()}, I: {IS.sum()}')
+        if screen:
+            print(f'A: {AS.sum()}, B: {BS.sum()}, I: {IS.sum()}')
 
     """ First calculate p(t), <tau>, <tau^2> without any GT"""
     tau, pt = compute_escape_stats(BS, BF, Q)
         
     """Now calculate <tau>, <tau^2>, p(t) after graph transforming away the top 10% of B nodes"""
-    rm_reg = np.zeros(N,bool)
-    #rm_reg = ~(AS+BS)
-    if rm_type == 'free_energy':
-        rm_reg[BS] = BF[BS]>np.percentile(BF[BS],percent_retained_in_B)
-    elif rm_type == 'escape_time':
-        #remove nodes with the smallest escape times
-        #retain nodes in the top percent_retained percentile of escape time
-        rm_reg[BS] = escape_time[BS] < np.percentile(escape_time[BS], 100.0 - percent_retained_in_B)
-    elif rm_type == 'hybrid':
-        #remove nodes in the top percent_retained percentile of escape time
-        time_sel = (escape_time[BS] < np.percentile(escape_time[BS], 100.0 - percent_retained_in_B))
-        bf_sel = (BF[BS]>np.percentile(BF[BS],percent_retained_in_B))
-        sel = np.bitwise_and(time_sel, bf_sel)
-        #that are also in the lowest percent_retained percentile of free energy
-        rm_reg[BS] = sel  
-    elif rm_type == 'combined':
-        #multiple escape_time by occupation probability e^-BF
-        #high free energy nodes have a small occupation probability 
-        #we want to remove nodes with low occupation probability AND small escape time
-        #if we multiply together, should make sense to remove the
-        rho = np.exp(-BF)[BS] #local equilibrium in source basin
-        rho /= rho.sum()
-        combo_metric = escape_time[BS] * rho
-        rm_reg[BS] = combo_metric < np.percentile(combo_metric, 100.0 - percent_retained_in_B)
-    else:
-        print('Choose a valid GT removal strategy.')
-        return
+    rm_reg = choose_nodes_to_remove(rm_type, percent_retained_in_B, BS)
     #free energies of retained states
     r_BF = BF[~rm_reg]
-    print(f'Nodes to eliminate: {rm_reg.sum()}')
+    if screen:
+        print(f'Nodes to eliminate: {rm_reg.sum()}')
     GT_B, GT_D, GT_Q, r_N, retry = gt.gt_seq(N=N,rm_reg=rm_reg,B=B,D=D,trmb=10,retK=True,Ndense=50,screen=False)
     gttau, gtpt = compute_escape_stats(BS[~rm_reg], r_BF, GT_Q,
                                        tau_escape=tau[0], dopdf=True)
@@ -426,31 +435,7 @@ def prune_all_basins(beta, data_path, rm_type='hybrid', percent_retained=50., sc
         BS = communities[source_commID]
         if screen:
             print(f'Source comm: {source_commID}, Source nodes: {BS.sum()}')
-        if rm_type == 'free_energy':
-            rm_reg[BS] = BF[BS] > np.percentile(BF[BS], percent_retained)
-        elif rm_type == 'escape_time':
-            #remove nodes with the smallest escape times
-            #retain nodes in the top percent_retained percentile of escape time
-            rm_reg[BS] = escape_time[BS] < np.percentile(escape_time[BS], 100.0 - percent_retained)
-        elif rm_type == 'hybrid':
-            #remove nodes in the top percent_retained percentile of escape time
-            time_sel = (escape_time[BS] < np.percentile(escape_time[BS], 100.0 - percent_retained))
-            bf_sel = (BF[BS]>np.percentile(BF[BS],percent_retained))
-            sel = np.bitwise_and(time_sel, bf_sel)
-            #that are also in the lowest percent_retained percentile of free energy
-            rm_reg[BS] = sel
-        elif rm_type == 'combined':
-            #multiple escape_time by occupation probability e^-BF
-            #high free energy nodes have a small occupation probability 
-            #we want to remove nodes with low occupation probability AND small escape time
-            #if we multiply together, should make sense to remove the
-            rho = np.exp(-BF)[BS] #local equilibrium in source basin
-            rho /= rho.sum()
-            combo_metric = escape_time[BS] * rho
-            rm_reg[BS] = combo_metric < np.percentile(combo_metric, 100.0 - percent_retained)
-        else:
-            print('Choose a valid GT removal strategy.')
-            return
+        rm_reg = choose_nodes_to_remove(rm_type, percent_retained, BS, rm_reg=rm_reg)
         if screen:
             print(f'Percent eliminated from basin: {100*rm_reg[BS].sum()/BS.sum()}')        
     #now do the GT all in one go
@@ -527,8 +512,9 @@ def compute_rates(AS, BS, BF, B, D, K, **kwargs):
         df[f'kNSS{dirs[i]}'] = [C.dot(np.diag(rD[r_s])).dot(rho)]
         #kQSD is same as NSS except using qsd instead of boltzmann
         df[f'kQSD{dirs[i]}'] = [C.dot(np.diag(rD[r_s])).dot(qsd)]
-        #finally k* is just 1/MFPT
+        #k* is just 1/MFPT
         df[f'k*{dirs[i]}'] = [1./tau]
+        #and kF is <1/T_Ab>
         df[f'kF{dirs[i]}'] = [(rho/T_Ba).sum()]
     return df     
     
