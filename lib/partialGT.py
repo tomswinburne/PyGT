@@ -5,7 +5,7 @@ Deepti Kannan, 2020"""
 import numpy as np
 from io import StringIO
 import time,os, importlib
-from tqdm import tqdm
+#from tqdm import tqdm
 np.set_printoptions(linewidth=160)
 import lib.ktn_io as kio
 import lib.gt_tools as gt
@@ -471,13 +471,13 @@ def compute_rates(AS, BS, BF, B, D, K, **kwargs):
     rDSS = D[~inter_region]
 
     #use GT to renormalize away all I states
-    rB, rD, rQ, rN, retry = gt_seq(N=N,rm_reg=inter_region,B=B,D=D,retK=True,trmb=1,**kwargs)
+    rB, rD, rQ, rN, retry = gt.gt_seq(N=N,rm_reg=inter_region,B=B,D=D,retK=True,trmb=1,**kwargs)
 
     #first do A->B direction, then B->A
     #r_s is the non-absorbing region (A first, then B)
     df = pd.DataFrame(columns=['MFPTAB', 'kSSAB', 'kNSSAB', 'kQSDAB', 'k*AB', 'kFAB',
                                'MFPTBA', 'kSSBA', 'kNSSBA', 'kQSDBA', 'k*BA', 'kFBA'])
-    dirs = ['AB'. 'BA']
+    dirs = ['AB', 'BA']
     for i, r_s in enumerate([r_AS, r_BS]) :
         #eigendecomposition of rate matrix in non-abosrbing region
         #for A, full_RK[r_A, :][:, r_A] is just a 5x5 matrix
@@ -519,4 +519,20 @@ def compute_rates(AS, BS, BF, B, D, K, **kwargs):
     return df     
     
     
-
+def rates_cycle(temps):
+    """Simulate behavior of RATESCYCLE keyword in PATHSAMPLE."""
+    dfs = []
+    for temp in temps:
+        beta = 1./temp
+        B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path='KTN_data/LJ38/4k/',beta=beta,Emax=None,Nmax=None,screen=False)
+        D = np.ravel(K.sum(axis=0))
+        BF = beta*u-s
+        BF -= BF.min()
+        AS,BS = kio.load_AB('KTN_data/LJ38/4k/',index_sel)    
+        IS = np.zeros(N, bool)
+        IS[~(AS+BS)] = True
+        df = compute_rates(AS, BS, BF, B, D, K)
+        df['T'] = [temp]
+        dfs.append(df)
+    bigdf = pd.concat(dfs)
+    bigdf.to_csv('ratescycle_LJ38.csv')
