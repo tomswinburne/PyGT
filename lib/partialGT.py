@@ -14,6 +14,7 @@ from scipy.sparse.linalg import eigs,inv,spsolve
 from scipy.sparse.csgraph import connected_components
 import scipy as sp
 import scipy.linalg as spla
+import pandas as pd
 
 def read_communities(commdat, index_sel, screen=False):
     """Read in a single column file called communities.dat where each line
@@ -516,19 +517,19 @@ def compute_rates(AS, BS, BF, B, D, K, **kwargs):
         #so that T_Ba = tau_a / P_Ba
         T_Ba = invQ.sum(axis=0)
         #MFPT_BA = (T_Ba@rho)
-        df[f'MFPT{dirs[i]}'] = tau
+        df[f'MFPT{dirs[i]}'] = [tau]
         """
             Rates: SS, NSS, QSD, k*, kF
         """
         #for SS, we use waiting times from non-reduced network (DSS)
-        df[f'kSS{dirs[i]}'] = C.dot(np.diag(rDSS[r_s])).dot(rho)
+        df[f'kSS{dirs[i]}'] = [C.dot(np.diag(rDSS[r_s])).dot(rho)]
         #for NSS, we use waiting times D^I_s from reduced network
-        df[f'kNSS{dirs[i]}'] = C.dot(np.diag(rD[r_s])).dot(rho)
+        df[f'kNSS{dirs[i]}'] = [C.dot(np.diag(rD[r_s])).dot(rho)]
         #kQSD is same as NSS except using qsd instead of boltzmann
-        df[f'kQSD{dirs[i]}'] = C.dot(np.diag(rD[r_s])).dot(qsd)
+        df[f'kQSD{dirs[i]}'] = [C.dot(np.diag(rD[r_s])).dot(qsd)]
         #finally k* is just 1/MFPT
-        df[f'k*{dirs[i]}'] = 1./tau
-        df[f'kF{dirs[i]}'] = (rho/T_Ba).sum()  
+        df[f'k*{dirs[i]}'] = [1./tau]
+        df[f'kF{dirs[i]}'] = [(rho/T_Ba).sum()]
     return df     
     
     
