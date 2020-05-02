@@ -450,14 +450,16 @@ def prune_all_basins(beta, data_path, rm_type='hybrid', percent_retained=50., sc
             
     return r_B, r_D, r_Q, r_N, r_BF, r_communities
 
-def compute_rates(AS, BS, BF, B, D, K, **kwargs):
+def compute_rates(AS, BS, BF, B, D, K, fullGT=False, **kwargs):
     """ Calculate kSS, kNSS, kF, k*, kQSD, MFPT, and committors for the transition path
     ensemble AS --> BS from rate matrix K. K can be the matrix of an original network,
     or a partially graph-transformed matrix. 
     
     Differs from compute_passage_stats in that this function removes all intervening states
     using GT before computing fpt stats and rates on the fully reduced network
-    with state space (A U B)."""
+    with state space (A U B). This implementation also does not rely on a full
+    eigendecomposition of the non-absorbing matrix; it instead performs a matrix inversion,
+    or if fullGT is specified, all sources are disconnected."""
 
     N = len(AS)
     assert(N==len(BS))
@@ -501,7 +503,27 @@ def compute_rates(AS, BS, BF, B, D, K, **kwargs):
         #vector of T_Ba 's : in theory, could do another 5 GT's isolating each a in A
         #so that T_Ba = tau_a / P_Ba
         T_Ba = invQ.sum(axis=0)
-        #MFPT_BA = (T_Ba@rho)
+        #compare to individual T_Ba quantities from further GT compression
+        if fullGT:
+            T_Ba = np.zeros(r_s.sum())
+            for a in range(r_s.sum()):
+                #remove all nodes in A except for a
+                rm_reg = np.zeros(rN, bool)
+                rm_reg[r_s] = True
+                aind = r_s.nonzero()[0][a]
+                #print(f'Disconnecting source node {aind}')
+                rm_reg[r_s.nonzero()[0][a]] = False
+                rfB, rfD, rfQ, rfN, retry = gt.gt_seq(N=rN,rm_reg=rm_reg,B=rB,D=rD,trmb=1,retK=True,Ndense=1)
+                rfB = rfB.todense()
+                #escape time tau_F
+                tau_Fs = 1./rfD
+                #remaining network only as 1 in A and 1 in B = 2 states
+                rf_s = r_s[~rm_reg]
+                #tau_a^F / P_Ba^F
+                P_Ba = np.ravel(rfB[~rf_s,:][:,rf_s].sum(axis=0))[0]
+                T_Ba[a] = tau_Fs[rf_s][0]/P_Ba
+            #MFPT_BA = (T_Ba@rho)
+            tau = T_Ba@rho
         df[f'MFPT{dirs[i]}'] = [tau]
         """
             Rates: SS, NSS, QSD, k*, kF
@@ -519,8 +541,24 @@ def compute_rates(AS, BS, BF, B, D, K, **kwargs):
     return df     
     
     
-def rates_cycle(temps):
-    """Simulate behavior of RATESCYCLE keyword in PATHSAMPLE."""
+def rates_cycle(temps, data_path='KTN_data/LJ38/4k/'):
+    """Simulate behavior of RATESCYCLE keyword in PATHSAMPLE. Compute rates and
+    mean first passage times between A and B sets for a range of temperatures.
+    
+    Parameters
+    ----------
+    temps : (ntemps, ) array-like
+        list of temperatures at which to compute A<->B rates
+    data_path : str or Path object
+        path to data
+
+    Returns
+    -------
+    df : pandas DataFrame
+        rows are temperatures, columns are 'MFPTAB', 'kSSAB', 'kNSSAB', 'kQSDAB', 'k*AB', 'kFAB',
+        and the same quantities for B<-A
+
+    """
     dfs = []
     for temp in temps:
         beta = 1./temp
@@ -535,5 +573,5 @@ def rates_cycle(temps):
         df['T'] = [temp]
         dfs.append(df)
     bigdf = pd.concat(dfs)
-    bigdf = bigdf.set_index('T')
-    bigdf.to_csv('csvs/ratescycle_LJ38.csv', ignore_index=False)
+    bigdf.to_csv('csvs/ratescycle_LJ38.csv')
+    return bigdf
