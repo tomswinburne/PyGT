@@ -535,4 +535,5 @@ def rates_cycle(temps):
         df['T'] = [temp]
         dfs.append(df)
     bigdf = pd.concat(dfs)
-    bigdf.to_csv('ratescycle_LJ38.csv')
+    bigdf = bigdf.set_index('T')
+    bigdf.to_csv('csvs/ratescycle_LJ38.csv', ignore_index=False)
