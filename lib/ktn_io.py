@@ -74,7 +74,7 @@ def load_AB(data_path,index_sel=None):
 	A_states = keep[index_sel]
 	return A_states,B_states
 
-def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,screen=False):
+def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,screen=False,discon=False):
 
 	""" load data """
 	GSD = np.loadtxt(os.path.join(path,'min.data'),\
@@ -127,16 +127,22 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,screen=False)
 	s = GSD['S']/2.0 + np.log(GSD['DD'])
 
 	"""+ds Fill matricies: K_ij = rate(j->i), K_ii==0. iD_jj = 1/(sum_iK_ij) """
+
 	data = np.zeros(du.shape)
+	if discon:
+		ddu = du.copy()
 	data[:] = np.exp(-beta*du+ds)
 	data[i==f] *= 2.0
 	fNi = f*N+i
 	fNi_u = np.unique(fNi)
 	d_u = np.r_[[data[fNi==fi_ind].sum() for fi_ind in fNi_u]]
+	if discon:
+		d_du = np.r_[[ddu[fNi==fi_ind].sum() for fi_ind in fNi_u]]
 	f_u = fNi_u//N
 	i_u = fNi_u%N
 	K = csr_matrix((d_u,(f_u,i_u)),shape=(N,N))
-
+	if discon:
+		DU = csr_matrix((d_du,(f_u,i_u)),shape=(N,N))
 
 	""" connected components """
 	K.eliminate_zeros()
@@ -151,7 +157,10 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,screen=False)
 		print("Connected Clusters: %d, 1st 400 states in largest cluster: %d" % (nc,sel[:400].min()))
 	oN=N
 
-	K,N = K.tocsc()[sel,:].tocsr()[:,sel], sel.sum()
+	K,N = K[sel,:][:,sel], sel.sum()
+
+	if discon:
+		DU = DU[sel,:][:,sel]
 
 	if screen:
 		print("cc: N: %d->%d" % (oN,N),GSD.shape,sel.shape)
@@ -159,6 +168,9 @@ def load_mat(path='../data/LJ38/raw/',Nmax=None,Emax=None,beta=1.0,screen=False)
 
 	GSD = GSD[sel]
 	s = -GSD['S']/2.0 - np.log(GSD['DD'])
+
+	if discon:
+		return N,GSD['E'],DU
 
 	kt = np.ravel(K.sum(axis=0))
 	iD = csr_matrix((1.0/kt,(np.arange(N),np.arange(N))),shape=(N,N))
@@ -215,7 +227,7 @@ def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,Emax=None,generate=T
 
 
 
-def load_save_mat_gt(selA,selB,beta=10.0,path="../../data/LJ38",Nmax=None,Emax=None,generate=True):
+def load_save_mat_gt(keep_ind,beta=10.0,path="../../data/LJ38",Nmax=None,Emax=None,generate=True):
 	name = path.split("/")[-1]
 	if len(name)==0:
 		name = path.split("/")[-2]
@@ -233,7 +245,7 @@ def load_save_mat_gt(selA,selB,beta=10.0,path="../../data/LJ38",Nmax=None,Emax=N
 
 	if generate:
 		print("Generating....")
-		B,D,F,map = load_mat_gt(selA,selB,path,beta=beta,Nmax=Nmax,Emax=Emax)
+		B,D,F,map = load_mat_gt(keep_ind,path,beta=beta,Nmax=Nmax,Emax=Emax)
 		np.savetxt('cache/temp_%s_F.txt' % name,F)
 		np.savetxt('cache/temp_%s_M.txt' % name,map,fmt="%d")
 		save_npz('cache/temp_%s_B.npz' % name,B)
