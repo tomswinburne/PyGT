@@ -188,7 +188,8 @@ def compute_escape_stats(BS, BF, Q, tau_escape=None, dopdf=True):
     else:
         return tau
 
-def choose_nodes_to_remove(rm_type, percent_retained, region, rm_reg=None):
+def choose_nodes_to_remove(rm_type, percent_retained, region, 
+                           BF, escape_time, node_degree, rm_reg=None):
     """Return an array rm_reg selecting out nodes to remove from
     the `region`.
 
@@ -301,7 +302,7 @@ def prune_intermediate_nodes(beta, data_path, rm_type='hybrid',
     tau, pt = compute_passage_stats(AS, BS, BF, Q)
         
     """Now calculate <tau>, <tau^2>, p(t) after graph transformation"""
-    rm_reg = choose_nodes_to_remove(rm_type, percent_retained, IS)   
+    rm_reg = choose_nodes_to_remove(rm_type, percent_retained, IS, BF, escape_time, node_degree)   
     #free energies of retained states
     r_BF = BF[~rm_reg]
     if screen:
@@ -369,7 +370,7 @@ def prune_source(beta, data_path, rm_type='hybrid', percent_retained_in_B=90.,
     tau, pt = compute_escape_stats(BS, BF, Q)
         
     """Now calculate <tau>, <tau^2>, p(t) after graph transforming away the top 10% of B nodes"""
-    rm_reg = choose_nodes_to_remove(rm_type, percent_retained_in_B, BS)
+    rm_reg = choose_nodes_to_remove(rm_type, percent_retained_in_B, BS, BF, escape_time, node_degree)
     #free energies of retained states
     r_BF = BF[~rm_reg]
     if screen:
@@ -420,6 +421,7 @@ def prune_all_basins(beta, data_path, rm_type='hybrid', percent_retained=50., sc
     """
 
     B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+    node_degree = B.indptr[1:] - B.indptr[:-1]
     D = np.ravel(K.sum(axis=0))
     Q = diags(D)-K
     escape_time = 1./D
@@ -435,7 +437,8 @@ def prune_all_basins(beta, data_path, rm_type='hybrid', percent_retained=50., sc
         BS = communities[source_commID]
         if screen:
             print(f'Source comm: {source_commID}, Source nodes: {BS.sum()}')
-        rm_reg = choose_nodes_to_remove(rm_type, percent_retained, BS, rm_reg=rm_reg)
+        rm_reg = choose_nodes_to_remove(rm_type, percent_retained, BS, 
+            BF, escape_time, node_degree, rm_reg=rm_reg)
         if screen:
             print(f'Percent eliminated from basin: {100*rm_reg[BS].sum()/BS.sum()}')        
     #now do the GT all in one go
@@ -562,11 +565,11 @@ def rates_cycle(temps, data_path='KTN_data/LJ38/4k/'):
     dfs = []
     for temp in temps:
         beta = 1./temp
-        B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path='KTN_data/LJ38/4k/',beta=beta,Emax=None,Nmax=None,screen=False)
+        B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
         D = np.ravel(K.sum(axis=0))
         BF = beta*u-s
         BF -= BF.min()
-        AS,BS = kio.load_AB('KTN_data/LJ38/4k/',index_sel)    
+        AS,BS = kio.load_AB(data_path,index_sel)    
         IS = np.zeros(N, bool)
         IS[~(AS+BS)] = True
         df = compute_rates(AS, BS, BF, B, D, K)
@@ -574,4 +577,4 @@ def rates_cycle(temps, data_path='KTN_data/LJ38/4k/'):
         dfs.append(df)
     bigdf = pd.concat(dfs)
     bigdf.to_csv('csvs/ratescycle_LJ38.csv')
-    return bigdf
+    

@@ -6,11 +6,16 @@ Plots figures in the partial GT manuscript.
 
 Deepti Kannan, 2020"""
 
+import numpy as np
 from lib import partialGT as pgt
+import lib.ktn_io as kio
+import lib.gt_tools as gt
+from scipy.sparse import save_npz,load_npz, diags, eye, csr_matrix, bmat
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.colors import LogNorm
 import seaborn as sns
+from pathlib import Path
 sns.set()
 textwidth = 6.47699
 
@@ -21,10 +26,10 @@ params = {'axes.edgecolor': 'black',
                   'backend': 'ps',
                   'savefig.format': 'ps',
                   'axes.titlesize': 11,
-                  'axes.labelsize': 10,
+                  'axes.labelsize': 9,
                   'legend.fontsize': 9,
-                  'xtick.labelsize': 9,
-                  'ytick.labelsize': 9,
+                  'xtick.labelsize': 8,
+                  'ytick.labelsize': 8,
                   'text.usetex': True,
                   'figure.figsize': [7, 5],
                   'font.family': 'sans-serif', 
@@ -46,6 +51,73 @@ params = {'axes.edgecolor': 'black',
                   'ytick.minor.right':False, 
                   'lines.linewidth':2}
 plt.rcParams.update(params)
+
+
+#calculate ratio of MFPT in reduced network to full network for all pairs of communities
+#same for the second moment
+def get_first_second_moment_ratios_reduced_full(beta, r_BF, r_Q, r_comms, data_path=Path('KTN_data/9state')):
+
+    #first compute c1<->c2 passage time distributions on full network
+    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+    D = np.ravel(K.sum(axis=0))
+    Q = diags(D)-K
+    BF = beta*u-s
+    BF -= BF.min()
+    communities = pgt.read_communities(data_path/'communities.dat', index_sel)
+    ncomms = len(communities)
+    #i <- j <tau> and <tau^2> ratios for reduced/full
+    mfpt_mat = np.ones((ncomms, ncomms))
+    std_mat = np.ones((ncomms, ncomms))
+    for c1 in communities:
+        for c2 in communities:
+            if c1 < c2:
+                #update matrices
+                tau_full = pgt.compute_passage_stats(communities[c1], communities[c2], BF, Q, dopdf=False)
+                #now compute c1<->c2 passage time distributions on reduced network
+                tau = pgt.compute_passage_stats(r_comms[c1], r_comms[c2], r_BF, 
+                                                r_Q, dopdf=False)
+                #c2 <- c1
+                mfpt_mat[c2][c1] = tau[0]/tau_full[0]
+                std_mat[c2][c1] = tau[1]/tau_full[1]
+                #c1 <-c2
+                mfpt_mat[c1][c2] = tau[2]/tau_full[2]
+                std_mat[c1][c2] = tau[3]/tau_full[3]
+    return mfpt_mat, std_mat
+
+def compare_pgt_networks(beta=1.0, data_path=Path('KTN_data/9state')):
+    """ Plot 4 panel figure where top two are MFPT and std heatmaps from removing
+    25% of nodes and the bottom two are MFPT and std heatmaps from removing 75% of the nodes."""
+
+    fig, (ax0, ax1) = plt.subplots(2, 2, figsize=(textwidth*(2.5/3), textwidth*(2/3)))
+    #start by conservatively removing 25% of the nodes at T=1
+    #recall, that these nodes do not have a high tpp density
+    r_B, r_D, r_Q, r_N, r_BF, r_comms = pgt.prune_all_basins(beta=beta, data_path=data_path,
+                                                            rm_type='hybrid', percent_retained=53)
+
+    mfpt_mat, std_mat = get_first_second_moment_ratios_reduced_full(beta, r_BF, r_Q, r_comms)
+    sns.heatmap(mfpt_mat, center=1.0, linewidths=0.25, linecolor='k', square=True, robust=True,
+                cmap='coolwarm', ax=ax0[0])
+    sns.heatmap(std_mat, center=1.0, linewidths=0.25, linecolor='k', square=True, robust=True,
+                cmap='coolwarm', ax=ax0[1])
+    ax0[0].set_title(r'$\mathcal{T}_{IJ}^{\mathcal{Z}} / \mathcal{T}_{IJ}$, retaining 75\%')
+    ax0[1].set_title(r'$\sigma_{IJ}^{\mathcal{Z}} / \sigma_{IJ}$, retaining 75\%')
+
+    #this time, RETAIN 25%
+    r_B, r_D, r_Q, r_N, r_BF, r_comms = pgt.prune_all_basins(beta=beta, data_path=data_path,
+                                                               rm_type='hybrid', percent_retained=13)
+    mfpt_mat, std_mat = get_first_second_moment_ratios_reduced_full(beta, r_BF, r_Q, r_comms)
+    minnorm = min(mfpt_mat.min(), std_mat.min())
+    maxnorm = max(mfpt_mat.max(), std_mat.max())
+    lognorm = LogNorm(minnorm, maxnorm)
+    sns.heatmap(mfpt_mat, center=1.0, linewidths=0.25, linecolor='k', cmap='coolwarm', robust=True,
+                square=True, norm=lognorm, cbar_kws={"ticks":[0,1,10,1e2,1e3, 1e4]}, ax=ax1[0])
+                
+    sns.heatmap(std_mat, center=1.0, linewidths=0.25, linecolor='k', cmap='coolwarm', robust=True,
+                square=True, norm=lognorm, cbar_kws={"ticks":[0,1,10,1e2,1e3, 1e4]}, ax=ax1[1])
+    ax1[0].set_title(r'$\mathcal{T}_{IJ}^{\mathcal{Z}} / \mathcal{T}_{IJ}$, retaining 25\%')
+    ax1[1].set_title(r'$\sigma_{IJ}^{\mathcal{Z}} / \sigma_{IJ}$, retaining 25\%')
+    fig.tight_layout()
+    plt.savefig('plots/heatmaps_T1.0_hybrid.pdf')
 
 def rank_nodes_to_eliminate(beta=1.0/0.25, escape_time_upper_bound=1000):
     """ Scatter nodes by node degree, free energy, and escape time, 
@@ -94,6 +166,83 @@ def rank_nodes_to_eliminate(beta=1.0/0.25, escape_time_upper_bound=1000):
     ax2.legend()
     plt.show()
     fig.tight_layout()
+
+def scatter_committors_tpd(beta = 1.0, rm_type='hybrid', percent_retained=75):
+    data_path = Path("KTN_data/9state")
+    temp = 1.
+    beta = 1./temp
+    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=True)
+    D = np.ravel(K.sum(axis=0)) 
+    #escape time
+    escape_times = 1./D
+    #free energy of minima
+    BF = beta*u-s
+    #rescaled
+    BF -= BF.min()
+    #node degree
+    node_degree = B.indptr[1:] - B.indptr[:-1]
+    # AB regions
+    #AS,BS = kio.load_AB(data_path,index_sel)
+    Amin = 585
+    Bmin = 827
+    AS = np.zeros(N, bool)
+    BS = np.zeros(N, bool)
+    AS[Amin-1] = True
+    BS[Bmin-1] = True
+    IS = np.zeros(N, bool)
+    IS[~(AS+BS)] = True
+    tp_densities = np.loadtxt(Path(data_path)/'tp_densities.dat')
+    rm_reg = np.zeros(N,bool)
+    #color nodes that we would propose to remove
+    if rm_type == 'node_degree':
+        rm_reg[node_degree < 2] = True
+        rm_reg[(AS+BS)] = False #only remove the intermediate nodes this time
+
+    if rm_type == 'escape_time':
+        #remove nodes with the smallest escape times
+        #retain nodes in the top percent_retained percentile of escape time
+        rm_reg[IS] = escape_times[IS] < np.percentile(escape_times[IS], 100.0 - percent_retained)
+
+    if rm_type == 'free_energy':
+        rm_reg[IS] = BF[IS] > np.percentile(BF[IS], percent_retained)
+
+    if rm_type == 'combined':
+        rho = np.exp(-BF)
+        rho /= rho.sum()
+        combo_metric = escape_times * rho
+        rm_reg[IS] = combo_metric[IS] < np.percentile(combo_metric[IS], 100.0 - percent_retained)
+        
+    if rm_type == 'hybrid':
+        #remove nodes in the top percent_retained percentile of escape time
+        time_sel = (escape_times[IS] < np.percentile(escape_times[IS], 100.0 - percent_retained))
+        bf_sel = (BF[IS]>np.percentile(BF[IS],percent_retained))
+        sel = np.bitwise_and(time_sel, bf_sel)
+        #that are also in the lowest percent_retained percentile of free energy
+        rm_reg[IS] = sel
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(textwidth*(2/3), textwidth/3))
+    colors = sns.color_palette("Paired")
+    #tp_density vs escape time
+    ax1.scatter(tp_densities[~rm_reg], escape_times[~rm_reg], color=colors[8], 
+        s=3, alpha=0.4, label='I')
+    ax1.scatter(tp_densities[AS], escape_times[AS], color=colors[5], 
+        s=3, alpha=0.8, label='A')
+    ax1.scatter(tp_densities[BS], escape_times[BS], color=colors[1], 
+        s=3, alpha=0.8, label='B')
+    ax1.scatter(tp_densities[rm_reg], escape_times[rm_reg], color=colors[9], 
+        s=3, alpha=0.8, label='rm')
+    ax1.set_xlabel('tpp density')
+    ax1.set_ylabel('Escape Time')
+    ax1.set_yscale('log')
+    ax1.legend(ncol=2)
+    #tp_density vs free energy
+    ax2.scatter(BF[~rm_reg], tp_densities[~rm_reg], color=colors[8], alpha=0.4, s=3, label='I')
+    ax2.scatter(BF[AS], tp_densities[AS], color=colors[5], alpha=0.8, s=3, label='A')
+    ax2.scatter(BF[BS], tp_densities[BS], color=colors[1], alpha=0.8, s=3, label='B')
+    ax2.scatter(BF[rm_reg], tp_densities[rm_reg], color=colors[9], alpha=0.8, s=3, label='rm')
+    ax2.set_xlabel('Free Energy')
+    ax2.set_ylabel('tpp density')
+    fig.tight_layout()
+    plt.savefig('plots/tpp_bf_tau_scatter.pdf')
 
 def plot_AB_waiting_time(beta, size=[5, 128], percent_retained=10, **kwargs):
     """ Plot two panels, A->B first passage time in full and reduced networks,
