@@ -85,13 +85,22 @@ def get_first_second_moment_ratios_reduced_full(beta, r_BF, r_Q, r_comms, data_p
                 std_mat[c1][c2] = tau[3]/tau_full[3]
     return mfpt_mat, std_mat
 
+def dump_rate_mat(Q):
+    """ Dump a rate_matrix.dat file for PATHSAMPLE to read. """
+    ix, iy = np.nonzero(rate_mat)
+    for j in range(len(ix)):
+        rate_mat[ix[j],iy[j]] *= -1
+    np.savetxt('rate_matrix.dat', rate_mat, fmt='%.20f')
+
 def mfpt_reduced_full_GT(betas, c1, c2, data_path):
     """ For each temperature, compute MFPT c1<->c2 in reduced and full networks.
     Plot T_AB vs. 1/T. """
     
     tauAB_gt = np.zeros(len(betas))
     tauAB_full = np.zeros(len(betas))
-    for beta in betas:
+    tauBA_gt = np.zeros(len(betas))
+    tauBA_full = np.zeros(len(betas))
+    for i, beta in enumerate(betas):
         #first compute c1<->c2 passage time distributions on full network
         B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
         D = np.ravel(K.sum(axis=0))
@@ -102,17 +111,25 @@ def mfpt_reduced_full_GT(betas, c1, c2, data_path):
         #first calculate MFPT on full network using PATHSAMPLE
         ktn = Analyze_KTN(path=data_path,
                           commdat=data_path/'communities_bace.dat')
-        ktn.K = Q
-        pi = np.exp(-BF)
-        ktn.pi = pi/pi.sum()
-        ktn.commpi = ktn.get_comm_stat_probs(np.log(ktn.pi), ktn.K)
-        MFPT = ktn.get_MFPT_between_communities_GT(temp)
-        tauAB_full = MFPT[A, B]
-        tauBA_full = MFPT[B, A]
+        dump_rate_mat(Q)
+        #TODO: update this function to use READRATES keyword in pathsample
+        MFPTAB, MFPTBA = ktn.get_MFPT_AB(c1, c2, temp, N)
+        tauAB_full[i] = MFPTAB
+        tauBA_full[i] = MFPTBA
         #then repeat on reduced network
         r_B, r_D, r_Q, r_N, r_BF, r_comms = pgt.prune_all_basins(beta=beta, data_path=data_path,
                                                                 rm_type='hybrid', percent_retained=53)
-        
+        #dump reduced rate matrix into file that PATHSAMPLE can read
+        dump_rate_mat(r_Q.todense())
+        #todo: fix r_comms so that it's valid communitie s(ID : minima)
+        comms = {}
+        for ci in r_comms:
+            comms[ci+1] = np.array(r_comms[ci].nonzero()[0]) + 1
+        ktn = Analyze_KTN(path=data_path, communities=comms)
+        MFPTAB, MFPTBA = ktn.get_MFPT_AB(c1, c2, temp, r_N)
+        tauAB_gt[i] = MFPTAB
+        tauBA_gt[i] = MFPTBA
+    return tauAB_full, tauAB_gt, tauBA_full, tauBA_gt
 
 def compare_pgt_networks(beta=1.0, data_path=Path('KTN_data/9state')):
     """ Plot 4 panel figure where top two are MFPT and std heatmaps from removing

@@ -428,6 +428,7 @@ class Analyze_KTN(object):
                         raise Exception('LinAlgWarning') 
         return mfpt
 
+
     def get_MFPT_between_communities(self, K, pi):
         """Use Tom's linear solver method to extract MFPTs between communities
         using a rate matrix K. Equivalent to Eqn. (14) in Swinbourne & Wales
@@ -453,6 +454,35 @@ class Analyze_KTN(object):
 
 
         return mfpt
+
+    def get_MFPT_AB(self, A, B, temp, n):
+        """Run a single GT calculation using the READRATES keyword in PATHSAMPLE
+        to get the A<->B mean first passage time at specified temperatire."""
+
+        parse = ParsedPathsample(self.path/'pathdata')
+        files_to_modify = [self.path/'min.A', self.path/'min.B']
+        for f in files_to_modify:
+            if not f.exists():
+                print(f'File {f} does not exists')
+                raise FileNotFoundError 
+            os.system(f'mv {f} {f}.original')
+        communities = self.communities
+        #update min.A and min.B with nodes in A and B
+        parse.minA = np.array(communities[A+1]) - 1
+        parse.numInA = len(communities[A+1])
+        parse.minB = np.array(communities[B+1]) - 1
+        parse.numInB = len(communities[B+1])
+        parse.write_minA_minB(self.path/'min.A', self.path/'min.B')
+        parse.append_input('NGT', '0 T')
+        parse.append_input('TEMPERATURE', f'{temp}')
+        parse.append_input('READRATES', f'{n}')
+        parse.write_input(self.path/'pathdata')
+        #run PATHSAMPLE
+        outfile = open(self.path/f'out.{A+1}.{B+1}.T{temp}', 'w')
+        subprocess.run(f"{PATHSAMPLE}", stdout=outfile, cwd=self.path)
+        #parse output
+        parse.parse_output(outfile=self.path/f'out.{ci+1}.{cj+1}.T{temp}')
+        return parse.output['MFPTAB'], parse.output['MFPTBA']
 
     def get_MFPT_between_communities_GT(self, temp):
         """Use PATHSAMPLE to compute MFPTs between communities
