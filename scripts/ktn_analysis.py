@@ -178,6 +178,11 @@ class Analyze_KTN(object):
         self.K = None
         self.pi = None
         self.commpi = None
+        if temp is not None:
+            logpi, Kmat = read_ktn_info(f'T{temp:.3f}', log=True)
+            pi = np.exp(logpi)
+            self.K = Kmat
+            self.pi = pi/pi.sum()
         if communities is not None:
             self.communities = communities
         elif commdata is not None:
@@ -186,10 +191,6 @@ class Analyze_KTN(object):
             if thresh is not None and temp is not None:
                 commdata=f'communities_G{thresh:.2f}_T{temp:.3f}.dat'
                 self.communities = read_communities(self.path/commdata)
-                logpi, Kmat = read_ktn_info(f'T{temp:.3f}', log=True)
-                pi = np.exp(logpi)
-                self.K = Kmat
-                self.pi = pi/pi.sum()
                 commpi = self.get_comm_stat_probs(logpi, log=False)
                 self.commpi = commpi/commpi.sum()
             else:

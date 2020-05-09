@@ -8,6 +8,7 @@ Deepti Kannan, 2020"""
 
 import numpy as np
 from lib import partialGT as pgt
+from scripts.ktn_analysis import *
 import lib.ktn_io as kio
 import lib.gt_tools as gt
 from scipy.sparse import save_npz,load_npz, diags, eye, csr_matrix, bmat
@@ -83,6 +84,35 @@ def get_first_second_moment_ratios_reduced_full(beta, r_BF, r_Q, r_comms, data_p
                 mfpt_mat[c1][c2] = tau[2]/tau_full[2]
                 std_mat[c1][c2] = tau[3]/tau_full[3]
     return mfpt_mat, std_mat
+
+def mfpt_reduced_full_GT(betas, c1, c2, data_path):
+    """ For each temperature, compute MFPT c1<->c2 in reduced and full networks.
+    Plot T_AB vs. 1/T. """
+    
+    tauAB_gt = np.zeros(len(betas))
+    tauAB_full = np.zeros(len(betas))
+    for beta in betas:
+        #first compute c1<->c2 passage time distributions on full network
+        B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+        D = np.ravel(K.sum(axis=0))
+        Q = K - diags(D)
+        BF = beta*u-s
+        BF -= BF.min()
+        temp = 1./beta
+        #first calculate MFPT on full network using PATHSAMPLE
+        ktn = Analyze_KTN(path=data_path,
+                          commdat=data_path/'communities_bace.dat')
+        ktn.K = Q
+        pi = np.exp(-BF)
+        ktn.pi = pi/pi.sum()
+        ktn.commpi = ktn.get_comm_stat_probs(np.log(ktn.pi), ktn.K)
+        MFPT = ktn.get_MFPT_between_communities_GT(temp)
+        tauAB_full = MFPT[A, B]
+        tauBA_full = MFPT[B, A]
+        #then repeat on reduced network
+        r_B, r_D, r_Q, r_N, r_BF, r_comms = pgt.prune_all_basins(beta=beta, data_path=data_path,
+                                                                rm_type='hybrid', percent_retained=53)
+        
 
 def compare_pgt_networks(beta=1.0, data_path=Path('KTN_data/9state')):
     """ Plot 4 panel figure where top two are MFPT and std heatmaps from removing
