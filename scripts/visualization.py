@@ -94,7 +94,7 @@ def dump_rate_mat(Q, data_path):
     ix, iy = np.nonzero(rate_mat)
     for j in range(len(ix)):
         rate_mat[ix[j],iy[j]] *= -1
-    np.savetxt(data_path/'rate_matrix.dat', rate_mat, fmt='%.20f')
+    np.savetxt(data_path/'rate_matrix.dat', rate_mat, fmt='%.20G')
 
 def mfpt_reduced_full_GT(betas, c1, c2, data_path):
     """ For each temperature, compute MFPT c1<->c2 in reduced and full networks.
