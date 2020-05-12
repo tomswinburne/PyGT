@@ -11,6 +11,7 @@ from lib import partialGT as pgt
 from ktn.ktn_analysis import *
 import lib.ktn_io as kio
 import lib.gt_tools as gt
+import lib.conversion as convert
 import scipy as sp
 from scipy.sparse import save_npz,load_npz, diags, eye, csr_matrix, bmat
 import matplotlib.pyplot as plt
@@ -86,16 +87,6 @@ def get_first_second_moment_ratios_reduced_full(beta, r_BF, r_Q, r_comms, data_p
                 std_mat[c1][c2] = tau[3]/tau_full[3]
     return mfpt_mat, std_mat
 
-def dump_rate_mat(Q, data_path):
-    """ Dump a rate_matrix.dat file for PATHSAMPLE to read. """
-    rate_mat = Q
-    if sp.sparse.issparse(rate_mat):
-        rate_mat = rate_mat.todense()
-    ix, iy = np.nonzero(rate_mat)
-    for j in range(len(ix)):
-        rate_mat[ix[j],iy[j]] *= -1
-    np.savetxt(data_path/'rate_matrix.dat', rate_mat, fmt='%.20G')
-
 def mfpt_reduced_full_GT(betas, c1, c2, data_path):
     """ For each temperature, compute MFPT c1<->c2 in reduced and full networks.
     Plot T_AB vs. 1/T. """
@@ -115,7 +106,7 @@ def mfpt_reduced_full_GT(betas, c1, c2, data_path):
         #first calculate MFPT on full network using PATHSAMPLE
         ktn = Analyze_KTN(path=data_path,
                           commdata='communities_bace.dat')
-        dump_rate_mat(Q, data_path)
+        convert.dump_rate_mat(convert.K_from_Q(Q), data_path)
         #TODO: update this function to use READRATES keyword in pathsample
         MFPTAB, MFPTBA = ktn.get_MFPT_AB(c1, c2, temp, N)
         tauAB_full[i] = MFPTAB
@@ -124,12 +115,8 @@ def mfpt_reduced_full_GT(betas, c1, c2, data_path):
         r_B, r_D, r_Q, r_N, r_BF, r_comms = pgt.prune_all_basins(beta=beta, data_path=data_path,
                                                                 rm_type='hybrid', percent_retained=53)
         #dump reduced rate matrix into file that PATHSAMPLE can read
-        dump_rate_mat(r_Q.todense(), data_path)
-        #todo: fix r_comms so that it's valid communitie s(ID : minima)
-        comms = {}
-        for ci in r_comms:
-            comms[ci+1] = np.array(r_comms[ci].nonzero()[0]) + 1
-        ktn = Analyze_KTN(path=data_path, communities=comms)
+        convert.dump_rate_mat(convert.K_from_Q(r_Q), data_path)
+        ktn = Analyze_KTN(path=data_path, communities=convert.ktn_comms_from_gt_comms(r_comms))
         MFPTAB, MFPTBA = ktn.get_MFPT_AB(c1, c2, temp, r_N)
         tauAB_gt[i] = MFPTAB
         tauBA_gt[i] = MFPTBA
