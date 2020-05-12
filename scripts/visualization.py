@@ -87,13 +87,14 @@ def get_first_second_moment_ratios_reduced_full(beta, r_BF, r_Q, r_comms, data_p
                 std_mat[c1][c2] = tau[3]/tau_full[3]
     return mfpt_mat, std_mat
 
-def mfpt_reduced_full_GT(betas, c1, c2, data_path):
+def mfpt_reduced_full_GT(betas=np.linspace(0.1, 10.0, 20), c1=7, c2=3,
+                                           data_path=Path('KTN_data/9state')):
     """ For each temperature, compute MFPT c1<->c2 in reduced and full networks.
     Plot T_AB vs. 1/T. """
     
-    tauAB_gt = np.zeros(len(betas))
+    tauAB_gt = np.zeros((2,len(betas)))
     tauAB_full = np.zeros(len(betas))
-    tauBA_gt = np.zeros(len(betas))
+    tauBA_gt = np.zeros((2, len(betas)))
     tauBA_full = np.zeros(len(betas))
     for i, beta in enumerate(betas):
         #first compute c1<->c2 passage time distributions on full network
@@ -111,15 +112,47 @@ def mfpt_reduced_full_GT(betas, c1, c2, data_path):
         MFPTAB, MFPTBA = ktn.get_MFPT_AB(c1, c2, temp, N)
         tauAB_full[i] = MFPTAB
         tauBA_full[i] = MFPTBA
-        #then repeat on reduced network
+        #then repeat on reduced network retaining 75% of states
         r_B, r_D, r_Q, r_N, r_BF, r_comms = pgt.prune_all_basins(beta=beta, data_path=data_path,
                                                                 rm_type='hybrid', percent_retained=53)
         #dump reduced rate matrix into file that PATHSAMPLE can read
         convert.dump_rate_mat(convert.K_from_Q(r_Q), data_path)
         ktn = Analyze_KTN(path=data_path, communities=convert.ktn_comms_from_gt_comms(r_comms))
         MFPTAB, MFPTBA = ktn.get_MFPT_AB(c1, c2, temp, r_N)
-        tauAB_gt[i] = MFPTAB
-        tauBA_gt[i] = MFPTBA
+        tauAB_gt[0, i] = MFPTAB
+        tauBA_gt[0, i] = MFPTBA
+        #then repeat on reduced network retaining 25% of states
+        r_B, r_D, r_Q, r_N, r_BF, r_comms = pgt.prune_all_basins(beta=beta, data_path=data_path,
+                                                                rm_type='hybrid', percent_retained=13)
+        #dump reduced rate matrix into file that PATHSAMPLE can read
+        convert.dump_rate_mat(convert.K_from_Q(r_Q), data_path)
+        ktn = Analyze_KTN(path=data_path, communities=convert.ktn_comms_from_gt_comms(r_comms))
+        MFPTAB, MFPTBA = ktn.get_MFPT_AB(c1, c2, temp, r_N)
+        tauAB_gt[1, i] = MFPTAB
+        tauBA_gt[1, i] = MFPTBA
+    fig, ax = plt.subplots(1, 2, figsize=(textwidth, textwidth/3))
+    colors = sns.color_palette("bright", 10)
+    ax[0].plot(betas, tauAB_full, '-', color=colors[0],
+               label=r'$\mathcal{T}_{\mathcal{A}\mathcal{B}}$')
+    ax[0].plot(betas, tauAB_gt[0,:], '--', color=colors[1], 
+               label=r'$\mathcal{T}_{\mathcal{A}\mathcal{B}}$ (retaining 75\%)')
+    ax[0].plot(betas, tauAB_gt[1,:], '--', color=colors[2], 
+               label=r'$\mathcal{T}_{\mathcal{A}\mathcal{B}}$ (retaining 25\%)')
+    ax[0].set_xlabel(r'$1/T$')
+    ax[0].set_ylabel('Time')
+    ax[0].set_yscale('log')
+    ax[0].legend()
+    ax[1].plot(betas, tauBA_full, '-', color=colors[0],
+               label=r'$\mathcal{T}_{\mathcal{B}\mathcal{A}}$')
+    ax[1].plot(betas, tauBA_gt[0,:], '--', color=colors[1], 
+               label=r'$\mathcal{T}_{\mathcal{B}\mathcal{A}}$ (retaining 75\%)')
+    ax[1].plot(betas, tauBA_gt[1,:], '--', color=colors[2], 
+               label=r'$\mathcal{T}_{\mathcal{B}\mathcal{A}}$ (retaining 25\%)')
+    ax[1].set_xlabel(r'$1/T$')
+    ax[1].set_ylabel('Time')
+    ax[1].set_yscale('log')
+    ax[1].legend()
+    fig.tight_layout()
     return tauAB_full, tauAB_gt, tauBA_full, tauBA_gt
 
 def compare_pgt_networks(beta=1.0, data_path=Path('KTN_data/9state')):

@@ -164,7 +164,7 @@ def ktn_comms_from_gt_comms(gt_comms):
     """
     ktn_comms = {}
     for ci in gt_comms:
-        comms[ci+1] = np.array(r_comms[ci].nonzero()[0]) + 1
+        ktn_comms[ci+1] = np.array(gt_comms[ci].nonzero()[0]) + 1
     return ktn_comms
 
 def write_AB_communities_from_gt(gt_comms, A, B, data_path, suffix=''):
