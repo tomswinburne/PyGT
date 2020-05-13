@@ -9,6 +9,7 @@ import time,os, importlib
 np.set_printoptions(linewidth=160)
 import lib.ktn_io as kio
 import lib.gt_tools as gt
+from lib import conversion as convert
 from scipy.sparse import save_npz,load_npz, diags, eye, csr_matrix,bmat
 from scipy.sparse.linalg import eigs,inv,spsolve
 from scipy.sparse.csgraph import connected_components
@@ -189,7 +190,7 @@ def compute_escape_stats(BS, BF, Q, tau_escape=None, dopdf=True):
         return tau
 
 def choose_nodes_to_remove(rm_type, percent_retained, region, 
-                           BF, escape_time, node_degree, rm_reg=None):
+                           BF, escape_time, node_degree, pi=None, rm_reg=None):
     """Return an array rm_reg selecting out nodes to remove from
     the `region`.
 
@@ -217,6 +218,7 @@ def choose_nodes_to_remove(rm_type, percent_retained, region,
         of specified region)
 
     """
+    N = len(region)
     if rm_reg is None:
         rm_reg = np.zeros(N, bool)
     
@@ -235,6 +237,10 @@ def choose_nodes_to_remove(rm_type, percent_retained, region,
         #remove nodes in the top percent_retained percentile of escape time
         time_sel = (escape_time[region] < np.percentile(escape_time[region], 100.0 - percent_retained))
         bf_sel = (BF[region]>np.percentile(BF[region],percent_retained))
+        if pi is not None:
+            rho = pi[region]/pi[region].sum()
+            #use given occupation probabilities instead of free energies
+            bf_sel = (rho < np.percentile(rho, 100.0 - percent_retained))
         sel = np.bitwise_and(time_sel, bf_sel)
         #that are also in the lowest percent_retained percentile of free energy
         rm_reg[region] = sel
@@ -242,9 +248,11 @@ def choose_nodes_to_remove(rm_type, percent_retained, region,
         #multiple escape_time by occupation probability e^-BF
         #high free energy nodes have a small occupation probability 
         #we want to remove nodes with low occupation probability AND small escape time
-        #if we multiply together, should make sense to remove the smallest values
+        #if we multiply together, should make sense to remove the smallest values 
         rho = np.exp(-BF)[region] #stationary probabilities
         rho /= rho.sum()
+        if pi is not None:
+            rho = pi[region]/pi[region].sum()
         combo_metric = escape_time[region] * rho
         rm_reg[region] = combo_metric < np.percentile(combo_metric, 100.0 - percent_retained)
     else:
@@ -354,6 +362,7 @@ def prune_source(beta, data_path, rm_type='hybrid', percent_retained_in_B=90.,
     """
     Nmax = None
     B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=Nmax,screen=False)
+    node_degree = B.indptr[1:] - B.indptr[:-1]
     D = np.ravel(K.sum(axis=0))
     escape_time = 1./D
     Q = diags(D)-K
@@ -452,6 +461,81 @@ def prune_all_basins(beta, data_path, rm_type='hybrid', percent_retained=50., sc
         r_communities[com] = communities[com][~rm_reg]
             
     return r_B, r_D, r_Q, r_N, r_BF, r_communities
+
+def prune_basins_sequentially(beta, data_path, rm_type='hybrid', percent_retained=50., screen=True):
+    """ Prune each basin one at a time and feed the reduced network into the
+    next round of GT (so that escape times and equilibrium probabilities get
+    updated each time a basin is pruned)
+
+    Parameters
+    ----------
+    beta : float
+        inverse temperature
+    data_path : str or Path
+        location of min.data, ts.data, min.A, min.B files
+    rm_type : str
+        heuristic used to remove nodes, 'escape_time', 'free_energy', or 'node_degree'
+    percent_retained : float
+        percent of nodes to keep in the source community B
+    screen : boolean
+        whether to print number of eliminated nodes in each basin
+
+
+    Returns
+    -------
+    r_B : (r_N, r_N) np.ndarray[float64]
+        branching probability matrix in reduced network
+    r_D : (r_N, r_N) np.ndarray[float64]
+        diagonal matrix with inverse escape times in reduced network
+    r_Q : (r_N, r_N) np.ndarray[float64]
+        rate matrix in reduced network
+    r_N : int
+        number of nodes in reduced network
+    r_BF : (r_N,) np.ndarray[float64]
+        free energies of nodes in reduced network (not shifted from original)
+    r_communities : dict
+        mapping from community IDs (0-indexed) to index selectors in reduced network
+    """
+
+    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+    node_degree = B.indptr[1:] - B.indptr[:-1]
+    D = np.ravel(K.sum(axis=0))
+    Q = diags(D)-K
+    escape_time = 1./D
+    BF = beta*u-s
+    BF -= BF.min()
+    pi = np.exp(-BF)
+    communities = read_communities(data_path/'communities.dat', index_sel)
+    N_original = N
+    
+    #loop through the basins and graph transform one at a time
+    for source_commID in communities:
+        #BS is the selector for all nodes in the source community
+        BS = communities[source_commID]
+        if screen:
+            print(f'Source comm: {source_commID}, Source nodes: {BS.sum()}')
+        rm_reg = choose_nodes_to_remove(rm_type, percent_retained, BS, 
+            BF, escape_time, node_degree, pi=pi)
+        if screen:
+            print(f'Percent eliminated from basin: {100*rm_reg[BS].sum()/BS.sum()}')
+        #perform the GT for this basin alone
+        B, D, Q, N, retry = gt.gt_seq(N=N,rm_reg=rm_reg,B=B,D=D,trmb=10,retK=True,Ndense=50,screen=False)
+        #update free energies, escape times, and equilibrium occupation probabilities
+        BF = BF[~rm_reg]
+        BF -= BF.min()
+        #peq in reduced system
+        rK = convert.K_from_Q(Q)
+        nu, vr = spla.eig(rK)
+        qsdo = np.abs(nu.real).argsort()
+        pi = vr[:, qsdo[0]].real
+        escape_time = 1./D
+        node_degree = B.indptr[1:] - B.indptr[:-1]
+        #community selectors in reduced network -- update shapes
+        for com in communities:
+            communities[com] = communities[com][~rm_reg]        
+    #return final network 
+    print(f'Removed {N_original-N} of {N_original} nodes,retained: {100 * N/N_original}') 
+    return B, D, Q, N, BF, communities
 
 def compute_rates(AS, BS, BF, B, D, K, fullGT=False, **kwargs):
     """ Calculate kSS, kNSS, kF, k*, kQSD, MFPT, and committors for the transition path

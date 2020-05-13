@@ -315,17 +315,17 @@ def scatter_committors_tpd(beta = 1.0, rm_type='hybrid', percent_retained=75):
     fig.tight_layout()
     plt.savefig('plots/tpp_bf_tau_scatter.pdf')
 
-def plot_AB_waiting_time(beta, size=[5, 128], percent_retained=10, **kwargs):
+def plot_AB_waiting_time(beta, data_path='KTN_data/LJ38/4k/', size=[5, 128], percent_retained=10, **kwargs):
     """ Plot two panels, A->B first passage time in full and reduced networks,
     and B->A first passage time in full and reduced networks. Reduce networks
     with three different heuristics (escape_time, free_energy, hybrid).
     """
-    beta, tau, gttau_time, pt, gtpt_time = prune_intermediate_nodes(beta, dopdf=True, 
-                                                        rm_type='escape_time', **kwargs)
-    beta, tau, gttau_bf, pt, gtpt_bf = prune_intermediate_nodes(beta, dopdf=True, 
+    beta, tau, gttau_time, pt, gtpt_time = pgt.prune_intermediate_nodes(beta, data_path=data_path, dopdf=True, 
+                                            percent_retained=percent_retained, rm_type='escape_time', **kwargs)
+    beta, tau, gttau_bf, pt, gtpt_bf = pgt.prune_intermediate_nodes(beta, data_path=data_path, dopdf=True, percent_retained=percent_retained,
                                                         rm_type='free_energy', **kwargs)
-    beta, tau, gttau_hybrid, pt, gtpt_hybrid = prune_intermediate_nodes(beta, dopdf=True, 
-                                                        rm_type='hybrid', percent_retained=percent_retained/2, **kwargs)
+    beta, tau, gttau_hybrid, pt, gtpt_hybrid = pgt.prune_intermediate_nodes(beta, data_path=data_path, dopdf=True, 
+                                                        rm_type='combined', percent_retained=percent_retained, **kwargs)
     fig, ax = plt.subplots(1, 2, figsize=(textwidth, textwidth/2.25))
     colors = sns.color_palette("bright", 10)
     names = ["A", "B"]
@@ -342,7 +342,7 @@ def plot_AB_waiting_time(beta, size=[5, 128], percent_retained=10, **kwargs):
             label=r"$p^{GT}_\mathcal{%s\to{%s}}(t), \beta F$" % (names[j],names[1-j]))
         #by hybrid approach
         ax[j].plot(gtpt_hybrid[2*j]/gttau_hybrid[2*j],gtpt_hybrid[1+2*j],'-.',color=colors[1], lw=2,
-            label=r"$p^{GT}_\mathcal{%s\to{%s}}(t)$, hybrid" % (names[j],names[1-j]))
+            label=r"$p^{GT}_\mathcal{%s\to{%s}}(t)$, combined" % (names[j],names[1-j]))
         ax[j].set_xlabel(r"$t/\langle t \rangle$")
         if j==0:
             ax[j].set_ylabel(r"$\langle t \rangle p(t/\langle t \rangle)$")
@@ -353,9 +353,9 @@ def plot_AB_waiting_time(beta, size=[5, 128], percent_retained=10, **kwargs):
         ax[j].set_xlim(0.001,100.)
         ax[j].set_ylim(pt[1+2*j].min()/10.0,10.0)
     fig.tight_layout()
-    plt.savefig('plots/LJ38_partialGT_ABwaitpdf.pdf')
+    plt.savefig('plots/LJ38_partialGT_ABwaitpdf_combined.pdf')
 
-def plot_escapeB(betas=[4.0, 7.0], percent_retained=25, **kwargs):
+def plot_escapeB(betas=[4.0, 7.0], data_path='KTN_data/LJ38/4k/', percent_retained=25, **kwargs):
     """Plot a four panel figure. Top two panels show escape time distributions
     from the icosahedral funnel of LJ38 in the full network and in 3 reduced
     networks at two different temperatures.
@@ -367,15 +367,15 @@ def plot_escapeB(betas=[4.0, 7.0], percent_retained=25, **kwargs):
     colors = sns.color_palette("bright", 10)
     names = ["A", "B"]
     for j in range(2):
-        beta, tau, gttau_bf, pt, gtpt_bf = prune_source(betas[j], dopdf=True,
+        beta, tau, gttau_bf, pt, gtpt_bf = pgt.prune_source(betas[j], data_path=data_path, dopdf=True,
                                                         percent_retained_in_B=percent_retained, 
                                                         rm_type='free_energy', **kwargs)
-        beta, tau, gttau_time, pt, gtpt_time = prune_source(betas[j], dopdf=True,
+        beta, tau, gttau_time, pt, gtpt_time = pgt.prune_source(betas[j], data_path=data_path, dopdf=True,
                                                         percent_retained_in_B=percent_retained, 
                                                         rm_type='escape_time', **kwargs)
-        beta, tau, gttau_hybrid, pt, gtpt_hybrid = prune_source(betas[j], dopdf=True, 
-                                                            rm_type='hybrid',
-                                                            percent_retained_in_B=percent_retained/2, **kwargs)
+        beta, tau, gttau_hybrid, pt, gtpt_hybrid = pgt.prune_source(betas[j], data_path=data_path, dopdf=True, 
+                                                            rm_type='combined',
+                                                            percent_retained_in_B=percent_retained, **kwargs)
         ax[j].set_title(r"Escape from $\mathcal{B}$, T=%2.2g" % (1.0/betas[j]))
         #by escape time
         ax[j].plot(gtpt_time[0]/tau[0],gtpt_time[1],'-',
@@ -389,7 +389,7 @@ def plot_escapeB(betas=[4.0, 7.0], percent_retained=25, **kwargs):
             label=r"Full $p_\mathcal{B}(t)$")
         #by hybrid approach
         ax[j].plot(gtpt_hybrid[0]/tau[0],gtpt_hybrid[1],'-.',color=colors[1], lw=2,
-            label=r"$p^{GT}_\mathcal{B}(t)$, hybrid")
+            label=r"$p^{GT}_\mathcal{B}(t)$, combined")
         ax[j].set_xlabel(r"$t/\mathcal{T}_\mathcal{B}$")
         if j==0:
             ax[j].set_ylabel(r'$p(t/\mathcal{T}_\mathcal{B})\mathcal{T}_{\mathcal{B}}$')
@@ -406,13 +406,13 @@ def plot_escapeB(betas=[4.0, 7.0], percent_retained=25, **kwargs):
     data = np.zeros((2, 20, 5))
     beta_range = np.linspace(2.5, 8.5, 20)
     for i, beta in enumerate(beta_range):
-        data[0][i][0], data[0][i][1:3], data[0][i][3:5] = prune_source(beta, dopdf=False,
+        data[0][i][0], data[0][i][1:3], data[0][i][3:5] = pgt.prune_source(beta, data_path=data_path, dopdf=False,
                                 percent_retained_in_B=percent_retained,
                                 rm_type='free_energy', **kwargs)
-        data[1][i][0], data[1][i][1:3], data[1][i][3:5] = prune_source(beta, dopdf=False,
-                                percent_retained_in_B=12,
-                                rm_type='hybrid', **kwargs)
-    names=[r"$\beta F$", "hybrid"]    
+        data[1][i][0], data[1][i][1:3], data[1][i][3:5] = pgt.prune_source(beta, data_path=data_path, dopdf=False,
+                                percent_retained_in_B=percent_retained,
+                                rm_type='combined', **kwargs)
+    names=[r"$\beta F$", "combined"]    
     for j in range(2):
         #full mean escape time and second moment
         ax1[j].plot(data[j,:,0], data[j,:,1], '-', lw=2, color=colors[0],
@@ -433,7 +433,7 @@ def plot_escapeB(betas=[4.0, 7.0], percent_retained=25, **kwargs):
                                                       order], ncol=2)
         ax1[j].set_yscale("log")
     fig.tight_layout()
-    plt.savefig('plots/LJ38_partialGT_escapeB.pdf')
+    plt.savefig('plots/LJ38_partialGT_escapeB_combined.pdf')
 
 
 

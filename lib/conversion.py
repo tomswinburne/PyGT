@@ -60,8 +60,8 @@ def dump_rate_mat(K, data_path, fmt='%.20G'):
 
     Parameters
     ----------
-    Q : (nnodes, nnodes)
-        rate matrix in sparse or dense format
+    K : (nnodes, nnodes)
+        rate matrix in dense format
     data_path : str or Path
         path to folder with pathdata file where rate_matrix.dat will be dumped
     fmt : format string
@@ -79,10 +79,9 @@ def ts_weights_conns_from_K(K, data_path, suffix=''):
     TODO: figure out how to get ts_weights.dat from sparse matrix
     """
 
-    #if K is sparse (i.e. Q), can just get from data structure
-
     ts_conns = open(Path(data_path)/f'ts_conns{suffix}.dat', 'w')
     ts_weights = open(Path(data_path)/f'ts_weights{suffix}.dat', 'w')
+    #if K is sparse (i.e. Q), can just get from data structure
     if sp.sparse.issparse(K):
         #tsweights = []
         for i in range(K.shape[0]):
