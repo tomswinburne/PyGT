@@ -267,8 +267,33 @@ def gtDD(B,iD,iDD,sel,timeit=False,dense=False):
 		return Bij,iDjj,True#,ts,tm
 
 
-def gt_seq(N,rm_reg,B,D=None,DD=None,trmb=1,condThresh=1.0e10,order=None,Ndense=500,force_sparse=True,screen=False,retK=False):
+def gt_seq(N,rm_reg,B,D=None,DD=None,trmb=1,dense=False,condThresh=1.0e10,order=None,
+	Ndense=500,force_sparse=True,screen=False,retK=False):
+	""" Main function for GT code. by default, takes in a B and a D matrix
+	in sparse format. If they are supplied in dense format, then dense should be set to True.
 
+	Parameters
+	----------
+	N : int
+		number of connected states
+	rm_reg : boolean array (N,)
+		selects out states to remove
+	B : matrix
+		Branching probability matrix in dense or sparse format.
+	D : np.ndarray[float64] (N,)
+		array of inverse escape times.
+	trmb : int
+		Number of states to remove in a given block. Defaults to 1.
+	dense : bool
+		Whether or not inputted branching probability matrix is dense. Defaults to False.
+	force_sparse : bool
+		Whether to return matrices in sparse format. Defaults to True.
+	screen : bool
+		Whether to print progress of GT.
+	retK : bool
+		Whether to return the GT-reduced rate matrix in addition to B and D.
+
+	"""
 	rmb=trmb
 	retry=0
 	NI = rm_reg.sum()
@@ -281,6 +306,7 @@ def gt_seq(N,rm_reg,B,D=None,DD=None,trmb=1,condThresh=1.0e10,order=None,Ndense=
 			return -1
 	else:
 		if not D is None:
+			#iD is array of inverse waiting times
 			iD = 1.0/np.ravel(D)
 
 	#B.tolil()
@@ -294,12 +320,15 @@ def gt_seq(N,rm_reg,B,D=None,DD=None,trmb=1,condThresh=1.0e10,order=None,Ndense=
 
 	pass_over = np.empty(0,bool)
 	pobar = None
-	dense = False
 	dense_onset = 0
+	if dense:
+		dense_onset = B.shape[0]
 	while NI>0:
 
 		if N<Ndense and not dense:
+			#when network is small enough, more efficient to switch to dense format
 			dense = True
+			#nnz is number of stored values in B, including explicit zeros
 			density = float(B.nnz) /  float( B.shape[0]*B.shape[1])
 			dense_onset = B.shape[0]
 			B = B.todense()
@@ -313,6 +342,7 @@ def gt_seq(N,rm_reg,B,D=None,DD=None,trmb=1,condThresh=1.0e10,order=None,Ndense=
 			if not pobar is None:
 				pobar.update(1)
 		else:
+			#order the nodes to remove
 			if order is None:
 				if not dense:
                     #order contains number of elements in each row
@@ -329,6 +359,7 @@ def gt_seq(N,rm_reg,B,D=None,DD=None,trmb=1,condThresh=1.0e10,order=None,Ndense=
 		if not DD is None:
 			B, iD, iDD, success = gtDD(B,iD,iDD,rm,timeit=False,dense=dense)
 		else:
+			#THIS IS THE USE CASE FOR US
 			if not D is None:
 				B, iD, success = gtD(B,iD,rm,timeit=False,dense=dense)
 			else:

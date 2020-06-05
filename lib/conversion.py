@@ -80,7 +80,7 @@ def ts_weights_conns_from_K(K, data_path, suffix=''):
     """
 
     ts_conns = open(Path(data_path)/f'ts_conns{suffix}.dat', 'w')
-    ts_weights = open(Path(data_path)/f'ts_weights{suffix}.dat', 'w')
+    #ts_weights = open(Path(data_path)/f'ts_weights{suffix}.dat', 'w')
     #if K is sparse (i.e. Q), can just get from data structure
     if sp.sparse.issparse(K):
         #tsweights = []
@@ -89,7 +89,7 @@ def ts_weights_conns_from_K(K, data_path, suffix=''):
             kijs = K.data[K.indptr[i]:K.indptr[i+1]]
             for j in cols:
                 if i < j:
-                    ts_conns.write(f'{i} {j}\n')
+                    ts_conns.write(f'{i+1} {j+1}\n')
                 #append k i <- j, later we'll sort it so j <- i comes right after
                 #ts_weights.append(np.log(kijs[j]))
         #tsweights_sorted = np.array(tsweights)

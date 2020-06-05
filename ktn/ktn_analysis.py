@@ -142,6 +142,7 @@ def check_detailed_balance(pi, K):
                 if (diff > 1.E-10):
                     #print(f'Detailed balance not satisfied for i={i}, j={j}')
                     return False
+    return True
 
 def read_communities(commdat):
     """Read in a single column file called communities.dat where each line
@@ -369,7 +370,7 @@ class Analyze_KTN(object):
         #H-S relation
         second_inversion = spla.inv(M.T@first_inverse@D_V@M)
         R_HS = Pi_col@np.ones((1,N)) - D_N@second_inversion
-        if not check_detailed_balance(np.log(self.commpi), R_HS):
+        if not check_detailed_balance(self.commpi, R_HS):
             print(f'HS does not satisfy detailed balance at T={temp}')
         return R_HS
 
@@ -406,7 +407,7 @@ class Analyze_KTN(object):
         R = Pi_col@np.ones((1,N)) - D_N@spla.inv(Pi_col@Pi_col.T +
                                                  M.T@D_n@mfpt@pi_col@Pi_col.T -
                                                  M.T@D_n@mfpt@D_n@M)
-        if not check_detailed_balance(np.log(self.commpi), R):
+        if not check_detailed_balance(self.commpi, R):
             print(f'KRA does not satisfy detailed balance at T={temp}')
         return R
 
@@ -630,7 +631,7 @@ class Analyze_KTN(object):
         matrix_of_ones = np.ones((N,1))@np.ones((1,N))
         #R_MFPT = inv(MFPT)@(inv(D_N) - matrix_of_ones)
         R_MFPT = spla.solve(mfpt,np.diag(1.0/self.commpi) - matrix_of_ones)
-        check_detailed_balance(np.log(self.commpi), R_MFPT)
+        check_detailed_balance(self.commpi, R_MFPT)
         return R_MFPT
 
     def get_free_energies_from_rates(self, R, thresh, temp, kB=1.0, planck=1.0):

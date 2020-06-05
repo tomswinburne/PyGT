@@ -60,7 +60,7 @@ def read_communities(commdat, index_sel, screen=False):
 
 def compute_passage_stats(AS, BS, BF, Q, dopdf=True):
     """Compute the A->B and B->A first passage time distribution, 
-    first moment, and second moment.
+    first moment, and second moment using eigendecomposition.
 
     Parameters
     ----------
@@ -138,7 +138,7 @@ def compute_passage_stats(AS, BS, BF, Q, dopdf=True):
 
 def compute_escape_stats(BS, BF, Q, tau_escape=None, dopdf=True):
     """Compute escape time distribution and first and second moment
-    from the basin specified by BS.
+    from the basin specified by BS using eigendecomposition.
 
     Parameters
     ----------
@@ -460,7 +460,7 @@ def prune_all_basins(beta, data_path, rm_type='hybrid', percent_retained=50., sc
     for com in communities:
         r_communities[com] = communities[com][~rm_reg]
             
-    return r_B, r_D, r_Q, r_N, r_BF, r_communities
+    return r_B, r_D, r_Q, r_N, r_BF, r_communities, rm_reg
 
 def prune_basins_sequentially(beta, data_path, rm_type='hybrid', percent_retained=50., screen=True):
     """ Prune each basin one at a time and feed the reduced network into the
@@ -504,7 +504,7 @@ def prune_basins_sequentially(beta, data_path, rm_type='hybrid', percent_retaine
     escape_time = 1./D
     BF = beta*u-s
     BF -= BF.min()
-    pi = np.exp(-BF)
+    #pi = np.exp(-BF)
     communities = read_communities(data_path/'communities.dat', index_sel)
     N_original = N
     
@@ -515,7 +515,7 @@ def prune_basins_sequentially(beta, data_path, rm_type='hybrid', percent_retaine
         if screen:
             print(f'Source comm: {source_commID}, Source nodes: {BS.sum()}')
         rm_reg = choose_nodes_to_remove(rm_type, percent_retained, BS, 
-            BF, escape_time, node_degree, pi=pi)
+            BF, escape_time, node_degree)
         if screen:
             print(f'Percent eliminated from basin: {100*rm_reg[BS].sum()/BS.sum()}')
         #perform the GT for this basin alone
@@ -524,10 +524,10 @@ def prune_basins_sequentially(beta, data_path, rm_type='hybrid', percent_retaine
         BF = BF[~rm_reg]
         BF -= BF.min()
         #peq in reduced system
-        rK = convert.K_from_Q(Q)
-        nu, vr = spla.eig(rK)
-        qsdo = np.abs(nu.real).argsort()
-        pi = vr[:, qsdo[0]].real
+        #rK = convert.K_from_Q(Q)
+        #nu, vr = spla.eig(rK)
+        #qsdo = np.abs(nu.real).argsort()
+        #pi = vr[:, qsdo[0]].real
         escape_time = 1./D
         node_degree = B.indptr[1:] - B.indptr[:-1]
         #community selectors in reduced network -- update shapes
@@ -537,7 +537,57 @@ def prune_basins_sequentially(beta, data_path, rm_type='hybrid', percent_retaine
     print(f'Removed {N_original-N} of {N_original} nodes,retained: {100 * N/N_original}') 
     return B, D, Q, N, BF, communities
 
-def compute_rates(AS, BS, BF, B, D, K, fullGT=False, **kwargs):
+def get_intermicrostate_mfpts_GT(temp, data_path, **kwargs):
+    """Compute matrix of inter-microstate MFPTs with GT."""
+    beta = 1./temp
+    #GT setup
+    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+    D = np.ravel(K.sum(axis=0))
+    BF = beta*u-s
+    BF -= BF.min()
+    rho = np.exp(-BF)
+    rho /= rho.sum()
+    mfpt = np.zeros((N,N))
+    for i in range(N):
+        for j in range(N):
+            if i < j:
+                MFPTAB, MFPTBA = compute_MFPTAB(i, j, B, D, **kwargs)
+                mfpt[i][j] = MFPTAB
+                mfpt[j][i] = MFPTBA
+    return mfpt, rho
+
+def compute_MFPTAB(i, j, B, D, K=None, **kwargs):
+    """Compute the inter-microstate i<->j MFPT using GT. 
+
+    Unlike compute_rates function, with assumes there is at least 2 microstates
+    in the absorbing macrostate. This function does not require knowledge of equilibrium
+    occupation probabilities since T_ij = tau_j/P_ij."""
+
+    if K is not None:
+        D = np.ravel(K.sum(axis=0))
+    N = B.shape[0]
+    AS = np.zeros(N, bool)
+    AS[i] = True
+    BS = np.zeros(N, bool)
+    BS[j] = True
+    #GT away all I states
+    inter_region = ~(AS+BS)
+    #left with a 2-state network
+    rB, rD, rQ, rN, retry = gt.gt_seq(N=N,rm_reg=inter_region,B=B,D=D,retK=True,trmb=1,**kwargs)
+    rB = rB.todense()
+    #escape time tau_F
+    tau_Fs = 1./rD
+    #remaining network only has 1 in A and 1 in B = 2 states
+    r_AS = AS[~inter_region]
+    r_BS = BS[~inter_region]
+    #tau_a^F / P_Ba^F
+    P_BA = rB[r_BS, :][:, r_AS]
+    P_AB = rB[r_AS, :][:, r_BS]
+    MFPTBA = tau_Fs[r_AS]/P_BA
+    MFPTAB = tau_Fs[r_BS]/P_AB
+    return MFPTAB[0,0], MFPTBA[0,0]
+
+def compute_rates(AS, BS, BF, B, D, K=None, MFPTonly=True, fullGT=False, **kwargs):
     """ Calculate kSS, kNSS, kF, k*, kQSD, MFPT, and committors for the transition path
     ensemble AS --> BS from rate matrix K. K can be the matrix of an original network,
     or a partially graph-transformed matrix. 
@@ -546,13 +596,20 @@ def compute_rates(AS, BS, BF, B, D, K, fullGT=False, **kwargs):
     using GT before computing fpt stats and rates on the fully reduced network
     with state space (A U B). This implementation also does not rely on a full
     eigendecomposition of the non-absorbing matrix; it instead performs a matrix inversion,
-    or if fullGT is specified, all sources are disconnected."""
+    or if fullGT is specified, all sources are disconnected.
+    
+    TODO: debug case where A and B each only contain one state.
+    """
 
     N = len(AS)
     assert(N==len(BS))
     assert(N==len(BF))
 
-    D = np.ravel(K.sum(axis=0))
+    if AS.sum()==1 and BS.sum()==1:
+        raise NotImplementedError('There must be at least 2 microstates in A and B.')
+
+    if K is not None:
+        D = np.ravel(K.sum(axis=0))
     inter_region = ~(AS+BS)
     r_AS = AS[~inter_region]
     r_BS = BS[~inter_region]
@@ -564,35 +621,34 @@ def compute_rates(AS, BS, BF, B, D, K, fullGT=False, **kwargs):
 
     #first do A->B direction, then B->A
     #r_s is the non-absorbing region (A first, then B)
-    df = pd.DataFrame(columns=['MFPTAB', 'kSSAB', 'kNSSAB', 'kQSDAB', 'k*AB', 'kFAB',
-                               'MFPTBA', 'kSSBA', 'kNSSBA', 'kQSDBA', 'k*BA', 'kFBA'])
+    df = pd.DataFrame()
     dirs = ['AB', 'BA']
     for i, r_s in enumerate([r_AS, r_BS]) :
+        #local equilibrium distribution in r_s
+        rho = np.exp(-r_BF[r_s])
+        rho /= rho.sum()
         #eigendecomposition of rate matrix in non-abosrbing region
         #for A, full_RK[r_A, :][:, r_A] is just a 5x5 matrix
         l, v = spla.eig(rQ[r_s,:][:,r_s].todense())
         #order the eigenvalues from smallest to largest -- they are positive since Q = D - K instead of K-D
         qsdo = np.abs(l.real).argsort()
         nu = l.real[qsdo]
-        #local equilibrium distribution in r_s
-        rho = np.exp(-r_BF[r_s])
-        rho /= rho.sum()
         #v[:, qsdo[0]] is the eigenvector corresponding to smallest eigenvalue
         #aka quasi=stationary distribution
         qsd = v[:,qsdo[0]]
         qsd /= qsd.sum()
-    
         #committor C^B_A: probability of reaching B before A: 1_B.B_BA^I (eqn 6 of SwinburneW20)
         C = np.ravel(rB[~r_s,:][:,r_s].sum(axis=0))
-        #MFPT
-        invQ = spla.inv(rQ[r_s,:][:,r_s].todense())
-        tau = invQ.dot(rho).sum(axis=0)
-        #vector of T_Ba 's : in theory, could do another 5 GT's isolating each a in A
-        #so that T_Ba = tau_a / P_Ba
-        T_Ba = invQ.sum(axis=0)
+        T_Ba = np.zeros(r_s.sum())
+        if not fullGT:
+            #MFPT
+            invQ = spla.inv(rQ[r_s,:][:,r_s].todense())
+            tau = invQ.dot(rho).sum(axis=0)
+            #vector of T_Ba 's : in theory, could do another 5 GT's isolating each a in A
+            #so that T_Ba = tau_a / P_Ba
+            T_Ba = invQ.sum(axis=0)
         #compare to individual T_Ba quantities from further GT compression
-        if fullGT:
-            T_Ba = np.zeros(r_s.sum())
+        else:
             for a in range(r_s.sum()):
                 #remove all nodes in A except for a
                 rm_reg = np.zeros(rN, bool)
@@ -615,20 +671,21 @@ def compute_rates(AS, BS, BF, B, D, K, fullGT=False, **kwargs):
         """
             Rates: SS, NSS, QSD, k*, kF
         """
-        #for SS, we use waiting times from non-reduced network (DSS)
-        df[f'kSS{dirs[i]}'] = [C.dot(np.diag(rDSS[r_s])).dot(rho)]
-        #for NSS, we use waiting times D^I_s from reduced network
-        df[f'kNSS{dirs[i]}'] = [C.dot(np.diag(rD[r_s])).dot(rho)]
-        #kQSD is same as NSS except using qsd instead of boltzmann
-        df[f'kQSD{dirs[i]}'] = [C.dot(np.diag(rD[r_s])).dot(qsd)]
-        #k* is just 1/MFPT
-        df[f'k*{dirs[i]}'] = [1./tau]
-        #and kF is <1/T_Ab>
-        df[f'kF{dirs[i]}'] = [(rho/T_Ba).sum()]
+        if not MFPTonly:
+            #for SS, we use waiting times from non-reduced network (DSS)
+            df[f'kSS{dirs[i]}'] = [C.dot(np.diag(rDSS[r_s])).dot(rho)]
+            #for NSS, we use waiting times D^I_s from reduced network
+            df[f'kNSS{dirs[i]}'] = [C.dot(np.diag(rD[r_s])).dot(rho)]
+            #kQSD is same as NSS except using qsd instead of boltzmann
+            df[f'kQSD{dirs[i]}'] = [C.dot(np.diag(rD[r_s])).dot(qsd)]
+            #k* is just 1/MFPT
+            df[f'k*{dirs[i]}'] = [1./tau]
+            #and kF is <1/T_Ab>
+            df[f'kF{dirs[i]}'] = [(rho/T_Ba).sum()]
     return df     
     
     
-def rates_cycle(temps, data_path='KTN_data/LJ38/4k/'):
+def rates_cycle(temps, data_path, suffix=None, **kwargs):
     """Simulate behavior of RATESCYCLE keyword in PATHSAMPLE. Compute rates and
     mean first passage times between A and B sets for a range of temperatures.
     
@@ -656,9 +713,10 @@ def rates_cycle(temps, data_path='KTN_data/LJ38/4k/'):
         AS,BS = kio.load_AB(data_path,index_sel)    
         IS = np.zeros(N, bool)
         IS[~(AS+BS)] = True
-        df = compute_rates(AS, BS, BF, B, D, K)
+        df = compute_rates(AS, BS, BF, B, D, K, **kwargs)
         df['T'] = [temp]
         dfs.append(df)
     bigdf = pd.concat(dfs)
-    bigdf.to_csv('csvs/ratescycle_LJ38.csv')
+    bigdf.to_csv(f'csvs/ratescycle{suffix}.csv')
+    return bigdf
     

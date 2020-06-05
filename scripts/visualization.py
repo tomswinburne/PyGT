@@ -19,6 +19,10 @@ import matplotlib as mpl
 from matplotlib.colors import LogNorm
 import seaborn as sns
 from pathlib import Path
+import sys
+from scipy import interpolate
+from copy import deepcopy
+
 sns.set()
 textwidth = 6.47699
 
@@ -55,6 +59,116 @@ params = {'axes.edgecolor': 'black',
                   'lines.linewidth':2}
 plt.rcParams.update(params)
 
+''' read positions stored in file min.pos.dummy and ts.pos.dummy '''
+def read_pos(posf):
+
+    pos = []
+    with open(posf,"r") as pf:
+        for line in pf.readlines():
+            pos.append([float(x) for x in line.split()])
+    return np.array(pos,dtype=float)
+
+''' read energy and connectivity data stored in min.data.dummy and ts.data.dummy '''
+def read_data(dataf,sp_type):
+
+    ens = []
+    if sp_type==2: conns = []
+    with open(dataf,"r") as df:
+        for line in df.readlines():
+            ens.append(float(line.split()[0]))
+            if sp_type==2:
+                conns.append([int(line.split()[3]),int(line.split()[4])])
+    if sp_type==1:
+        return np.array(ens,dtype=float)
+    elif sp_type==2:
+        return np.array(ens,dtype=float), np.array(conns,dtype=int)
+
+
+''' make a 2D plot of the data '''
+def plot_network_landscape(min_ens,min_pos,ts_conns,plot_nodes=True):
+
+    xi, yi = np.linspace(-1.5,1.5,100), np.linspace(-1.5,1.5,100)
+    xi, yi = np.meshgrid(xi,yi)
+    rbfi = interpolate.Rbf(min_pos[:,0],min_pos[:,1],min_ens,function="gaussian")
+    approx_ens = rbfi(xi,yi)
+    fig, ax = plt.subplots(figsize=(textwidth/2, textwidth/2))
+    ax.imshow(approx_ens,cmap="bwr",extent=[xi.min(),xi.max(),yi.min(),yi.max()], origin="lower")
+    if plot_nodes:
+        # plot vertices
+        ax.scatter(min_pos[:,0],min_pos[:,1], c='k', s=3)
+        for conn in ts_conns:
+            pt1, pt2 = min_pos[conn[0]-1,:], min_pos[conn[1]-1,:]
+            ax.plot([pt1[0],pt2[0]],[pt1[1],pt2[1]],"k-", lw=0.5)
+    # plot
+    ax.set_xlim(-1.5,1.5)
+    ax.set_ylim(-1.5,1.5)
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_aspect('equal')
+    plt.show()
+    fig.tight_layout()
+    plt.savefig('plots/9state_network_landscape.pdf')
+
+def plot_network_communities(min_pos, ts_conns, communities=None, plot_edges=True):
+    data_path = Path('KTN_data/9state')
+    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=0.1,Emax=None,Nmax=None,screen=False)
+    xi, yi = np.linspace(-1.5,1.5,100), np.linspace(-1.5,1.5,100)
+    xi, yi = np.meshgrid(xi,yi)
+    if communities is None:
+        communities = np.loadtxt(data_path/'communities_bace.dat', dtype=int)
+    colors = sns.color_palette('Paired', 11)
+    node_colors = []
+    for i in range(len(communities)):
+        node_colors.append(colors[communities[i]])
+    fig, ax = plt.subplots(figsize=(textwidth/2, textwidth/2))
+    #plot endpoints
+    #plt.plot([min_pos[endpt1-1,0],min_pos[endpt2-1,0]],[min_pos[endpt1-1,1],min_pos[endpt2-1,1]], \
+    #         "ro",markersize=10,zorder=10)
+    # plot points pairwise such that connected points are joined
+    if plot_edges:
+        for conn in ts_conns:
+            pt1, pt2 = min_pos[conn[0]-1,:], min_pos[conn[1]-1,:]
+            #if communities[conn[0]-1] == communities[conn[1]-1]:
+                #color the edge according to that community
+            #    ax.plot([pt1[0],pt2[0]],[pt1[1],pt2[1]],"-", color=node_colors[communities[conn[0]-1]], lw=2)
+            ax.plot([pt1[0],pt2[0]],[pt1[1],pt2[1]],"k-", alpha=0.25,lw=0.5)
+    # plot vertices
+    ax.scatter(min_pos[:,0],min_pos[:,1], c=node_colors, alpha=1.0, s=10)
+    # plot
+    ax.set_xlim(-1.5,1.5)
+    ax.set_ylim(-1.5,1.5)
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_aspect('equal')
+    #plt.show()
+    fig.tight_layout()
+    plt.savefig('plots/9state_network_pgtcomms_no_edges.pdf')
+
+def plot_pgt_network(min_pos, **kwargs):
+    """ Plot a partially graph-transformed network."""
+    data_path = Path('KTN_data/9state')
+    #GT-reduced network
+    r_B, r_D, r_Q, r_N, r_BF, r_communities, rm_reg = pgt.prune_all_basins(beta=1.0, 
+        data_path=data_path, **kwargs)
+    convert.ts_weights_conns_from_K(r_Q, data_path, suffix='_GT')
+    ts_conns = np.loadtxt(data_path/'ts_conns_GT.dat', dtype=int)
+    r_min_pos = min_pos[~rm_reg, :]
+    communities = np.loadtxt(data_path/'communities_bace.dat', dtype=int)
+    r_comms = communities[~rm_reg]
+    plot_network_communities(r_min_pos, ts_conns, communities=r_comms, plot_edges=True)
+
+def plot_networks():
+    endpt1 = 585 
+    endpt2 = 827
+    data_path = Path('KTN_data/9state')
+    min_ens = read_data(data_path/'min.data',1)
+    ts_ens, ts_conns = read_data(data_path/'ts.data',2)
+    min_pos = read_pos(data_path/'min.pos.dummy')
+    ts_pos = read_pos(data_path/'ts.pos.dummy')
+#    min_ens = [x for (y,x) in sorted(zip(min_ens,
+    plot_network_communities(min_pos, ts_conns, plot_edges=True)
+    plot_pgt_network(min_pos, percent_retained=73, rm_type='hybrid')
+    plot_network_landscape(min_ens,min_pos,ts_conns,plot_nodes=True)
 
 #calculate ratio of MFPT in reduced network to full network for all pairs of communities
 #same for the second moment
@@ -162,33 +276,35 @@ def compare_pgt_networks(beta=1.0, data_path=Path('KTN_data/9state')):
     fig, (ax0, ax1) = plt.subplots(2, 2, figsize=(textwidth*(2.5/3), textwidth*(2/3)))
     #start by conservatively removing 25% of the nodes at T=1
     #recall, that these nodes do not have a high tpp density
-    r_B, r_D, r_Q, r_N, r_BF, r_comms = pgt.prune_all_basins(beta=beta, data_path=data_path,
-                                                            rm_type='hybrid', percent_retained=53)
+    r_B, r_D, r_Q, r_N, r_BF, r_comms = pgt.prune_basins_sequentially(beta=beta, data_path=data_path,
+                                                            rm_type='hybrid', percent_retained=30)
 
     mfpt_mat, std_mat = get_first_second_moment_ratios_reduced_full(beta, r_BF, r_Q, r_comms)
+    #mfpt_labels = [][]
+    #[f'{ratio:.1f}' for ratio in mfpt_mat]
     sns.heatmap(mfpt_mat, center=1.0, linewidths=0.25, linecolor='k', square=True, robust=True,
-                cmap='coolwarm', ax=ax0[0])
+                annot=True, annot_kws={'fontsize':6, 'family':'sans-serif'}, cmap='coolwarm', ax=ax0[0])
     sns.heatmap(std_mat, center=1.0, linewidths=0.25, linecolor='k', square=True, robust=True,
-                cmap='coolwarm', ax=ax0[1])
-    ax0[0].set_title(r'$\mathcal{T}_{IJ}^{\mathcal{Z}} / \mathcal{T}_{IJ}$, retaining 75\%')
-    ax0[1].set_title(r'$\sigma_{IJ}^{\mathcal{Z}} / \sigma_{IJ}$, retaining 75\%')
+                annot=True, annot_kws={'fontsize':6, 'family':'sans-serif'}, cmap='coolwarm', ax=ax0[1])
+    ax0[0].set_title(r'$\mathcal{T}_{IJ}^{\mathcal{Z}} / \mathcal{T}_{IJ}$, retaining 50\%')
+    ax0[1].set_title(r'$\sigma_{IJ}^{\mathcal{Z}} / \sigma_{IJ}$, retaining 50\%')
 
     #this time, RETAIN 25%
-    r_B, r_D, r_Q, r_N, r_BF, r_comms = pgt.prune_all_basins(beta=beta, data_path=data_path,
-                                                               rm_type='hybrid', percent_retained=13)
+    r_B, r_D, r_Q, r_N, r_BF, r_comms = pgt.prune_basins_sequentially(beta=beta, data_path=data_path,
+                                                               rm_type='hybrid', percent_retained=5)
     mfpt_mat, std_mat = get_first_second_moment_ratios_reduced_full(beta, r_BF, r_Q, r_comms)
     minnorm = min(mfpt_mat.min(), std_mat.min())
     maxnorm = max(mfpt_mat.max(), std_mat.max())
     lognorm = LogNorm(minnorm, maxnorm)
     sns.heatmap(mfpt_mat, center=1.0, linewidths=0.25, linecolor='k', cmap='coolwarm', robust=True,
-                square=True, norm=lognorm, cbar_kws={"ticks":[0,1,10,1e2,1e3, 1e4]}, ax=ax1[0])
+                square=True, annot=True, annot_kws={'fontsize':6, 'family':'sans-serif'}, ax=ax1[0])
                 
     sns.heatmap(std_mat, center=1.0, linewidths=0.25, linecolor='k', cmap='coolwarm', robust=True,
-                square=True, norm=lognorm, cbar_kws={"ticks":[0,1,10,1e2,1e3, 1e4]}, ax=ax1[1])
-    ax1[0].set_title(r'$\mathcal{T}_{IJ}^{\mathcal{Z}} / \mathcal{T}_{IJ}$, retaining 25\%')
-    ax1[1].set_title(r'$\sigma_{IJ}^{\mathcal{Z}} / \sigma_{IJ}$, retaining 25\%')
+                square=True, annot=True, annot_kws={'fontsize':6, 'family':'sans-serif'}, ax=ax1[1])
+    ax1[0].set_title(r'$\mathcal{T}_{IJ}^{\mathcal{Z}} / \mathcal{T}_{IJ}$, retaining 10\%')
+    ax1[1].set_title(r'$\sigma_{IJ}^{\mathcal{Z}} / \sigma_{IJ}$, retaining 10\%')
     fig.tight_layout()
-    plt.savefig('plots/heatmaps_T1.0_hybrid.pdf')
+    plt.savefig('plots/heatmaps_T1.0_hybrid_50_10_sequential.pdf')
 
 def rank_nodes_to_eliminate(beta=1.0/0.25, escape_time_upper_bound=1000):
     """ Scatter nodes by node degree, free energy, and escape time, 
