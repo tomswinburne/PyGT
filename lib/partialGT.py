@@ -627,25 +627,12 @@ def compute_rates(AS, BS, BF, B, D, K=None, MFPTonly=True, fullGT=False, **kwarg
         #local equilibrium distribution in r_s
         rho = np.exp(-r_BF[r_s])
         rho /= rho.sum()
-        #eigendecomposition of rate matrix in non-abosrbing region
-        #for A, full_RK[r_A, :][:, r_A] is just a 5x5 matrix
-        l, v = spla.eig(rQ[r_s,:][:,r_s].todense())
-        #order the eigenvalues from smallest to largest -- they are positive since Q = D - K instead of K-D
-        qsdo = np.abs(l.real).argsort()
-        nu = l.real[qsdo]
-        #v[:, qsdo[0]] is the eigenvector corresponding to smallest eigenvalue
-        #aka quasi=stationary distribution
-        qsd = v[:,qsdo[0]]
-        qsd /= qsd.sum()
-        #committor C^B_A: probability of reaching B before A: 1_B.B_BA^I (eqn 6 of SwinburneW20)
-        C = np.ravel(rB[~r_s,:][:,r_s].sum(axis=0))
+        #MFPTs to B from each source microstate a
         T_Ba = np.zeros(r_s.sum())
         if not fullGT:
-            #MFPT
+            #MFPT calculation via matrix inversion
             invQ = spla.inv(rQ[r_s,:][:,r_s].todense())
             tau = invQ.dot(rho).sum(axis=0)
-            #vector of T_Ba 's : in theory, could do another 5 GT's isolating each a in A
-            #so that T_Ba = tau_a / P_Ba
             T_Ba = invQ.sum(axis=0)
         #compare to individual T_Ba quantities from further GT compression
         else:
@@ -672,6 +659,18 @@ def compute_rates(AS, BS, BF, B, D, K=None, MFPTonly=True, fullGT=False, **kwarg
             Rates: SS, NSS, QSD, k*, kF
         """
         if not MFPTonly:
+            #eigendecomposition of rate matrix in non-abosrbing region
+            #for A, full_RK[r_A, :][:, r_A] is just a 5x5 matrix
+            l, v = spla.eig(rQ[r_s,:][:,r_s].todense())
+            #order the eigenvalues from smallest to largest -- they are positive since Q = D - K instead of K-D
+            qsdo = np.abs(l.real).argsort()
+            nu = l.real[qsdo]
+            #v[:, qsdo[0]] is the eigenvector corresponding to smallest eigenvalue
+            #aka quasi=stationary distribution
+            qsd = v[:,qsdo[0]]
+            qsd /= qsd.sum()
+            #committor C^B_A: probability of reaching B before A: 1_B.B_BA^I (eqn 6 of SwinburneW20)
+            C = np.ravel(rB[~r_s,:][:,r_s].sum(axis=0))
             #for SS, we use waiting times from non-reduced network (DSS)
             df[f'kSS{dirs[i]}'] = [C.dot(np.diag(rDSS[r_s])).dot(rho)]
             #for NSS, we use waiting times D^I_s from reduced network
