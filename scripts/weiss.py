@@ -4,8 +4,8 @@ calculations on the unbranched nearest neighbor model first considered in Weiss
 
 Deepti Kannan 2020 """
 
-from code_wrapper import ParsedPathsample
-from ktn_analysis import Analyze_KTN
+from ktn.code_wrapper import ParsedPathsample
+from ktn.ktn_analysis import Analyze_KTN
 import numpy as np
 from numpy.linalg import inv
 import scipy 
@@ -22,39 +22,46 @@ from matplotlib import pyplot as plt
 from scipy.interpolate import CubicSpline
 
 
-textwidth_inches = 6.47699
-plot_params = {'axes.edgecolor': 'black', 
+textwidth = 6.47699
+columnwidth = 246.0/72
+purple = '#BB6DBA'
+orange = '#F57937'
+green = '#6CB41C'
+blue = '#07B4CC'
+grey = '#2D3A3B'
+
+params = {'axes.edgecolor': 'black', 
                   'axes.facecolor':'white', 
                   'axes.grid': False, 
                   'axes.linewidth': 0.5, 
                   'backend': 'ps',
                   'savefig.format': 'ps',
                   'axes.titlesize': 11,
-                  'axes.labelsize': 11,
+                  'axes.labelsize': 9,
                   'legend.fontsize': 9,
-                  'xtick.labelsize': 9,
-                  'ytick.labelsize': 9,
+                  'xtick.labelsize': 8,
+                  'ytick.labelsize': 8,
                   'text.usetex': True,
                   'figure.figsize': [7, 5],
-                  'font.family': 'serif', 
-                  'font.serif': ['Computer Modern Roman'],
+                  'font.family': 'sans-serif', 
                   #'mathtext.fontset': 'cm', 
                   'xtick.bottom':True,
                   'xtick.top': False,
-                  'xtick.direction': 'in',
-                  'xtick.major.pad': 2, 
+                  'xtick.direction': 'out',
+                  'xtick.major.pad': 3, 
                   'xtick.major.size': 3,
-                  'xtick.major.width': 0.25,
+                  'xtick.minor.bottom': False,
+                  'xtick.major.width': 0.2,
 
                   'ytick.left':True, 
                   'ytick.right':False, 
-                  'ytick.direction':'in',
-                  'ytick.major.pad': 2,
+                  'ytick.direction':'out',
+                  'ytick.major.pad': 3,
                   'ytick.major.size': 3, 
-                  'ytick.major.width': 0.25,
+                  'ytick.major.width': 0.2,
                   'ytick.minor.right':False, 
-                  'lines.linewidth':1}
-plt.rcParams.update(plot_params)
+                  'lines.linewidth':2}
+plt.rcParams.update(params)
 path = Path('/Users/deepti/Documents/Wales/databases/chain/metastable')
 #path = Path('/scratch/dk588/databases/chain/metastable')
 #PATHSAMPLE = "/home/dk588/svn/PATHSAMPLE/build/gfortran/PATHSAMPLE"
@@ -334,8 +341,9 @@ def plot_weiss_landscape_mfpt_benchmark():
     states = np.arange(1, 11.5, 0.5)
     xrange = np.linspace(1, 11, 1000)
     cs = CubicSpline(states, stat_pts, bc_type='clamped')
-    fig, (ax, ax2) = plt.subplots(1, 2, figsize=[textwidth_inches,
-                                                 textwidth_inches*(3.2/7)])
+    fig, (ax, ax2) = plt.subplots(2, 1, figsize=[columnwidth,
+                                                 columnwidth],
+                                        gridspec_kw={'height_ratios': [1, 1.6]})
     ax.plot(xrange, cs(xrange), 'k')
     ax.plot(states[0:5:2], stat_pts[0:5:2], 'ro')
     ax.plot(states[6:16:2], stat_pts[6:16:2], 'ko')
@@ -389,14 +397,15 @@ def plot_weiss_landscape_mfpt_benchmark():
     ax2.plot(1./temps, df['t*91'], 'o', markersize=11, alpha=0.3,
             markeredgewidth=0, label='Eigendecomposition')
     ax2.plot(1./temps, corrBA, 'bo', markersize=5, markeredgewidth=0.25,
-            markeredgecolor='k', label='Correlation function')
+            markeredgecolor='k', label='Fundamental matrix')
     ax2.plot(1./temps, df['tGT91'], 'kx', markersize=3, label='GT')
     ax2.set_xlabel('1/T')
-    ax2.set_ylabel('$t_{10 \leftarrow 2}$')
+    ax2.set_ylabel(r'$\mathcal{T}_{10 \leftarrow 2}$')
     ax2.set_yscale('log')
     ax2.legend()
     #plt.subplots_adjust(left=0.06, bottom=0.13, top=0.97, right=0.99)
-    fig.tight_layout()
+    plt.subplots_adjust(left=0.20, right=0.95, top=0.97, bottom=0.13, hspace=0.35)
+    #fig.tight_layout()
 
 def plot_mfpt_benchmark():
 
@@ -441,14 +450,15 @@ def plot_mfpt_benchmark():
         """
 
     #2 <- 10 direction (AB)
-    fig, ax = plt.subplots(figsize=[textwidth_inches/2, textwidth_inches/3])
+    fig, ax = plt.subplots(figsize=[columnwidth, 2*columnwidth/3])
     ax.plot(invT, weissAB, 'k', label='Weiss')
     ax.plot(1./temps, df['t*19'], 'o', markersize=11, alpha=0.3,
             markeredgewidth=0, label='Eigendecomposition')
     ax.plot(1./temps, corrAB, 'bo', markersize=5, markeredgewidth=0.25,
-            markeredgecolor='k', label='Correlation function')
+            markeredgecolor='k', label='Fundamental matrix')
     ax.plot(1./temps, df['tGT19'], 'kx', markersize=6, label='GT')
     ax.set_xlabel('1/T')
-    ax.set_ylabel('$t_{2 \leftarrow 10}$')
+    ax.set_ylabel(r'$\mathcal{T}_{2 \leftarrow 10}$')
     ax.set_yscale('log')
     ax.legend()
+    fig.tight_layout()

@@ -170,7 +170,9 @@ def write_AB_communities_from_gt(gt_comms, A, B, data_path, suffix=''):
     """ Write a communities.dat file containing just 2 communities;
     all nodes in B U I are assigned to community 0, and all nodes in
     absorbing A assigned to community 1. Useful for simulating A<-B
-    transition paths with DISCOTRESS."""
+    transition paths with DISCOTRESS.
+    Note: A and B are 0-indexed IDs of communities A and B respectively.
+    """
 
     AS = gt_comms[A]
     BS = gt_comms[B]
@@ -219,6 +221,22 @@ def write_ktn_comms(ktn_comms, data_path, suffix=''):
         min_in_ci = np.array(ktn_comms[ci]) - 1
         commIDs[min_in_ci] = ci - 1
     np.savetxt(commdat, commIDs, fmt='%d')
+
+def write_minA_minB(ktn_comms, Aind, Bind, data_path, suffix=''):
+    """Write a min.A and min.B file based on minIDs
+    in the communities with IDs Aind and Bind. community IDs are 1-indexed
+    as are minIDs."""
+    minima_in_A = ktn_comms[Aind]
+    minima_in_B = ktn_comms[Bind]
+    with open(data_path/f'min.A{suffix}','w') as f:
+        f.write(str(len(minima_in_A))+'\n') #first line is number of minima
+        for min in minima_in_A:
+            f.write(str(min)+'\n')
+
+    with open(data_path/f'min.B{suffix}','w') as f:
+        f.write(str(len(minima_in_B))+'\n') #first line is number of minima
+        for min in minima_in_B:
+            f.write(str(min)+'\n')
 
 
 
