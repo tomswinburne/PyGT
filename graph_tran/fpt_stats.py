@@ -196,7 +196,7 @@ def compute_escape_stats(BS, BF, Q, tau_escape=None, dopdf=True):
     else:
         return tau
 
-def get_intermicrostate_mfpts_GT(temp, data_path, **kwargs):
+def get_intermicrostate_mfpts_GT(temp, data_path, pool_size=None, **kwargs):
     """Compute matrix of inter-microstate MFPTs with GT.
     
     Parameters
@@ -224,15 +224,25 @@ def get_intermicrostate_mfpts_GT(temp, data_path, **kwargs):
     rho = np.exp(-BF)
     rho /= rho.sum()
     mfpt = np.zeros((N,N))
-    for i in range(N):
-        for j in range(N):
-            if i < j:
-                MFPTAB, MFPTBA = compute_MFPTAB(i, j, B, D, **kwargs)
-                mfpt[i][j] = MFPTAB
-                mfpt[j][i] = MFPTBA
+    
+    def given_ij(ij):
+        i, j = ij
+        if i < j:
+            MFPTAB, MFPTBA = compute_MFPTAB(i, j, B, D, **kwargs)
+            mfpt[i][j] = MFPTAB
+            mfpt[j][i] = MFPTBA
+    
+    if pool_size is None:
+        for i in range(N):
+            for j in range(N):
+                given_ij((i,j))
+    else:
+        with Pool(processes=pool_size) as p:
+            p.map(given_ij, [(i,j) for i in range(N) for j in range(N)])
+    
     return mfpt, rho
 
-def compute_MFPTAB(i, j, B, escape_rates, K=None, **kwargs):
+def compute_MFPTAB(i, j, B, escape_rates=None, K=None, **kwargs):
     r"""Compute the inter-microstate i<->j MFPT using GT. 
 
     Unlike ``compute_rates()`` function, which assumes there is at least 2 microstates
@@ -263,8 +273,14 @@ def compute_MFPTAB(i, j, B, escape_rates, K=None, **kwargs):
     
     """
 
+    if K is None and escape_rates is None:
+        raise ValueError('Either escape_rates or K must be specified.')
+    
+    if escape_rates is not None:
+        D = escape_rates
     if K is not None:
         D = np.ravel(K.sum(axis=0))
+
     N = B.shape[0]
     AS = np.zeros(N, bool)
     AS[i] = True
