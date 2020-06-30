@@ -1,0 +1,340 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Tutorial with graph_tran &mdash; graph_tran 2020 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="graph_tran 2020 documentation" href="index.html"/>
+        <link rel="next" title="graph_tran.ktn_io" href="ktn_io.html"/>
+        <link rel="prev" title="graph_tran: Analyzing Metastable Markov Chains" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> graph_tran
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial with graph_tran</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#input-files">Input Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#computing-mean-first-passage-times">Computing Mean First Passage Times</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ktn_io.html">graph_tran.ktn_io</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gt_tools.html">graph_tran.gt_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fpt_stats.html">graph_tran.fpt_stats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ktn.ktn_analysis.html">graph_tran.ktn.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conversion.html">graph_tran.conversion</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">graph_tran</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Tutorial with graph_tran</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/tutorial.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="tutorial-with-graph-tran">
+<h1>Tutorial with graph_tran<a class="headerlink" href="#tutorial-with-graph-tran" title="Permalink to this headline">¶</a></h1>
+<p>To help you get started, here, we outline a step-by-step guide on how to use the
+<cite>graph_tran</cite> package for the analysis of discrete- or continuous-time Markov
+chains. First, we will go over the various submodules in the package and then
+walk through various examples of using graph transformation for computing mean
+first passage times and estimating reduced Markov chains given a community
+structure.</p>
+<div class="section" id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
+<p><cite>graph_tran</cite> has to two submodules, <cite>lib</cite> and <cite>ktn</cite>. The <cite>lib</cite> module contains
+an implementation of the GT algorithm as well as wrappers for analyzing first
+passage time statistics between two endpoint regions of interest. The <cite>ktn</cite>
+module provides functions to estimate a reduced Markov chain given a community
+structure that groups together microstates of the original Markov chain.</p>
+<p>At the start of any python script, include the following import statements:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1">#library code</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lib.ktn_io</span> <span class="k">as</span> <span class="nn">kio</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lib.gt_tools</span> <span class="k">as</span> <span class="nn">gt</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lib.partialGT</span> <span class="k">as</span> <span class="nn">pgt</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lib.fpt_stats</span> <span class="k">as</span> <span class="nn">fpt</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lib.conversion</span> <span class="k">as</span> <span class="nn">convert</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">ktn.ktn_analysis</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1">#other modules</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">scipy</span> <span class="k">as</span> <span class="nn">sp</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">scipy.linalg</span> <span class="k">as</span> <span class="nn">spla</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">scipy.sparse.linalg</span> <span class="kn">import</span> <span class="n">eigs</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">csr_matrix</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">scipy.linalg</span> <span class="kn">import</span> <span class="n">eig</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">scipy.linalg</span> <span class="kn">import</span> <span class="n">expm</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sns</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="input-files">
+<h2>Input Files<a class="headerlink" href="#input-files" title="Permalink to this headline">¶</a></h2>
+<p>The graph transformation algorithm requires a branching probability matrix
+<span class="math notranslate nohighlight">\(\textbf{B}\)</span> as input, as well as a vector of escape rates specifying the
+inverse waiting time of each node. We will demonstrate a few differet ways of
+loading in a Markov chain for analysis with GT.</p>
+<ol class="arabic">
+<li><p class="first">If the Markov chain is constructed from the energy landscape, the
+<cite>lib/ktn_io</cite> package contains a function <code class="docutils literal notranslate"><span class="pre">load_mat()</span></code> to compute Arrhenius transition
+rates between potential energy minimuma. For example,</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">temp</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1">#GT setup</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">Emin</span><span class="p">,</span> <span class="n">index_sel</span> <span class="o">=</span> <span class="n">kio</span><span class="o">.</span><span class="n">load_mat</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s1">&#39;KTN_data/32state&#39;</span><span class="p">),</span> <span class="n">beta</span><span class="o">=</span><span class="mi">1</span><span class="o">/</span><span class="n">temp</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">BF</span> <span class="o">=</span> <span class="n">beta</span><span class="o">*</span><span class="n">u</span><span class="o">-</span><span class="n">s</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">BF</span> <span class="o">-=</span> <span class="n">BF</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>In this example, the <code class="docutils literal notranslate"><span class="pre">load_mat()</span></code> function read the connectivity of the
+chain from the files <cite>KTN_data/32state/min.data</cite> and <cite>KTN_data/32state/ts.data</cite>
+and returned the sparse branching probability matrix <span class="math notranslate nohighlight">\(\textbf{B}\)</span>, the
+sparse transition rate matrix <span class="math notranslate nohighlight">\(\textbf{K}\)</span>, and the sparse diagonal matrix
+<span class="math notranslate nohighlight">\(\textbf{D}\)</span> with elements corresponding to the escape rates from each
+node. The arrays <cite>u</cite> and <cite>s</cite> correspond to the energies and entropies of the
+nodes so that the stationary distribution <span class="math notranslate nohighlight">\(\pi\)</span> is given by the Boltzmann
+distribution <span class="math notranslate nohighlight">\(\pi_i = e^{-\beta F_i}/\sum_i e^{-\beta F_i}\)</span>.</p>
+</div></blockquote>
+</li>
+<li><p class="first">CTMC: If you already have a transition rate matrix <span class="math notranslate nohighlight">\(\textbf{Q}\)</span> representing
+a continuous-time Markov chain, such that the columns of <span class="math notranslate nohighlight">\(\textbf{Q}\)</span>
+sum to zero, then we can compute the branching probability
+matrix and vector of escape rates as follows:</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1">#subtract the diagonal elements of K</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">K</span> <span class="o">=</span> <span class="n">Q</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">Q</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">escape_rates</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">Q</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span> <span class="o">=</span> <span class="n">K</span><span class="nd">@np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">escape_rates</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here, <cite>B</cite> is a dense matrix with elements <span class="math notranslate nohighlight">\(B_{ij} = k_{ij}\tau_j\)</span>.</p>
+</div></blockquote>
+</li>
+<li><p class="first">DTMC: To setup a GT calculation for the corresponding discrete-time Markov
+chain estimating at a lag time <span class="math notranslate nohighlight">\(\tau\)</span>,</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1">#choose a lag time</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tau</span> <span class="o">=</span> <span class="mf">0.001</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">T</span> <span class="o">=</span> <span class="n">expm</span><span class="p">(</span><span class="n">Q</span><span class="o">*</span><span class="n">tau</span><span class="p">)</span> <span class="c1">#compute T with matrix exponential</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">nnodes</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">escape_rates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">tau</span><span class="p">,</span> <span class="n">nnodes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this case, we replace <cite>B</cite> with the discrete-time transition probability
+matrix <cite>T</cite>, which can either be calculated with a matrix exponential, or can
+be parameterized from simulation data.</p>
+</div></blockquote>
+</li>
+</ol>
+</div>
+<div class="section" id="computing-mean-first-passage-times">
+<h2>Computing Mean First Passage Times<a class="headerlink" href="#computing-mean-first-passage-times" title="Permalink to this headline">¶</a></h2>
+<p>First, we must specify endpoint macrostates (communities) of interest. To do so,
+we can either specify a community structure, or explicitly enumerate the nodes
+in the <span class="math notranslate nohighlight">\(\mathcal{A}\)</span> and <span class="math notranslate nohighlight">\(\mathcal{B}\)</span> sets.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="ktn_io.html" class="btn btn-neutral float-right" title="graph_tran.ktn_io" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="graph_tran: Analyzing Metastable Markov Chains" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Thomas D. Swinburne, Deepti Kannan.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2020',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

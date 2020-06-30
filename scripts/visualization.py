@@ -25,6 +25,37 @@ from copy import deepcopy
 
 sns.set()
 textwidth = 6.47699
+pres_params = {'axes.edgecolor': 'black', 
+                  'axes.facecolor':'white', 
+                  'axes.grid': False, 
+                  'axes.linewidth': 0.5, 
+                  'backend': 'ps',
+                  'savefig.format': 'pdf',
+                  'axes.titlesize': 24,
+                  'axes.labelsize': 20,
+                  'legend.fontsize': 20,
+                  'xtick.labelsize': 18,
+                  'ytick.labelsize': 18,
+                  'text.usetex': True,
+                  'figure.figsize': [7, 5],
+                  'font.family': 'sans-serif', 
+                  #'mathtext.fontset': 'cm', 
+                  'xtick.bottom':True,
+                  'xtick.top': False,
+                  'xtick.direction': 'out',
+                  'xtick.major.pad': 3, 
+                  'xtick.major.size': 3,
+                  'xtick.minor.bottom': False,
+                  'xtick.major.width': 0.2,
+
+                  'ytick.left':True, 
+                  'ytick.right':False, 
+                  'ytick.direction':'out',
+                  'ytick.major.pad': 3,
+                  'ytick.major.size': 3, 
+                  'ytick.major.width': 0.2,
+                  'ytick.minor.right':False, 
+                  'lines.linewidth':2}
 
 params = {'axes.edgecolor': 'black', 
                   'axes.facecolor':'white', 
@@ -57,7 +88,7 @@ params = {'axes.edgecolor': 'black',
                   'ytick.major.width': 0.2,
                   'ytick.minor.right':False, 
                   'lines.linewidth':2}
-plt.rcParams.update(params)
+plt.rcParams.update(pres_params)
 
 ''' read positions stored in file min.pos.dummy and ts.pos.dummy '''
 def read_pos(posf):
@@ -115,7 +146,7 @@ def plot_network_communities(min_pos, ts_conns, communities=None, plot_edges=Tru
     xi, yi = np.linspace(-1.5,1.5,100), np.linspace(-1.5,1.5,100)
     xi, yi = np.meshgrid(xi,yi)
     if communities is None:
-        communities = np.loadtxt(data_path/'communities_bace.dat', dtype=int)
+        communities = np.loadtxt(data_path/'communities_bace9.dat', dtype=int)
     colors = sns.color_palette('Paired', 11)
     node_colors = []
     for i in range(len(communities)):
@@ -142,7 +173,7 @@ def plot_network_communities(min_pos, ts_conns, communities=None, plot_edges=Tru
     ax.set_aspect('equal')
     #plt.show()
     fig.tight_layout()
-    plt.savefig('plots/9state_network_pgtcomms_no_edges.pdf')
+    plt.savefig('plots/9state_network_pgtcomms_bace9.pdf')
 
 def plot_pgt_network(min_pos, **kwargs):
     """ Plot a partially graph-transformed network."""
@@ -150,12 +181,101 @@ def plot_pgt_network(min_pos, **kwargs):
     #GT-reduced network
     r_B, r_D, r_Q, r_N, r_BF, r_communities, rm_reg = pgt.prune_all_basins(beta=1.0, 
         data_path=data_path, **kwargs)
-    convert.ts_weights_conns_from_K(r_Q, data_path, suffix='_GT')
+    convert.ts_weights_conns_from_K(r_Q.todense(), data_path, suffix='_GT')
     ts_conns = np.loadtxt(data_path/'ts_conns_GT.dat', dtype=int)
     r_min_pos = min_pos[~rm_reg, :]
-    communities = np.loadtxt(data_path/'communities_bace.dat', dtype=int)
+    communities = np.loadtxt(data_path/'communities_bace9.dat', dtype=int)
     r_comms = communities[~rm_reg]
     plot_network_communities(r_min_pos, ts_conns, communities=r_comms, plot_edges=True)
+
+def illustrate_gt_gephi(temp, data_path = Path('KTN_data/32state'), suffix='gt', **kwargs):
+    """ Show a network where (A U B)^c has been removed. """
+    
+    #GT-reduced 
+    beta = 1./temp
+    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+    D = np.ravel(K.sum(axis=0))
+    BF = beta*u-s
+    BF -= BF.min()
+    AS,BS = kio.load_AB(data_path,index_sel)    
+    #remove all of intervening region
+    rm_reg = ~AS
+    rm_reg[24] = False #don't remove attractor node of B
+    r_B, r_D, r_Q, r_N, retry = gt.gt_seq(N=N,rm_reg=rm_reg,B=B,D=D,retK=True,trmb=1,**kwargs)
+    convert.ts_weights_conns_from_K(r_Q, data_path, suffix='_GT')
+    ts_conns = np.loadtxt(data_path/'ts_conns_GT.dat', dtype=int)
+
+    #get nodes in remaining network + their attributes
+    mindata = np.loadtxt(data_path/'min.data')
+    nnodes = mindata.shape[0]
+    node_ids = np.arange(1, nnodes+1, 1) #all node IDs
+    pgt_node_ids = node_ids[~rm_reg] #node IDs remaining in network
+    pgt_fake_ids = np.arange(1, r_N+1, 1) #what the new ts_conns file thinks the IDs are
+    pgt_id_dict = {}
+    for i, id in enumerate(pgt_fake_ids):
+        pgt_id_dict[id] = pgt_node_ids[i]
+
+    #record whether node remains or not
+    df = pd.DataFrame(columns=['Id', 'remains'])
+    df['Id'] = node_ids
+    df['remains'] = ~rm_reg #true if remains
+    df.to_csv('csvs/nodes_to_remove_32state_Ab.csv', index=False)
+
+    #load edges from original network
+    edge_df = pd.DataFrame(columns=['source', 'target', 'weight'])
+    for i in range(ts_conns.shape[0]):
+        #convert to original node IDs
+        ts_conns[i, 0] = pgt_id_dict[ts_conns[i, 0]]
+        ts_conns[i, 1] = pgt_id_dict[ts_conns[i, 1]]
+    edge_df['source'] = ts_conns[:, 0]
+    edge_df['target'] = ts_conns[:, 1]
+    edge_df['weight'] = np.tile(1.0, ts_conns.shape[0])
+    edge_df.to_csv(f'csvs/edge_list_{suffix}.csv', index=False)
+
+
+def dump_pgt_network_gephi(min_data, suffix='pgt', **kwargs):
+    """ Plot a partially graph-transformed network."""
+    data_path = Path('KTN_data/9state')
+    #GT-reduced network
+    r_B, r_D, r_Q, r_N, r_BF, r_communities, rm_reg = pgt.prune_all_basins(beta=1.0, 
+        data_path=data_path, **kwargs)
+    convert.ts_weights_conns_from_K(r_Q, data_path, suffix='_GT')
+    ts_conns = np.loadtxt(data_path/'ts_conns_GT.dat', dtype=int)
+    communities = np.loadtxt(data_path/'communities_bace9.dat', dtype=int)
+    r_comms = communities[~rm_reg]
+
+    #get nodes in remaining network + their attributes
+    mindata = np.loadtxt(min_data)
+    nnodes = mindata.shape[0]
+    node_ids = np.arange(1, nnodes+1, 1) #all node IDs
+    pgt_node_ids = node_ids[~rm_reg] #node IDs remaining in network
+    pgt_fake_ids = np.arange(1, r_N+1, 1) #what the new ts_conns file thinks the IDs are
+    pgt_id_dict = {}
+    for i, id in enumerate(pgt_fake_ids):
+        pgt_id_dict[id] = pgt_node_ids[i]
+    mindata = mindata[~rm_reg, :]
+    node_df = pd.DataFrame(columns=['Id', 'Energy', 'community'])
+    node_df['Id'] = pgt_node_ids
+    node_df['Energy'] = mindata[:, 0].astype('float')
+    node_df['community'] = r_comms
+    node_df.to_csv(f'csvs/node_list_{suffix}.csv', index=False)
+
+    #record whether node remains or not
+    df = pd.DataFrame(columns=['Id', 'remains'])
+    df['Id'] = node_ids
+    df['remains'] = ~rm_reg #true if remains
+    df.to_csv('csvs/nodes_to_remove_9state.csv', index=False)
+
+    #load edges from original network
+    edge_df = pd.DataFrame(columns=['source', 'target', 'weight'])
+    for i in range(ts_conns.shape[0]):
+        #convert to original node IDs
+        ts_conns[i, 0] = pgt_id_dict[ts_conns[i, 0]]
+        ts_conns[i, 1] = pgt_id_dict[ts_conns[i, 1]]
+    edge_df['source'] = ts_conns[:, 0]
+    edge_df['target'] = ts_conns[:, 1]
+    edge_df['weight'] = np.tile(1.0, ts_conns.shape[0])
+    edge_df.to_csv(f'csvs/edge_list_{suffix}.csv', index=False)
 
 def plot_networks():
     endpt1 = 585 
@@ -167,7 +287,7 @@ def plot_networks():
     ts_pos = read_pos(data_path/'ts.pos.dummy')
 #    min_ens = [x for (y,x) in sorted(zip(min_ens,
     plot_network_communities(min_pos, ts_conns, plot_edges=True)
-    plot_pgt_network(min_pos, percent_retained=73, rm_type='hybrid')
+    #plot_pgt_network(min_pos, percent_retained=73, rm_type='hybrid')
     plot_network_landscape(min_ens,min_pos,ts_conns,plot_nodes=True)
 
 #calculate ratio of MFPT in reduced network to full network for all pairs of communities
@@ -269,6 +389,22 @@ def mfpt_reduced_full_GT(betas=np.linspace(0.1, 10.0, 20), c1=7, c2=3,
     fig.tight_layout()
     return tauAB_full, tauAB_gt, tauBA_full, tauBA_gt
 
+def compare_pgt_network_pres(beta=1.0, percent_retained=30, mfpt=True, data_path=Path('KTN_data/9state')):
+    """ Make a single heatmap with just the MFPT ratios for a given coarse-graining amount."""
+    fig, ax = plt.subplots(figsize=(4.5,4.2))
+    #perform GT-reduction
+    r_B, r_D, r_Q, r_N, r_BF, r_comms = pgt.prune_basins_sequentially(beta=beta, data_path=data_path,
+                                                rm_type='hybrid', percent_retained=percent_retained)
+
+    mfpt_mat, std_mat = get_first_second_moment_ratios_reduced_full(beta, r_BF, r_Q, r_comms)
+    #mfpt_labels = [][]
+    #[f'{ratio:.1f}' for ratio in mfpt_mat]
+    sns.heatmap(std_mat, center=1.0, linewidths=0.25, linecolor='k', square=True, robust=True,
+                annot=True, annot_kws={'fontsize':16, 'family':'sans-serif'}, cmap='coolwarm', ax=ax)
+    ax.set_title(r'$\mathcal{T}_{IJ}^{\rm GT} / \mathcal{T}_{IJ}$, retaining 50\%')
+    fig.tight_layout()
+    plt.savefig('plots/heatmap_2nd_T1.0_hybrid50_sequential.pdf')
+
 def compare_pgt_networks(beta=1.0, data_path=Path('KTN_data/9state')):
     """ Plot 4 panel figure where top two are MFPT and std heatmaps from removing
     25% of nodes and the bottom two are MFPT and std heatmaps from removing 75% of the nodes."""
@@ -354,7 +490,7 @@ def rank_nodes_to_eliminate(beta=1.0/0.25, escape_time_upper_bound=1000):
     plt.show()
     fig.tight_layout()
 
-def scatter_committors_tpd(beta = 1.0, rm_type='hybrid', percent_retained=75):
+def scatter_visitation_prob(beta = 1.0, rm_type='hybrid', percent_retained=75):
     data_path = Path("KTN_data/9state")
     temp = 1.
     beta = 1./temp
@@ -369,16 +505,10 @@ def scatter_committors_tpd(beta = 1.0, rm_type='hybrid', percent_retained=75):
     #node degree
     node_degree = B.indptr[1:] - B.indptr[:-1]
     # AB regions
-    #AS,BS = kio.load_AB(data_path,index_sel)
-    Amin = 585
-    Bmin = 827
-    AS = np.zeros(N, bool)
-    BS = np.zeros(N, bool)
-    AS[Amin-1] = True
-    BS[Bmin-1] = True
+    AS,BS = kio.load_AB(data_path,index_sel)
     IS = np.zeros(N, bool)
     IS[~(AS+BS)] = True
-    tp_densities = np.loadtxt(Path(data_path)/'tp_densities.dat')
+    tp_densities = np.loadtxt(Path(data_path)/'tp_stats.dat')[:,3]
     rm_reg = np.zeros(N,bool)
     #color nodes that we would propose to remove
     if rm_type == 'node_degree':
@@ -406,30 +536,32 @@ def scatter_committors_tpd(beta = 1.0, rm_type='hybrid', percent_retained=75):
         sel = np.bitwise_and(time_sel, bf_sel)
         #that are also in the lowest percent_retained percentile of free energy
         rm_reg[IS] = sel
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(textwidth*(2/3), textwidth/3))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7, 3.71))
     colors = sns.color_palette("Paired")
     #tp_density vs escape time
-    ax1.scatter(tp_densities[~rm_reg], escape_times[~rm_reg], color=colors[8], 
-        s=3, alpha=0.4, label='I')
-    ax1.scatter(tp_densities[AS], escape_times[AS], color=colors[5], 
-        s=3, alpha=0.8, label='A')
-    ax1.scatter(tp_densities[BS], escape_times[BS], color=colors[1], 
-        s=3, alpha=0.8, label='B')
+    ax1.scatter(tp_densities[~rm_reg], escape_times[~rm_reg], color=colors[8],
+        s=15, alpha=0.5, label='intervening nodes')
+    #ax1.scatter(tp_densities[AS], escape_times[AS], color=colors[5], 
+    #    s=3, alpha=0.8, label='A')
+    #ax1.scatter(tp_densities[BS], escape_times[BS], color=colors[1], 
+    #    s=3, alpha=0.8, label='B')
     ax1.scatter(tp_densities[rm_reg], escape_times[rm_reg], color=colors[9], 
-        s=3, alpha=0.8, label='rm')
-    ax1.set_xlabel('tpp density')
+        s=15, alpha=0.8, label='nodes to remove')
+    ax1.set_xlabel(r'$\mathcal{A}\leftarrow \mathcal{B}$ visitation prob.')
     ax1.set_ylabel('Escape Time')
     ax1.set_yscale('log')
-    ax1.legend(ncol=2)
+    handles, labels = ax1.get_legend_handles_labels()
+    #ax1.legend(ncol=2, loc=(0, 1.05))
     #tp_density vs free energy
-    ax2.scatter(BF[~rm_reg], tp_densities[~rm_reg], color=colors[8], alpha=0.4, s=3, label='I')
-    ax2.scatter(BF[AS], tp_densities[AS], color=colors[5], alpha=0.8, s=3, label='A')
-    ax2.scatter(BF[BS], tp_densities[BS], color=colors[1], alpha=0.8, s=3, label='B')
-    ax2.scatter(BF[rm_reg], tp_densities[rm_reg], color=colors[9], alpha=0.8, s=3, label='rm')
+    ax2.scatter(BF[~rm_reg], tp_densities[~rm_reg], color=colors[8], alpha=0.5, s=15, label='intervening nodes')
+    #ax2.scatter(BF[AS], tp_densities[AS], color=colors[5], alpha=0.8, s=3, label='A')
+    #ax2.scatter(BF[BS], tp_densities[BS], color=colors[1], alpha=0.8, s=3, label='B')
+    ax2.scatter(BF[rm_reg], tp_densities[rm_reg], color=colors[9], alpha=0.8, s=15, label='nodes to remove')
     ax2.set_xlabel('Free Energy')
-    ax2.set_ylabel('tpp density')
+    ax2.set_ylabel(r'$\mathcal{A}\leftarrow \mathcal{B}$ visitation prob.')
     fig.tight_layout()
-    plt.savefig('plots/tpp_bf_tau_scatter.pdf')
+    fig.legend(handles, labels, loc=(0, 1.0), ncol=2)
+    plt.savefig('plots/visitation_probability_scatter.pdf')
 
 def plot_AB_waiting_time(beta, data_path='KTN_data/LJ38/4k/', size=[5, 128], percent_retained=10, **kwargs):
     """ Plot two panels, A->B first passage time in full and reduced networks,

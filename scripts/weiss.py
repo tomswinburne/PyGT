@@ -20,7 +20,8 @@ import os
 import subprocess
 from matplotlib import pyplot as plt
 from scipy.interpolate import CubicSpline
-
+import seaborn as sns
+sns.set()
 
 textwidth = 6.47699
 columnwidth = 246.0/72
@@ -345,9 +346,10 @@ def plot_weiss_landscape_mfpt_benchmark():
                                                  columnwidth],
                                         gridspec_kw={'height_ratios': [1, 1.6]})
     ax.plot(xrange, cs(xrange), 'k')
-    ax.plot(states[0:5:2], stat_pts[0:5:2], 'ro')
+    ax.plot(states[2], stat_pts[2], 'ro')
+    ax.plot(states[[0, 4, 16, 20]], stat_pts[[0, 4, 16, 20]], 'ko')
     ax.plot(states[6:16:2], stat_pts[6:16:2], 'ko')
-    ax.plot(states[16::2], stat_pts[16::2], 'bo')
+    ax.plot(states[18], stat_pts[18], 'ro')
     ax.set_xticks(np.arange(1, 12, 1))
     ax.set_xlabel('States')
     ax.set_ylabel('Energy')
@@ -405,6 +407,7 @@ def plot_weiss_landscape_mfpt_benchmark():
     ax2.legend()
     #plt.subplots_adjust(left=0.06, bottom=0.13, top=0.97, right=0.99)
     plt.subplots_adjust(left=0.20, right=0.95, top=0.97, bottom=0.13, hspace=0.35)
+    plt.savefig('plots/weiss_mfpt_landscape.pdf')
     #fig.tight_layout()
 
 def plot_mfpt_benchmark():

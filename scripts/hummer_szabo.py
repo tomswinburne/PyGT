@@ -68,7 +68,7 @@ params = {'axes.edgecolor': 'black',
                   'lines.linewidth':2}
 plt.rcParams.update(params)
 
-def compare_HS_LEA(temps, data_path=Path('KTN_data/16state'), theta=False, mfpt_eig=False):
+def compare_HS_LEA(temps, data_path=Path('KTN_data/32state'), theta=False):
     """ Calculate coarse-grained rate matrices using the Hummer-Szabo and LEA
     methods and compute MFPTAB/BA using NGT to be compared to the rates on the
     full network. """
@@ -86,13 +86,9 @@ def compare_HS_LEA(temps, data_path=Path('KTN_data/16state'), theta=False, mfpt_
         D = np.ravel(K.sum(axis=0))
         BF = beta*u-s
         BF -= BF.min()
+        pi = np.exp(-BF)
+        pi /= pi.sum()
         #ktn setup
-        if mfpt_eig:
-            mfpt = ktn.get_MFPT_from_Kmat(Q)
-            pi = np.exp(-BF)
-            pi /= pi.sum()
-        else: 
-            mfpt, pi = pgt.get_intermicrostate_mfpts_GT(temp, data_path)
         commpi = ktn.get_comm_stat_probs(np.log(pi), log=False)
         ktn.K = Q
         ktn.pi = pi
@@ -104,6 +100,7 @@ def compare_HS_LEA(temps, data_path=Path('KTN_data/16state'), theta=False, mfpt_
         df['MFPTBA'] = full_df['MFPTBA']
         
         #compute coarse-grained networks: 4 versions of Hummer-Szabo + LEA
+        mfpt, pi = pgt.get_intermicrostate_mfpts_GT(temp, data_path)
         labels = []
         matrices = []
         try:
@@ -118,22 +115,55 @@ def compare_HS_LEA(temps, data_path=Path('KTN_data/16state'), theta=False, mfpt_
             labels.append('KKRA')
         except Exception as e:
             print(f'KKRA had the following error: {e}')
-        if theta:
-            pt = ktn.get_approx_kells_cluster_passage_times(pi, commpi, mfpt)
-        else:
-            pt = ktn.get_kells_cluster_passage_times(pi, commpi, mfpt)
+
+        #try inter-microstate MFPT calculations
+        
+        #weighted-MFPT with eigendecomposition for computer inter-microstate MFPTs
         try:
+            mfpt = ktn.get_MFPT_from_Kmat(Q)
+            if theta:
+                pt = ktn.get_approx_kells_cluster_passage_times(pi, commpi, mfpt)
+            else:
+                pt = ktn.get_kells_cluster_passage_times(pi, commpi, mfpt)
             Rhs_invert = spla.inv(pt)@(np.diag(1./commpi) - np.ones((ncomms,ncomms)))
             matrices.append(Rhs_invert)
-            labels.append('PTinvert')
+            labels.append('PTinvert_eig')
         except Exception as e:
             print(f'Inversion of weighted-MFPTs had the following error: {e}')
+
+        #weighted-MFPT with fundamental matrix for computing inter-microstate MFPTs
         try:
-            Rhs_solve = spla.solve(pt, np.diag(1.0/commpi) - np.ones((ncomms,ncomms)))
-            matrices.append(Rhs_solve)
-            labels.append('PTsolve')
+            mfpt = ktn.mfpt_from_correlation(Q, pi)
+            if theta:
+                pt = ktn.get_approx_kells_cluster_passage_times(pi, commpi, mfpt)
+            else:
+                pt = ktn.get_kells_cluster_passage_times(pi, commpi, mfpt)
+            Rhs_invert = spla.inv(pt)@(np.diag(1./commpi) - np.ones((ncomms,ncomms)))
+            matrices.append(Rhs_invert)
+            labels.append('PTinvert_fund')
         except Exception as e:
-            print(f'Linear solve with weighted-MFPTs had the following error: {e}')
+            print(f'Inversion of weighted-MFPTs had the following error: {e}')
+
+        #weighted-MFPT with GT for computing inter-microstate MFPTs
+        try:
+            mfpt, pi = pgt.get_intermicrostate_mfpts_GT(temp, data_path)
+            if theta:
+                pt = ktn.get_approx_kells_cluster_passage_times(pi, commpi, mfpt)
+            else:
+                pt = ktn.get_kells_cluster_passage_times(pi, commpi, mfpt)
+            Rhs_invert = spla.inv(pt)@(np.diag(1./commpi) - np.ones((ncomms,ncomms)))
+            matrices.append(Rhs_invert)
+            labels.append('PTinvert_GT')
+        except Exception as e:
+            print(f'Inversion of weighted-MFPTs had the following error: {e}')
+        
+        #try:
+        #    Rhs_solve = spla.solve(pt, np.diag(1.0/commpi) - np.ones((ncomms,ncomms)))
+        #    matrices.append(Rhs_solve)
+        #    labels.append('PTsolve')
+        #except Exception as e:
+        #    print(f'Linear solve with weighted-MFPTs had the following error: {e}')
+        
         try:
             Rlea = ktn.construct_coarse_rate_matrix_LEA(temp)
             matrices.append(Rlea)
@@ -199,7 +229,7 @@ def plot_ratios_16state(df, log=True, excludeHS=False):
     #fig.subplots_adjust(left=0.12, top=0.97, right=0.99, bottom=0.11,
     #                    wspace=0.325)
 
-def plot_mfpts_32state(df, insetdf, theta=False, mfpt_eig=False, log=True):
+def plot_mfpts_32state(df, insetdf=None, theta=False, mfpt_eig=False, log=True):
     """Plot MFPTs computed on coarse-grained networks against true MFPT from full network."""
     #colors = sns.color_palette("Dark2", 4)
     colors=[green, purple, orange, blue]
@@ -207,14 +237,21 @@ def plot_mfpts_32state(df, insetdf, theta=False, mfpt_eig=False, log=True):
     df.replace([np.inf, -np.inf], np.nan)
     df2= df.sort_values('T')
     symbols = ['-s', '--o', '-o', '--^']
-    rates = ['LEA', 'PTinvert','KKRA', 'HS']
     if theta:
         labels = ['LEA', r'$\theta^{-1}$', 'KKRA', 'HS']
     else:
         labels = ['LEA', r'$\textbf{t}_{\rm{C}}^{-1}$', 'KKRA', 'HS']
+
+    if mfpt_eig:
+        colors=[green, 'b', purple, orange, blue]
+        order = [0, 1, 2, 3, 4]
+        symbols = ['-s', '-x', '--o', '-o', '--^']
+        rates = ['LEA', 'PTinvert_eig', 'PTinvert_fund', 'KKRA', 'HS']
+        labels = ['LEA', r'$\textbf{t}_{\rm{C}}^{-1}$ (eigendecomposition)', r'$\textbf{t}_{\rm{C}}^{-1}$ (fundamental matrix)', 'KKRA', 'HS']
+
     denom = 'MFPT'
     #first plot A<-B direction
-    fig, ax = plt.subplots(figsize=[columnwidth, 0.80*columnwidth])
+    fig, ax = plt.subplots(figsize=[1.2*columnwidth, 0.95*columnwidth])
     ax.plot(1./df2['T'], df2['MFPTAB'], '-', color='k', label='Exact', lw=1, markersize=4)
     for j, CG in enumerate(rates):
         #then only plot HSK for temperatures that are not NaN
@@ -252,7 +289,7 @@ def plot_mfpts_32state(df, insetdf, theta=False, mfpt_eig=False, log=True):
     fig.tight_layout()
     #plt.savefig('plots/hummer_szabo_32state.pdf')
 
-def calculate_condition_numbers(invtemps=np.linspace(1, 20, 20), data_path=Path('KTN_data/32state')):
+def calculate_condition_numbers(invtemps=np.linspace(1, 40, 20), data_path=Path('KTN_data/32state')):
     # why is KKRA so bad? Let's plot the condition number of the 4-dimensional matrix that it inverts.
     dfs = []
     for temp in 1./invtemps:
@@ -316,25 +353,25 @@ def calculate_condition_numbers(invtemps=np.linspace(1, 20, 20), data_path=Path(
 def plot_condition_numbers(df):   
     #plot
     invtemps = 1./df['T']
-    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(textwidth, textwidth/2.5))
+    fig, ax = plt.subplots(figsize=[1.2*columnwidth, 0.9*columnwidth])
     colors = sns.color_palette("Dark2", 6)
-    ax.plot(invtemps, df['weighted-MFPT'], 'o-', markersize=3, color=colors[0], label='weighted-MFPT')
-    ax.plot(invtemps, df['KKRA_invert'], 'o-', markersize=3, color=colors[1], label='KKRA invert')
-    ax.plot(invtemps, df['KKRA_2nd_term'], 'o-', markersize=3, color=colors[2], label='KKRA 2nd term')
-    ax.plot(invtemps, df['HS_invert'], 'o-', markersize=3, color=colors[4], label='HS invert')
-    ax.plot(invtemps, df['HS_2nd_term'], 'o-', markersize=3, color=colors[5], label='HS 2nd term')
-    ax.plot(invtemps, df['Fund_matrix'], 'o-', markersize=3, color=colors[3], label='fund. matrix')
-    ax.legend(loc=2)
+    ax.plot(invtemps, df['weighted-MFPT'], 'o-', markersize=3, color=colors[0], label=r'$\textbf{t}_{\rm C}$')
+    #ax.plot(invtemps, df['KKRA_invert'], 'o-', markersize=3, color=colors[1], label='KKRA invert')
+    ax.plot(invtemps, df['KKRA_2nd_term'], 'o-', markersize=3, color=colors[2], label='matrix inverted \n in KKRA')
+    #ax.plot(invtemps, df['HS_invert'], 'o-', markersize=3, color=colors[4], label='HS invert')
+    #ax.plot(invtemps, df['HS_2nd_term'], 'o-', markersize=3, color=colors[5], label='HS 2nd term')
+    ax.plot(invtemps, df['Fund_matrix'], 'o-', markersize=3, color=colors[3], label='matrix inverted \n in HS')
     ax.set_xlabel(r"$1/T$")
     ax.set_ylabel("Condition number")
     ax.set_yscale('log')
-    ax2.plot(invtemps, df['KKRA_invert'], 'o-', markersize=3, color=colors[1], label='KKRA invert')
-    ax2.plot(invtemps, df['KKRA_rates'], 'o-', markersize=3, color=colors[2], label='KKRA rates')
-    ax2.plot(invtemps, df['HS_invert'], 'o-', markersize=3, color=colors[4], label='HS invert')
-    ax2.plot(invtemps, df['HS_rates'], 'o-', markersize=3, color=colors[5], label='HS rates')
-    ax2.legend(loc=2)
-    ax2.set_xlabel(r"$1/T$")
-    ax2.set_yscale('log')
+    #ax2.plot(invtemps, df['KKRA_invert'], 'o-', markersize=3, color=colors[1], label='KKRA invert')
+    ax.plot(invtemps, df['KKRA_rates'], 'o-', markersize=3, color=colors[4], label=r'$\textbf{K}_{\rm C}$ (KKRA)')
+    #ax2.plot(invtemps, df['HS_invert'], 'o-', markersize=3, color=colors[4], label='HS invert')
+    ax.plot(invtemps, df['HS_rates'], 'o-', markersize=3, color=colors[1], label=r'$\textbf{K}_{\rm C}$ (HS)')
+    #ax2.legend(loc=2)
+    #ax2.set_xlabel(r"$1/T$")
+    #ax2.set_yscale('log')
+    ax.legend(loc=2)
     fig.tight_layout()
     plt.savefig('plots/condition_numbers_32state.pdf')
 
@@ -370,7 +407,7 @@ def compare_theta_approx(i, j, I, J, labels, invT = np.linspace(0.1, 50, 6), dat
 
 def plot_theta_approx_panel(invT = np.linspace(0.1, 50, 10), data_path=Path('KTN_data/32state'), approx=False):
     """Plot all 6 inter-community weighted-MFPTs (theta)."""
-    fig, axes = plt.subplots(2, 3, sharex='col', sharey='row', figsize=[0.6*textwidth, 1.1*textwidth/3])
+    fig, axes = plt.subplots(2, 3, sharex='col', sharey='row', figsize=[0.66*textwidth, 1.15*textwidth/3])
     labels = np.array([[r'$\mathcal{T}_{ab}/[t_C]_{\mathcal{A}\mathcal{B}}$', r'$\mathcal{T}_{ac}/[t_C]_{\mathcal{A}\mathcal{C}}$', r'$\mathcal{T}_{a d}/[t_C]_{\mathcal{A}\mathcal{D}}$'],
               [r'$\mathcal{T}_{b a}/[t_C]_{\mathcal{B}\mathcal{A}}$', r'$\mathcal{T}_{c a}/[t_C]_{\mathcal{C}\mathcal{A}}$', r'$\mathcal{T}_{d a}/[t_C]_{\mathcal{D}\mathcal{A}}$']])
     labels2 = np.array([[r'$\mathcal{T}_{b c}/[t_C]_{\mathcal{B}\mathcal{C}}$', r'$\mathcal{T}_{b d}/[t_C]_{\mathcal{B}\mathcal{D}}$', r'$\mathcal{T}_{c d}/[t_C]_{\mathcal{C}\mathcal{D}}$'],

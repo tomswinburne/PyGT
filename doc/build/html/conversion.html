@@ -1,0 +1,399 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>graph_tran.conversion &mdash; graph_tran 2020 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="graph_tran 2020 documentation" href="index.html"/>
+        <link rel="prev" title="graph_tran.ktn.ktn_analysis" href="ktn.ktn_analysis.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> graph_tran
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html#input-files">Input Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html#computing-mean-first-passage-times">Computing Mean First Passage Times</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ktn_io.html">graph_tran.ktn_io</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gt_tools.html">graph_tran.gt_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fpt_stats.html">graph_tran.fpt_stats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ktn.ktn_analysis.html">graph_tran.ktn.ktn_analysis</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">graph_tran.conversion</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#community-files">Community Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#community-data-structures">Community data structures:</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rate-matrix-files">Rate matrix files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rate-matrix-variables">Rate matrix variables</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">graph_tran</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>graph_tran.conversion</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/conversion.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-graph_tran.conversion">
+<span id="graph-tran-conversion"></span><h1>graph_tran.conversion<a class="headerlink" href="#module-graph_tran.conversion" title="Permalink to this headline">¶</a></h1>
+<p>File Conversions</p>
+<p>The KTN_python module includes python GT tools, KTN analysis tools, and
+ways to talk to the external programs PATHSAMPLE and DISCOTRESS.
+To unify these four software packages, this script converts between
+different file formats for representing KTNs.</p>
+<div class="section" id="community-files">
+<h2>Community Files<a class="headerlink" href="#community-files" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>communities.dat <span class="classifier-delimiter">:</span> <span class="classifier">single-column (nnnodes,)</span></dt>
+<dd>used by DISCOTRESS and ktn_tools; each line contains community ID (0-indexed)
+of the node specified by the line number in the file</dd>
+<dt>minima.groups <span class="classifier-delimiter">:</span> <span class="classifier">output of DUMPGROUPS keyword from REGROUPFREE routine in PATHSAMPLE</span></dt>
+<dd>used by ParsePathsample class in ktn package to write a communities.dat file.
+So conversion is absent from this file.</dd>
+</dl>
+</div>
+<div class="section" id="community-data-structures">
+<h2>Community data structures:<a class="headerlink" href="#community-data-structures" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>ktn.communities <span class="classifier-delimiter">:</span> <span class="classifier">dictionary mapping community IDs (1-indexed) to minima IDs (1-indexed)</span></dt>
+<dd>file format used in ktn_analysis</dd>
+<dt>pgt.communities <span class="classifier-delimiter">:</span> <span class="classifier">dictionary mapping community IDs (0-indexed) to boolean list (nnodes,)</span></dt>
+<dd>Boolean list selects out the nodes in that community; used in gt_tools</dd>
+</dl>
+</div>
+<div class="section" id="rate-matrix-files">
+<h2>Rate matrix files<a class="headerlink" href="#rate-matrix-files" title="Permalink to this headline">¶</a></h2>
+<p>rate_matrix.dat : (nnodes, nnodes) rate matrix entries printed in dense format
+min.data, ts.data : input to PATHSAMPLE (unnecessary if rate_matrix.dat is present)
+ts_weights.dat : single column, ln(kij), (2*nts, )</p>
+<blockquote>
+<div>used in DISCOTRESS, output of DUMPINFO, kij first line, kji second line, etc.</div></blockquote>
+<dl class="docutils">
+<dt>ts_conns.dat <span class="classifier-delimiter">:</span> <span class="classifier">double columns, i &lt;-&gt; j, (nts, )</span></dt>
+<dd>used in DISCOTRESS, output of DUMPINFO</dd>
+</dl>
+</div>
+<div class="section" id="rate-matrix-variables">
+<h2>Rate matrix variables<a class="headerlink" href="#rate-matrix-variables" title="Permalink to this headline">¶</a></h2>
+<p>Q : in GT code, Q is actually -K and is typically in sparse format
+ktn.K : in ktn code, K is the same as -Q and is in dense format</p>
+<dl class="function">
+<dt id="graph_tran.conversion.K_from_Q">
+<code class="descclassname">graph_tran.conversion.</code><code class="descname">K_from_Q</code><span class="sig-paren">(</span><em>Q</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#K_from_Q"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.K_from_Q" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the sparse, gt_tools <cite>Q</cite> matrix to the dense, <cite>K</cite> matrix used
+in ktn_analysis by multiplying nonzero entries by -1. This same function
+can also be used to get Q from K, although that’s a less useful conversion.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.conversion.dump_gephi_format">
+<code class="descclassname">graph_tran.conversion.</code><code class="descname">dump_gephi_format</code><span class="sig-paren">(</span><em>mindatafile</em>, <em>tsdatafile</em>, <em>suffix</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#dump_gephi_format"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.dump_gephi_format" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create gephi-style csv format files from a min.data and ts.data file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.conversion.dump_rate_mat">
+<code class="descclassname">graph_tran.conversion.</code><code class="descname">dump_rate_mat</code><span class="sig-paren">(</span><em>K</em>, <em>data_path</em>, <em>fmt='%.20G'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#dump_rate_mat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.dump_rate_mat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dumps a rate_matrix.dat file for input to PATHSAMPLE.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>K</strong> (<em>(</em><em>nnodes</em><em>, </em><em>nnodes</em><em>)</em>) – rate matrix in dense format</li>
+<li><strong>data_path</strong> (<em>str</em><em> or </em><em>Path</em>) – path to folder with pathdata file where rate_matrix.dat will be dumped</li>
+<li><strong>fmt</strong> (<em>format string</em>) – Defaults to ‘%.20G’</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.conversion.dump_stat_probs">
+<code class="descclassname">graph_tran.conversion.</code><code class="descname">dump_stat_probs</code><span class="sig-paren">(</span><em>pi</em>, <em>data_path</em>, <em>suffix=''</em>, <em>fmt='%.20G'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#dump_stat_probs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.dump_stat_probs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump a stat_prob.dat file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.conversion.ktn_comms_from_gt_comms">
+<code class="descclassname">graph_tran.conversion.</code><code class="descname">ktn_comms_from_gt_comms</code><span class="sig-paren">(</span><em>gt_comms</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#ktn_comms_from_gt_comms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.ktn_comms_from_gt_comms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the GT-style dictionary of communities to a format
+compatible with the ktn_analysis class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>communities</strong> (<em>dict</em>) – community IDs (0-indexed) to boolean array selectors (nnodes,)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>communities</strong> – community IDs (1-indexed) to minimia IDs (1-indexed) (nmin, )</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dict</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.conversion.read_ktn_info">
+<code class="descclassname">graph_tran.conversion.</code><code class="descname">read_ktn_info</code><span class="sig-paren">(</span><em>data_path</em>, <em>suffix=''</em>, <em>log=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#read_ktn_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.read_ktn_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in Daniel’s files stat_prob.dat, ts_weights.dat, and ts_conns.dat
+and return a rate matrix and vector of stationary probabilities.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.conversion.ts_weights_conns_from_K">
+<code class="descclassname">graph_tran.conversion.</code><code class="descname">ts_weights_conns_from_K</code><span class="sig-paren">(</span><em>K</em>, <em>data_path</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#ts_weights_conns_from_K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.ts_weights_conns_from_K" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a ts_weights.dat and ts_conns.dat file from a rate matrix.
+K can actually be K or Q since we only care about off-diagonal entries. Ensures
+the rates are positive before writing to file.</p>
+<p>TODO: test
+TODO: figure out how to get ts_weights.dat from sparse matrix</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.conversion.write_AB_communities_from_gt">
+<code class="descclassname">graph_tran.conversion.</code><code class="descname">write_AB_communities_from_gt</code><span class="sig-paren">(</span><em>gt_comms</em>, <em>A</em>, <em>B</em>, <em>data_path</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#write_AB_communities_from_gt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.write_AB_communities_from_gt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a communities.dat file containing just 2 communities;
+all nodes in B U I are assigned to community 0, and all nodes in
+absorbing A assigned to community 1. Useful for simulating A&lt;-B
+transition paths with DISCOTRESS.
+Note: A and B are 0-indexed IDs of communities A and B respectively.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.conversion.write_gt_comms">
+<code class="descclassname">graph_tran.conversion.</code><code class="descname">write_gt_comms</code><span class="sig-paren">(</span><em>gt_comms</em>, <em>data_path</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#write_gt_comms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.write_gt_comms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a communities.dat file from GT-style communities dictionary.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.conversion.write_ktn_comms">
+<code class="descclassname">graph_tran.conversion.</code><code class="descname">write_ktn_comms</code><span class="sig-paren">(</span><em>ktn_comms</em>, <em>data_path</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#write_ktn_comms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.write_ktn_comms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a single-column file <cite>commdat</cite> where each line is the
+community ID (zero-indexed) of the minima given by the line
+number.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>communities</strong> (<em>dict</em>) – mapping from community ID (1-indexed) to minima ID (1-indexed)</li>
+<li><strong>commdat</strong> (<em>dat file name</em>) – file to which to write communitiy assignments (0-indexed)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.conversion.write_minA_minB">
+<code class="descclassname">graph_tran.conversion.</code><code class="descname">write_minA_minB</code><span class="sig-paren">(</span><em>ktn_comms</em>, <em>Aind</em>, <em>Bind</em>, <em>data_path</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#write_minA_minB"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.write_minA_minB" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a min.A and min.B file based on minIDs
+in the communities with IDs Aind and Bind. community IDs are 1-indexed
+as are minIDs.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="ktn.ktn_analysis.html" class="btn btn-neutral" title="graph_tran.ktn.ktn_analysis" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Thomas D. Swinburne, Deepti Kannan.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2020',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
