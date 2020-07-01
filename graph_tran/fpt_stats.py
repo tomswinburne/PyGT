@@ -2,7 +2,7 @@
 r"""
 Calculate first passage time statistics with graph transformation.
 
-Contains wrappers to `lib.gt_tools` to calculate the mean first passage times
+Contains wrappers to `graph_tran.gt_tools` to calculate the mean first passage times
 and phenomenological rate constants between endpoint macrostates
 :math:`\mathcal{A}` and :math:`\mathcal{B}`.
 
@@ -22,7 +22,7 @@ from scipy.sparse.csgraph import connected_components
 import scipy as sp
 import scipy.linalg as spla
 import pandas as pd
-from multiprocessing import Pool
+from pathos.multiprocessing import ProcessingPool as Pool
 
 def read_communities(commdat, index_sel, screen=False):
     """Read in a single column file called communities.dat where each line
@@ -197,7 +197,7 @@ def compute_escape_stats(BS, BF, Q, tau_escape=None, dopdf=True):
         return tau
 
 def get_intermicrostate_mfpts_GT(temp, data_path, pool_size=None, **kwargs):
-    """Compute matrix of inter-microstate MFPTs with GT.
+    r"""Compute matrix of inter-microstate MFPTs with GT.
     
     Parameters
     ----------
@@ -225,21 +225,28 @@ def get_intermicrostate_mfpts_GT(temp, data_path, pool_size=None, **kwargs):
     rho /= rho.sum()
     mfpt = np.zeros((N,N))
     
+    matrix_elements = []
+    for i in range(N):
+        for j in range(N):
+            if i < j:
+                matrix_elements.append((i,j))
+    
     def given_ij(ij):
         i, j = ij
-        if i < j:
-            MFPTAB, MFPTBA = compute_MFPTAB(i, j, B, D, **kwargs)
-            mfpt[i][j] = MFPTAB
-            mfpt[j][i] = MFPTBA
+        MFPTAB, MFPTBA = compute_MFPTAB(i, j, B, D, **kwargs)
+        return MFPTAB, MFPTBA
     
     if pool_size is None:
-        for i in range(N):
-            for j in range(N):
-                given_ij((i,j))
+        for ij in matrix_elements:
+            i, j = ij
+            mfpt[i][j], mfpt[j][i] = given_ij(ij)
     else:
         with Pool(processes=pool_size) as p:
-            p.map(given_ij, [(i,j) for i in range(N) for j in range(N)])
-    
+            results = p.map(given_ij, matrix_elements)
+        for k, result in enumerate(results):
+            i, j = matrix_elements[k]
+            mfpt[i][j], mfpt[j][i] = result
+
     return mfpt, rho
 
 def compute_MFPTAB(i, j, B, escape_rates=None, K=None, **kwargs):
@@ -303,7 +310,8 @@ def compute_MFPTAB(i, j, B, escape_rates=None, K=None, **kwargs):
     MFPTAB = tau_Fs[r_BS]/P_AB
     return MFPTAB[0,0], MFPTBA[0,0]
 
-def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, BF=None, MFPTonly=True, fullGT=False, **kwargs):
+def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, BF=None, 
+    MFPTonly=True, fullGT=False, pool_size=None, **kwargs):
     r""" Calculate kSS, kNSS, kF, k*, kQSD, MFPT, and committors for the transition path
     ensemble AS --> BS from rate matrix K. K can be the matrix of an original
     Markov chain, or a partially graph-transformed Markov chain. 
@@ -331,7 +339,6 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
    
     TODO: include equations for kSS, kNSS, etc.
     TODO: debug case where A and B each only contain one state.
-    TODO: parallelize fullGT calculation so it isn't so slow.
 
     Parameters
     ----------
@@ -355,7 +362,7 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
         normalized initial occupation probabilities in :math:`\mathcal{A}` set.
         Defaults to Boltzmann distribution if BF is specified.
     BF : array-like (N,)
-        Free energies of nodes, used to compute Boltzmann :math:`\pi_i =\rm{exp}^{-\beta F}`.
+        Free energies of nodes, used to compute Boltzmann :math:`\pi_i =\rm{exp}^{-\beta F_i}`.
     MFPTonly : bool
         If True, only MFPTs are calculated (rate calculations ignored).
     fullGT : bool
@@ -405,6 +412,7 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
     df = pd.DataFrame()
     dirs = ['BA', 'AB']
     inits = [initA, initB]
+
     for i, r_s in enumerate([r_AS, r_BS]) :
         #local equilibrium distribution in r_s
         rho = inits[i]
@@ -417,13 +425,13 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
             T_Ba = invQ.sum(axis=0)
         #compare to individual T_Ba quantities from further GT compression
         else:
-            for a in range(r_s.sum()):
-                #remove all nodes in A except for a
+            def disconnect_sources(s):
+                #disconnect all source nodes except for `s`
                 rm_reg = np.zeros(rN, bool)
                 rm_reg[r_s] = True
-                aind = r_s.nonzero()[0][a]
+                aind = r_s.nonzero()[0][s]
                 #print(f'Disconnecting source node {aind}')
-                rm_reg[r_s.nonzero()[0][a]] = False
+                rm_reg[r_s.nonzero()[0][s]] = False
                 rfB, rfD, rfQ, rfN, retry = gt.gt_seq(N=rN,rm_reg=rm_reg,B=rB,D=rD,trmb=1,retK=True,Ndense=1)
                 rfB = rfB.todense()
                 #escape time tau_F
@@ -432,9 +440,16 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
                 rf_s = r_s[~rm_reg]
                 #tau_a^F / P_Ba^F
                 P_Ba = np.ravel(rfB[~rf_s,:][:,rf_s].sum(axis=0))[0]
-                T_Ba[a] = tau_Fs[rf_s][0]/P_Ba
-        #MFPT_BA = (T_Ba@rho)
-        tau = T_Ba@rho
+                return tau_Fs[rf_s][0]/P_Ba
+
+            if pool_size is None:
+                for s in range(r_s.sum()):
+                    T_Ba[s] = disconnect_sources(s)
+            else:
+                with Pool(processes=pool_size) as p:
+                    T_Ba = p.map(disconnect_sources, [s for s in range(r_s.sum())])
+            #MFPT_BA = (T_Ba@rho)
+            tau = T_Ba@rho
         df[f'MFPT{dirs[i]}'] = [tau]
         """
             Rates: SS, NSS, QSD, k*, kF
