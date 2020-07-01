@@ -1,12 +1,15 @@
-""" This module provides functions to analyze and estimate coarse-grained continuous-time
-Markov chains given a partiion of the :math:`V` nodes into :math:`N<V` communities.
+r""" 
+Dimensionality Reduction of Markov chains
+
+This module provides functions to analyze and estimate coarse-grained continuous-time
+Markov chains given a partiioning :math:`\mathcal{C} = \{I, J, ...\}` of the :math:`V` nodes into :math:`N<V` communities.
 Various formulations for the inter-community rates are implemented, including the local
 equilibrium approximation, Hummer-Szabo relation, and other expressions. 
 
 The module is
 designed to interface with both the Python and Fortran implementations of the GT algorithm.
 
-Deepti Kannan 2020 """
+"""
 
 from .code_wrapper import ParsedPathsample
 from .code_wrapper import ScanPathsample
@@ -25,152 +28,6 @@ import os
 import subprocess
 
 PATHSAMPLE = "/home/dk588/svn/PATHSAMPLE/build/gfortran/PATHSAMPLE"
-
-"""Functions to analyze KTNs without any community structure."""
-
-def read_ktn_info(self, suffix, log=False):
-    #read in Daniel's files stat_prob.dat and ts_weights.dat
-    logpi = np.loadtxt(self.path/f'stat_prob_{suffix}.dat')
-    pi = np.exp(logpi)
-    nnodes = len(pi)
-    assert(abs(1.0 - np.sum(pi)) < 1.E-10)
-    logk = np.loadtxt(self.path/f'ts_weights_{suffix}.dat', 'float')
-    k = np.exp(logk)
-    tsconns = np.loadtxt(self.path/f'ts_conns_{suffix}.dat', 'int')
-    Kmat = np.zeros((nnodes, nnodes))
-    for i in range(tsconns.shape[0]):
-        Kmat[tsconns[i,1]-1, tsconns[i,0]-1] = k[2*i]
-        Kmat[tsconns[i,0]-1, tsconns[i,1]-1] = k[2*i+1]
-    #set diagonals
-    for i in range(nnodes):
-        Kmat[i, i] = 0.0
-        Kmat[i, i] = -np.sum(Kmat[:, i])
-    #identify isolated minima (where row of Kmat = 0)
-    #TODO: identify unconnected minima
-    Kmat_nonzero_rows = np.where(~np.all(Kmat==0, axis=1))
-    Kmat_connected = Kmat[np.ix_(Kmat_nonzero_rows[0],
-                                    Kmat_nonzero_rows[0])]
-    pi = pi[Kmat_nonzero_rows]/np.sum(pi[Kmat_nonzero_rows])
-    logpi = np.log(pi)
-    assert(len(pi) == Kmat_connected.shape[0])
-    assert(Kmat_connected.shape[0] == Kmat_connected.shape[1])
-    assert(np.all(np.abs(Kmat_connected@pi)<1.E-10))
-
-    if log:
-        return logpi, Kmat_connected 
-    else:
-        return pi, Kmat_connected
-
-def calc_eigenvectors(K, k, which_eig='SM', norm=False):
-    # calculate k dominant eigenvectors and eigenvalues of sparse matrix
-    # using the implictly restarted Arnoldi method
-    evals, evecs = eigs(K, k, which=which_eig)
-    evecs = np.transpose(evecs)
-    evecs = np.array([evec for _,evec in sorted(zip(list(evals),list(evecs)),
-                                key=lambda pair: pair[0], reverse=True)],dtype=float)
-    evals = np.array(sorted(list(evals),reverse=True),dtype=float)
-    if norm:
-        row_sums = evecs.sum(axis=1)
-        evecs = evecs / row_sums[:, np.newaxis] 
-    return evals, evecs
-
-def construct_transition_matrix(K, tau_lag):
-    """ Return column-stochastic transition matrix T = expm(K*tau).
-    Columns sum to 1. """
-    T = expm(tau_lag*K)
-    for x in np.sum(T, axis=0):
-        #assert( abs(x - 1.0) < 1.0E-10) 
-        print(f'Transition matrix is not column-stochastic at' \
-                f'tau={tau_lag}')
-    return T
-
-def get_timescales(K, m, tau_lag):
-    """ Return characteristic timescales obtained from the m dominant 
-    eigenvalues of the transition matrix constructed from K at lag time
-    tau_lag."""
-    T = construct_transition_matrix(K, tau_lag)
-    evals, evecs = calc_eigenvectors(T, m, which_eig='LM')
-    char_times = np.zeros((np.shape(evals)[0]),dtype=float)
-    # note that we ignore the zero eigenvalue, associated with
-    # infinite time (stationary distribution)
-    for i, eigval in enumerate(evals[1:]):
-        char_times[i+1] = -tau_lag/np.log(eigval)
-    return char_times
-
-def calculate_spectral_error(m, Rs, labels):
-    """ Calculate spectral error, where m is the number of dominant
-    eigenvalues in both the reduced and original transition networks, as a
-    function of lag time. Plots the decay. """
-
-    tau_lags = np.logspace(-4, 4, 1000)
-    colors = sns.color_palette("BrBG", 5)
-    colors = [colors[0], colors[-1]]
-    fig, ax = plt.subplots()
-
-    for j,R in enumerate(Rs):
-        spectral_errors = np.zeros(tau_lags.shape)
-        for i, tau in enumerate(tau_lags):
-            T = construct_transition_matrix(R, tau)
-            Tevals, Tevecs = calc_eigenvectors(T, m+1, which_eig='LM')
-            # compare m+1 th eigenvalue (first fast eigenvalue) to slowest
-            # eigenmodde
-            spectral_errors[i] = Tevals[m]/Tevals[1]
-        ax.plot(tau_lags, spectral_errors, label=labels[j], color=colors[j])
-
-    plt.xlabel(r'$\tau$')
-    plt.ylabel(r'$\eta(\tau)$')
-    plt.yscale('log')
-    plt.legend()
-    fig.tight_layout()
-
-def check_detailed_balance(pi, K):
-    """ Check if network satisfies detailed balance condition, which is
-    thatthat :math:`k_{ij} \pi_j = k_{ji} \pi_i` for all :math:`i,j`.
-
-    Parameters
-    ----------
-    pi : list (nnodes,) or (ncomms,)
-        stationary probabilities
-    K : np.ndarray (nnodes, nnodes) or (ncomms, ncomms)
-        inter-minima rate constants in matrix form
-
-    """
-    for i in range(K.shape[0]):
-        for j in range(K.shape[1]):
-            if i < j:
-                left = K[i,j]*pi[j]
-                right = K[j,i]*pi[i]
-                diff = abs(left - right)
-                if (diff > 1.E-10):
-                    #print(f'Detailed balance not satisfied for i={i}, j={j}')
-                    return False
-    return True
-
-def read_communities(commdat):
-    """Read in a single column file called communities.dat where each line
-    is the community ID (zero-indexed) of the minima given by the line
-    number.
-    
-    Parameters
-    ----------
-    commdat : .dat file
-        single-column file containing community IDs of each minimum
-
-    Returns
-    -------
-    communities : dict
-        mapping from community ID (1-indexed) to minima ID (1-indexed)
-    """
-
-    communities = {}
-    with open(commdat, 'r') as f:
-        for minID, line in enumerate(f, 1):
-            groupID =  int(line) + 1
-            if groupID in communities:
-                communities[groupID].append(minID)
-            else:
-                communities[groupID] = [minID]
-    return communities
 
 class Analyze_KTN(object):
     """ Analyze a KTN with a specified community structure."""
@@ -203,8 +60,8 @@ class Analyze_KTN(object):
         if pathsample is not None:
             self.parse = pathsample
 
-    def calc_inter_community_rates_NGT(self, C1, C2):
-        """Calculate k_{C1<-C2} using NGT. Here, C1 and C2 are community IDs
+    def calc_inter_community_rates_GT(self, C1, C2):
+        """Calculate k_{C1<-C2} using GT. Here, C1 and C2 are community IDs
         (i.e. groups identified in DUMPGROUPS file from REGROUPFREE). This
         function isolates the minima in C1 union C2 and the transition states
         that connect them and feeds this subnetwork into PATHSAMPLE, using the
@@ -337,9 +194,9 @@ class Analyze_KTN(object):
             Rlea[i, i] = -np.sum(Rlea[:, i])
         return Rlea
 
-    def construct_coarse_matrix_Hummer_Szabo(self, temp):
-        """ Calculate the coarse-grained rate matrix using the Hummer-Szabo
-        relation, aka eqn. (12) in Hummer & Szabo (2015) J.Phys.Chem.B."""
+    def construct_coarse_rate_matrix_Hummer_Szabo(self, temp):
+        r""" Calculate the optimal coarse-grained rate matrix using the Hummer-Szabo
+        relation, aka Eqn. (12) in Hummer & Szabo *J. Phys. Chem. B.* (2015)."""
 
         if self.K is None:
             logpi, Kmat = read_ktn_info(f'T{temp:.3f}', log=True)
@@ -376,10 +233,11 @@ class Analyze_KTN(object):
             print(f'HS does not satisfy detailed balance at T={temp}')
         return R_HS
 
-    def hummer_szabo_from_mfpt(self, temp, GT=True, mfpt=None):
-        """Calculate Hummer-Szabo coarse-grained rate matrix using Eqn. (72)
-        of Kells et al. (2019) paper on correlation functions and the Kemeny
-        constant."""
+    def construct_coarse_rate_matrix_KKRA(self, temp, GT=True, mfpt=None):
+        r"""Calculate optimal coarse-grained rate matrix using Eqn. (79) 
+        of Kells et al. *J. Chem. Phys.* (2020), aka the KKRA expression
+        in Eqn. (10) of Kannan et al. *J. Chem. Phys.* (2020)."""
+
         if self.K is None:
             logpi, Kmat = read_ktn_info(f'T{temp:.3f}', log=True)
             pi = np.exp(logpi)
@@ -413,10 +271,12 @@ class Analyze_KTN(object):
             print(f'KRA does not satisfy detailed balance at T={temp}')
         return R
 
-    def get_MFPT_from_Kmat(self, K):
-        """Use Tom's linear solver method to extract MFPTs from a rate matrix
-        K. Equivalent to Eqn. (14) in Swinburne & Wales (2020)."""
+    def get_intermicrostate_mfpts_linear_solve(self):
+        r"""Calculate the matrix of inter-microstate MFPTs between all pairs of nodes
+        by solving a system of linear equations given by Eq.(8) of 
+        Kannan et al. *J. Chem. Phys.* (2020)."""
 
+        K = ktn.K
         n = K.shape[0]
         mfpt = np.zeros((n,n))
         for i in range(n):
@@ -431,112 +291,19 @@ class Analyze_KTN(object):
                         raise Exception('LinAlgWarning') 
         return mfpt
 
-    def mfpt_from_correlation(self, K, pi):
-        """Calculate the matrix of mean first passage times using Eq. (49) of KRA
-        JCP paper. """
+    def get_intermicrostate_mfpts_fundamental_matrix(self):
+        r"""Calculate the matrix of inter-microstate MFPTs between all pairs of nodes
+        using Eq. (6) of Kannan et al. *J. Chem. Phys.* (2020). """
+
+        K = ktn.K
+        pi = ktn.pi
         nmin = K.shape[0]
         pioneK = spla.inv(pi.reshape((nmin,1))@np.ones((1,nmin)) + K)
         zvec = np.diag(pioneK)
         mfpt = np.diag(1./pi)@(pioneK - zvec.reshape((nmin,1))@np.ones((1,nmin)))
         return mfpt
 
-    def get_MFPT_between_communities(self, K, pi):
-        """Use Tom's linear solver method to extract MFPTs between communities
-        using a rate matrix K. Equivalent to Eqn. (14) in Swinbourne & Wales
-        2020."""
-       
-        n = K.shape[0]
-        N = len(self.communities)
-        mfpt = np.zeros((N,N))
-        for i in range(N):
-            for j in range(N):
-                if i==j:
-                    mfpt[i][j] = 0.
-                else:
-                    ci = np.array(self.communities[i+1]) - 1
-                    cj = np.array(self.communities[j+1]) - 1
-                    cond = np.ones((n,), dtype=bool)
-                    cond[ci] = False
-                    initial_cond = np.zeros((n,))
-                    #initialize probability density to local boltzman in cj
-                    initial_cond[cj] = pi[cj]/pi[cj].sum()
-                    mfpt[i][j] = -spla.solve(K[cond, :][:, cond],
-                                            initial_cond[cond]).sum()
-
-
-        return mfpt
-
-    def get_MFPT_AB(self, A, B, temp, n):
-        """Run a single GT calculation using the READRATES keyword in PATHSAMPLE
-        to get the A<->B mean first passage time at specified temperatire."""
-
-        parse = ParsedPathsample(self.path/'pathdata')
-        files_to_modify = [self.path/'min.A', self.path/'min.B']
-        for f in files_to_modify:
-            if not f.exists():
-                print(f'File {f} does not exists')
-                raise FileNotFoundError 
-            os.system(f'mv {f} {f}.original')
-        communities = self.communities
-        #update min.A and min.B with nodes in A and B
-        parse.minA = np.array(communities[A+1]) - 1
-        parse.numInA = len(communities[A+1])
-        parse.minB = np.array(communities[B+1]) - 1
-        parse.numInB = len(communities[B+1])
-        parse.write_minA_minB(self.path/'min.A', self.path/'min.B')
-        parse.append_input('NGT', '0 T')
-        parse.append_input('TEMPERATURE', f'{temp}')
-        parse.append_input('READRATES', f'{n}')
-        parse.write_input(self.path/'pathdata')
-        #run PATHSAMPLE
-        outfile = open(self.path/f'out.{A+1}.{B+1}.T{temp}', 'w')
-        subprocess.run(f"{PATHSAMPLE}", stdout=outfile, cwd=self.path)
-        #parse output
-        parse.parse_output(outfile=self.path/f'out.{A+1}.{B+1}.T{temp}')
-        return parse.output['MFPTAB'], parse.output['MFPTBA']
-
-    def get_MFPT_between_communities_GT(self, temp):
-        """Use PATHSAMPLE to compute MFPTs between communities
-        using a rate matrix K."""
-
-        parse = ParsedPathsample(self.path/'pathdata')
-        files_to_modify = [self.path/'min.A', self.path/'min.B']
-        for f in files_to_modify:
-            if not f.exists():
-                print(f'File {f} does not exists')
-                raise FileNotFoundError 
-            os.system(f'mv {f} {f}.original')
-        communities = self.communities
-        N = len(communities)
-        MFPT = np.zeros((N,N))
-        for ci in range(N):
-            for cj in range(N):
-                if ci < cj:
-                    parse.minA = np.array(communities[ci+1]) - 1
-                    parse.numInA = len(communities[ci+1])
-                    parse.minB = np.array(communities[cj+1]) - 1
-                    parse.numInB = len(communities[cj+1])
-                    parse.write_minA_minB(self.path/'min.A', self.path/'min.B')
-                    #os.system(f'cat {self.path}/min.A')
-                    #os.system(f'cat {self.path}/min.B')
-                    parse.append_input('NGT', '0 T')
-                    parse.append_input('TEMPERATURE', f'{temp}')
-                    parse.write_input(self.path/'pathdata')
-                    #run PATHSAMPLE
-                    outfile = open(self.path/f'out.{ci+1}.{cj+1}.T{temp}', 'w')
-                    subprocess.run(f"{PATHSAMPLE}", stdout=outfile, cwd=self.path)
-                    #parse output
-                    parse.parse_output(outfile=self.path/f'out.{ci+1}.{cj+1}.T{temp}')
-                    MFPT[ci, cj] = parse.output['MFPTAB']
-                    MFPT[cj, ci] = parse.output['MFPTBA']
-
-        #restore original min.A and min.B files
-        for f in files_to_modify:
-            os.system(f'mv {f}.original {f}')
-
-        return MFPT
-
-    def get_MFPT_between_states_GT(self, temp):
+    def get_intermicrostate_mfpts_GT_PATHSAMPLE(self, temp):
         """Use PATHSAMPLE to compute MFPTs between states
         using a rate matrix K."""
 
@@ -579,9 +346,105 @@ class Analyze_KTN(object):
 
         return mfpt
 
-    def get_kells_cluster_passage_times(self, pi, commpi, mfpt):
-        """Comppute the t_JI as defined in Eqn. 66 in Kells, Rosta,
-        Annibale (2019)."""
+    def get_intercommunity_MFPTs_linear_solve(self):
+        r"""Calculate the true MFPTs between communities by inverting the non-absorbing
+        rate matrix. Equivalent to Eqn. (14) in Swinbourne & Wales *JCTC* (2020)."""
+       
+        K = ktn.K
+        pi = ktn.pi
+        n = K.shape[0]
+        N = len(self.communities)
+        mfpt = np.zeros((N,N))
+        for i in range(N):
+            for j in range(N):
+                if i==j:
+                    mfpt[i][j] = 0.
+                else:
+                    ci = np.array(self.communities[i+1]) - 1
+                    cj = np.array(self.communities[j+1]) - 1
+                    cond = np.ones((n,), dtype=bool)
+                    cond[ci] = False
+                    initial_cond = np.zeros((n,))
+                    #initialize probability density to local boltzman in cj
+                    initial_cond[cj] = pi[cj]/pi[cj].sum()
+                    mfpt[i][j] = -spla.solve(K[cond, :][:, cond],
+                                            initial_cond[cond]).sum()
+        return mfpt
+
+
+    def get_MFPTAB_PATHSAMPLE(self, A, B, temp, n):
+        """Run a single GT calculation using the READRATES keyword in PATHSAMPLE
+        to get the A<->B mean first passage time at specified temperatire."""
+
+        parse = ParsedPathsample(self.path/'pathdata')
+        files_to_modify = [self.path/'min.A', self.path/'min.B']
+        for f in files_to_modify:
+            if not f.exists():
+                print(f'File {f} does not exists')
+                raise FileNotFoundError 
+            os.system(f'mv {f} {f}.original')
+        communities = self.communities
+        #update min.A and min.B with nodes in A and B
+        parse.minA = np.array(communities[A+1]) - 1
+        parse.numInA = len(communities[A+1])
+        parse.minB = np.array(communities[B+1]) - 1
+        parse.numInB = len(communities[B+1])
+        parse.write_minA_minB(self.path/'min.A', self.path/'min.B')
+        parse.append_input('NGT', '0 T')
+        parse.append_input('TEMPERATURE', f'{temp}')
+        parse.append_input('READRATES', f'{n}')
+        parse.write_input(self.path/'pathdata')
+        #run PATHSAMPLE
+        outfile = open(self.path/f'out.{A+1}.{B+1}.T{temp}', 'w')
+        subprocess.run(f"{PATHSAMPLE}", stdout=outfile, cwd=self.path)
+        #parse output
+        parse.parse_output(outfile=self.path/f'out.{A+1}.{B+1}.T{temp}')
+        return parse.output['MFPTAB'], parse.output['MFPTBA']
+
+    def get_intercommunity_MFPTs_GT_PATHSAMPLE(self, temp):
+        """Use PATHSAMPLE to compute the MFPTs between communities."""
+
+        parse = ParsedPathsample(self.path/'pathdata')
+        files_to_modify = [self.path/'min.A', self.path/'min.B']
+        for f in files_to_modify:
+            if not f.exists():
+                print(f'File {f} does not exists')
+                raise FileNotFoundError 
+            os.system(f'mv {f} {f}.original')
+        communities = self.communities
+        N = len(communities)
+        MFPT = np.zeros((N,N))
+        for ci in range(N):
+            for cj in range(N):
+                if ci < cj:
+                    parse.minA = np.array(communities[ci+1]) - 1
+                    parse.numInA = len(communities[ci+1])
+                    parse.minB = np.array(communities[cj+1]) - 1
+                    parse.numInB = len(communities[cj+1])
+                    parse.write_minA_minB(self.path/'min.A', self.path/'min.B')
+                    #os.system(f'cat {self.path}/min.A')
+                    #os.system(f'cat {self.path}/min.B')
+                    parse.append_input('NGT', '0 T')
+                    parse.append_input('TEMPERATURE', f'{temp}')
+                    parse.write_input(self.path/'pathdata')
+                    #run PATHSAMPLE
+                    outfile = open(self.path/f'out.{ci+1}.{cj+1}.T{temp}', 'w')
+                    subprocess.run(f"{PATHSAMPLE}", stdout=outfile, cwd=self.path)
+                    #parse output
+                    parse.parse_output(outfile=self.path/f'out.{ci+1}.{cj+1}.T{temp}')
+                    MFPT[ci, cj] = parse.output['MFPTAB']
+                    MFPT[cj, ci] = parse.output['MFPTBA']
+
+        #restore original min.A and min.B files
+        for f in files_to_modify:
+            os.system(f'mv {f}.original {f}')
+
+        return MFPT
+
+    def get_intercommunity_weighted_MFPTs(self, pi, commpi, mfpt):
+        r"""Comppute the matrix :math:`\textbf{t}_{\rm C}` of appropriately weighted
+        inter-community MFPTs, as defined in Eq. (18) in Kannan et al. *J. Chem. Phys.*
+        (2020)."""
 
         N = len(self.communities)
         tJI = np.zeros((N,N))
@@ -594,18 +457,9 @@ class Analyze_KTN(object):
 
         return tJI
 
-    def get_approx_kells_cluster_passage_times(self, pi, commpi, mfpt):
-        """Compute an approximation to t_JI as defined in Eqn. 66 in Kells, Rosta,
-        Annibale (2019) in which we assume that all mfpt's tji from any state i
-        in I to any state j in J are the same. In this approximation, whose
-        accuracy depends on the degree of metastability, we can approximate
-        t_JI by a single mfpt between i* and j* where i* and j* are the local minima of I
-        and J respectively.
-        NOTE: problem with local min is that they may have very little
-        occupation probability, in which case it doesnt make sense to choose
-        it.
-        Other possibility: keep choosing (i,j) pairs and montecarlo sample them
-        and take an average or something?
+    def get_thetaIJ(self, pi, commpi, mfpt):
+        r"""Compute the matrix :math:`\theta` defined in Eq. (16) in Kannan et al.
+        *J. Chem. Phys.* (2020).
         """
 
         N = len(self.communities)
@@ -807,6 +661,152 @@ class Analyze_KTN(object):
         else:
             return commpi
 
+
+"""Functions to analyze KTNs without any community structure."""
+
+def read_ktn_info(self, suffix, log=False):
+    #read in Daniel's files stat_prob.dat and ts_weights.dat
+    logpi = np.loadtxt(self.path/f'stat_prob_{suffix}.dat')
+    pi = np.exp(logpi)
+    nnodes = len(pi)
+    assert(abs(1.0 - np.sum(pi)) < 1.E-10)
+    logk = np.loadtxt(self.path/f'ts_weights_{suffix}.dat', 'float')
+    k = np.exp(logk)
+    tsconns = np.loadtxt(self.path/f'ts_conns_{suffix}.dat', 'int')
+    Kmat = np.zeros((nnodes, nnodes))
+    for i in range(tsconns.shape[0]):
+        Kmat[tsconns[i,1]-1, tsconns[i,0]-1] = k[2*i]
+        Kmat[tsconns[i,0]-1, tsconns[i,1]-1] = k[2*i+1]
+    #set diagonals
+    for i in range(nnodes):
+        Kmat[i, i] = 0.0
+        Kmat[i, i] = -np.sum(Kmat[:, i])
+    #identify isolated minima (where row of Kmat = 0)
+    #TODO: identify unconnected minima
+    Kmat_nonzero_rows = np.where(~np.all(Kmat==0, axis=1))
+    Kmat_connected = Kmat[np.ix_(Kmat_nonzero_rows[0],
+                                    Kmat_nonzero_rows[0])]
+    pi = pi[Kmat_nonzero_rows]/np.sum(pi[Kmat_nonzero_rows])
+    logpi = np.log(pi)
+    assert(len(pi) == Kmat_connected.shape[0])
+    assert(Kmat_connected.shape[0] == Kmat_connected.shape[1])
+    assert(np.all(np.abs(Kmat_connected@pi)<1.E-10))
+
+    if log:
+        return logpi, Kmat_connected 
+    else:
+        return pi, Kmat_connected
+
+def calc_eigenvectors(K, k, which_eig='SM', norm=False):
+    # calculate k dominant eigenvectors and eigenvalues of sparse matrix
+    # using the implictly restarted Arnoldi method
+    evals, evecs = eigs(K, k, which=which_eig)
+    evecs = np.transpose(evecs)
+    evecs = np.array([evec for _,evec in sorted(zip(list(evals),list(evecs)),
+                                key=lambda pair: pair[0], reverse=True)],dtype=float)
+    evals = np.array(sorted(list(evals),reverse=True),dtype=float)
+    if norm:
+        row_sums = evecs.sum(axis=1)
+        evecs = evecs / row_sums[:, np.newaxis] 
+    return evals, evecs
+
+def construct_transition_matrix(K, tau_lag):
+    """ Return column-stochastic transition matrix T = expm(K*tau).
+    Columns sum to 1. """
+    T = expm(tau_lag*K)
+    for x in np.sum(T, axis=0):
+        #assert( abs(x - 1.0) < 1.0E-10) 
+        print(f'Transition matrix is not column-stochastic at' \
+                f'tau={tau_lag}')
+    return T
+
+def get_timescales(K, m, tau_lag):
+    """ Return characteristic timescales obtained from the m dominant 
+    eigenvalues of the transition matrix constructed from K at lag time
+    tau_lag."""
+    T = construct_transition_matrix(K, tau_lag)
+    evals, evecs = calc_eigenvectors(T, m, which_eig='LM')
+    char_times = np.zeros((np.shape(evals)[0]),dtype=float)
+    # note that we ignore the zero eigenvalue, associated with
+    # infinite time (stationary distribution)
+    for i, eigval in enumerate(evals[1:]):
+        char_times[i+1] = -tau_lag/np.log(eigval)
+    return char_times
+
+def calculate_spectral_error(m, Rs, labels):
+    """ Calculate spectral error, where m is the number of dominant
+    eigenvalues in both the reduced and original transition networks, as a
+    function of lag time. Plots the decay. """
+
+    tau_lags = np.logspace(-4, 4, 1000)
+    colors = sns.color_palette("BrBG", 5)
+    colors = [colors[0], colors[-1]]
+    fig, ax = plt.subplots()
+
+    for j,R in enumerate(Rs):
+        spectral_errors = np.zeros(tau_lags.shape)
+        for i, tau in enumerate(tau_lags):
+            T = construct_transition_matrix(R, tau)
+            Tevals, Tevecs = calc_eigenvectors(T, m+1, which_eig='LM')
+            # compare m+1 th eigenvalue (first fast eigenvalue) to slowest
+            # eigenmodde
+            spectral_errors[i] = Tevals[m]/Tevals[1]
+        ax.plot(tau_lags, spectral_errors, label=labels[j], color=colors[j])
+
+    plt.xlabel(r'$\tau$')
+    plt.ylabel(r'$\eta(\tau)$')
+    plt.yscale('log')
+    plt.legend()
+    fig.tight_layout()
+
+def check_detailed_balance(pi, K):
+    """ Check if network satisfies detailed balance condition, which is
+    thatthat :math:`k_{ij} \pi_j = k_{ji} \pi_i` for all :math:`i,j`.
+
+    Parameters
+    ----------
+    pi : list (nnodes,) or (ncomms,)
+        stationary probabilities
+    K : np.ndarray (nnodes, nnodes) or (ncomms, ncomms)
+        inter-minima rate constants in matrix form
+
+    """
+    for i in range(K.shape[0]):
+        for j in range(K.shape[1]):
+            if i < j:
+                left = K[i,j]*pi[j]
+                right = K[j,i]*pi[i]
+                diff = abs(left - right)
+                if (diff > 1.E-10):
+                    #print(f'Detailed balance not satisfied for i={i}, j={j}')
+                    return False
+    return True
+
+def read_communities(commdat):
+    """Read in a single column file called communities.dat where each line
+    is the community ID (zero-indexed) of the minima given by the line
+    number.
+    
+    Parameters
+    ----------
+    commdat : .dat file
+        single-column file containing community IDs of each minimum
+
+    Returns
+    -------
+    communities : dict
+        mapping from community ID (1-indexed) to minima ID (1-indexed)
+    """
+
+    communities = {}
+    with open(commdat, 'r') as f:
+        for minID, line in enumerate(f, 1):
+            groupID =  int(line) + 1
+            if groupID in communities:
+                communities[groupID].append(minID)
+            else:
+                communities[groupID] = [minID]
+    return communities
  
 """Functions that use the Analyze_KTN class to perform useful tasks."""
 

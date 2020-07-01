@@ -3,7 +3,7 @@ r"""
 Iteratively remove nodes from a Markov chain with graph transformation.
 
 Implements the core GT algorithm for eliminating nodes from a Markov chain
-in blocks, or one at a time. For use with the `graph_tran.lib.ktn_io` module, 
+in blocks, or one at a time. For use with the `graph_tran.ktn_io` module, 
 which reads the input files describing the original Markov chain.
 
 The graph transformation algorithm requires a branching probability matrix
