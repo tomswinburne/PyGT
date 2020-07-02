@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 r"""
-Calculate first passage time statistics with graph transformation.
-
+Calculate first passage time statistics with graph transformation
+-----------------------------------------------------------------
 Contains wrappers to `graph_tran.gt_tools` to calculate the mean first passage times
 and phenomenological rate constants between endpoint macrostates
 :math:`\mathcal{A}` and :math:`\mathcal{B}`.
+
+.. note::
+    
+    Install the `pathos` package to parallelize MFPT computations.
 
 """
 
@@ -24,49 +28,8 @@ import scipy.linalg as spla
 import pandas as pd
 from pathos.multiprocessing import ProcessingPool as Pool
 
-def read_communities(commdat, index_sel, screen=False):
-    """Read in a single column file called communities.dat where each line
-    is the community ID (zero-indexed) of the minima given by the line
-    number. Produces boolean arrays, one per community, selecting out the
-    nodes that belong to each community.
-
-    Parameters
-    ----------
-    commdat : .dat file
-        single-column file containing community IDs of each minimum
-    index_sel : (N,) boolean array
-        selects out the largest connected component of the network
-
-    Returns
-    -------
-    communities : dict
-        mapping from community ID (0-indexed) to a boolean array
-        of shape (len(index_sel), ) which selects out the states in that community.
-    """
-
-    communities = {}
-    with open(commdat, 'r') as f:
-        for minID, line in enumerate(f, 0):
-            groupID =  int(line) #number from 0 to N-1
-            if groupID in communities:
-                communities[groupID].append(minID)
-            else:
-                communities[groupID] = [minID]
-    
-    for ci in range(len(communities)):
-        #create a new index_selector to select out the minima in community ci
-        keep = np.zeros(index_sel.size,bool)
-        keep[communities[ci]] = True
-        #re-assign communities[ci] to be the index-selector for the maximally connected component of the graph
-        communities[ci] = keep[index_sel]
-        if screen:
-            print(f'Community {ci}: {keep.sum()}')
-        
-    return communities
-
-
 def compute_passage_stats(AS, BS, BF, Q, dopdf=True):
-    """Compute the A->B and B->A first passage time distribution, 
+    r"""Compute the A->B and B->A first passage time distribution, 
     first moment, and second moment using eigendecomposition.
 
     Parameters
@@ -85,9 +48,10 @@ def compute_passage_stats(AS, BS, BF, Q, dopdf=True):
     Returns
     -------
     tau : (4,) array-like
-        <tau>_BA, <tau^2>_BA, <tau>_AB, <tau^2>_AB
+        First and second moments of first passage time distribution for A->B and B->A [:math:`\mathcal{T}_{\mathcal{B}\mathcal{A}}`, :math:`\mathcal{V}_{\mathcal{B}\mathcal{A}}`, :math:`\mathcal{T}_{\mathcal{A}\mathcal{B}}`, :math:`\mathcal{V}_{\mathcal{A}\mathcal{B}}`]
     pt : (4, 400) array-like
-        time in multiples of <tau> and p(t)*<tau> for A->B and B->A
+        time in multiples of :math:`\left<t\right>` and first passage time distribution :math:`p(t)\left<t\right>` for A->B and B->A
+
     """
 
     #<tauBA>, <tau^2BA>, <tauAB>, <tau^2AB>
@@ -144,8 +108,8 @@ def compute_passage_stats(AS, BS, BF, Q, dopdf=True):
         return tau
 
 def compute_escape_stats(BS, BF, Q, tau_escape=None, dopdf=True):
-    """Compute escape time distribution and first and second moment
-    from the basin specified by BS using eigendecomposition.
+    r"""Compute escape time distribution and first and second moment
+    from the basin specified by `BS` using eigendecomposition.
 
     Parameters
     ----------
@@ -165,9 +129,9 @@ def compute_escape_stats(BS, BF, Q, tau_escape=None, dopdf=True):
     Returns
     -------
     tau : (2,) array-like
-        <tau>_B, <tau^2>_B
+        First and second moments of escape time distribution, [:math:`\left<t\right>_{\mathcal{B}}`, :math:`\left<t^2 \right>_{\mathcal{B}}`]
     pt : (2, 400) array-like
-        time in multiples of <tau_escape> and p(t)*<tau_escape> 
+        time in multiples of :math:`\left<t\right>` and escape time distribution :math:`p(t)\left<t\right>` 
 
     """
     #<tau>, <tau^2>
@@ -205,13 +169,15 @@ def get_intermicrostate_mfpts_GT(temp, data_path, pool_size=None, **kwargs):
         Effective temperature :math:`k_B T`.
     data_path : str or Path
         Path to data containing min.data, ts.data files.
+    pool_size : int
+        Number of cores over which to parallelize computation.
     
     Returns
     -------
     mfpt : np.ndarray[float64] (N,N)
         matrix of inter-microstate MFPTs between all pairs of nodes
     rho : np.ndarray[float64] (N,)
-        stationary distribution of Markov chain, :math:`\bm{\pi}`
+        stationary distribution of Markov chain
     
     """
 
@@ -250,7 +216,7 @@ def get_intermicrostate_mfpts_GT(temp, data_path, pool_size=None, **kwargs):
     return mfpt, rho
 
 def compute_MFPTAB(i, j, B, escape_rates=None, K=None, **kwargs):
-    r"""Compute the inter-microstate i<->j MFPT using GT. 
+    r"""Compute the inter-microstate :math:`i\leftrightarrow j` MFPT using GT. 
 
     Unlike ``compute_rates()`` function, which assumes there is at least 2 microstates
     in the absorbing macrostate, this function does not require knowledge of equilibrium
@@ -296,7 +262,7 @@ def compute_MFPTAB(i, j, B, escape_rates=None, K=None, **kwargs):
     #GT away all I states
     inter_region = ~(AS+BS)
     #left with a 2-state network
-    rB, rD, rQ, rN, retry = gt.gt_seq(N=N,rm_reg=inter_region,B=B,D=D,retK=True,trmb=1,**kwargs)
+    rB, rD, rQ, rN, retry = gt.gt_seq(N=N,rm_reg=inter_region,B=B,escape_rates=D,retK=True,trmb=1,**kwargs)
     rB = rB.todense()
     #escape time tau_F
     tau_Fs = 1./rD
@@ -312,7 +278,7 @@ def compute_MFPTAB(i, j, B, escape_rates=None, K=None, **kwargs):
 
 def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, BF=None, 
     MFPTonly=True, fullGT=False, pool_size=None, **kwargs):
-    r""" Calculate kSS, kNSS, kF, k*, kQSD, MFPT, and committors for the transition path
+    r""" Calculate kSS, kNSS, kF, k*, kQSD, and MFPT for the transition path
     ensemble AS --> BS from rate matrix K. K can be the matrix of an original
     Markov chain, or a partially graph-transformed Markov chain. 
     
@@ -362,12 +328,14 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
         normalized initial occupation probabilities in :math:`\mathcal{A}` set.
         Defaults to Boltzmann distribution if BF is specified.
     BF : array-like (N,)
-        Free energies of nodes, used to compute Boltzmann :math:`\pi_i =\rm{exp}^{-\beta F_i}`.
+        Free energies of nodes, used to compute Boltzmann :math:`\pi_i =\rm{exp}(-\beta F_i)/\sum_i \rm{exp}(-\beta F_i)`.
     MFPTonly : bool
         If True, only MFPTs are calculated (rate calculations ignored).
     fullGT : bool
         If True, all source nodes are isolated with GT to obtain the average
         MFPT.
+    pool_size : int
+        Number of cores over which to parallelize fullGT computation.
 
     Returns
     -------
@@ -405,7 +373,7 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
         initB = rhoB/rhoB.sum()
 
     #use GT to renormalize away all I states
-    rB, rD, rQ, rN, retry = gt.gt_seq(N=N,rm_reg=inter_region,B=B,D=D,retK=True,trmb=1,**kwargs)
+    rB, rD, rQ, rN, retry = gt.gt_seq(N=N,rm_reg=inter_region,B=B,escape_rates=D,retK=True,trmb=1,**kwargs)
 
     #first do A->B direction, then B->A
     #r_s is the non-absorbing region (A first, then B)
@@ -432,7 +400,7 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
                 aind = r_s.nonzero()[0][s]
                 #print(f'Disconnecting source node {aind}')
                 rm_reg[r_s.nonzero()[0][s]] = False
-                rfB, rfD, rfQ, rfN, retry = gt.gt_seq(N=rN,rm_reg=rm_reg,B=rB,D=rD,trmb=1,retK=True,Ndense=1)
+                rfB, rfD, rfQ, rfN, retry = gt.gt_seq(N=rN,rm_reg=rm_reg,B=rB,escape_rates=rD,trmb=1,retK=True,Ndense=1)
                 rfB = rfB.todense()
                 #escape time tau_F
                 tau_Fs = 1./rfD
@@ -480,7 +448,7 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
     return df     
     
     
-def rates_cycle(temps, data_path, suffix=None, **kwargs):
+def rates_cycle(temps, data_path, suffix='', **kwargs):
     """Compute rates and mean first passage times between A and B sets for a range of temperatures.
     
     Parameters
@@ -489,6 +457,8 @@ def rates_cycle(temps, data_path, suffix=None, **kwargs):
         list of temperatures at which to compute A<->B rates
     data_path : str or Path object
         path to data
+    suffix : str
+        suffix for output file name `ratecycle{suffix}.csv`
 
     Returns
     -------

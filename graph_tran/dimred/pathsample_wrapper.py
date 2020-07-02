@@ -1,14 +1,28 @@
-""" Script to iteratively run PATHSAMPLE and analyze its output.
+r""" 
+Wrapper to PATHSAMPLE implementation of graph transformation
+------------------------------------------------------------
+This module provides a Python interface for the graph transformation
+implementation in the `PATHSAMPLE program <http://www-wales.ch.cam.ac.uk/PATHSAMPLE/>`_
+available under the GNU General Public License. In addition to constructing
+a discrete-state network-representation of the energy landscape, the
+PATHSAMPLE program provides tools to compute rates and mean
+first passage times between product and reactant regions on the landscape.
 
-Workflow:
-- read in initial pathdata file, append / change parameters as desired
-- use a different class to run calculations and name output files
-- use parser class again to then extract output
-- so one ParsedPathsample object per calculation?
+The program also includes a REGROUPFREE routine, which groups together
+potential energy or free energy minimuma separated by low-lying barriers
+within a free energy regrouping threshold. This routine can be used to
+pre-process a network by lumping together rapidly interconverting states.
 
-TODO: potentially parse output separately?
+The implementation of graph transformation in Fortran is preferrable
+for large networks on the order of 100,000 nodes. For smaller networks, the python
+implementation available in `graph_tran.gt_tools` should suffice.
 
-Deepti Kannan 2019."""
+* Used the ``ParsedPathsample`` class to read in the initial `pathdata` file, which specifies the input keyworks
+  for the PATHSAMPLE program. Modify the input parameters as desired using this class.
+* Use the ``ScanPathsample`` class to run calculations with PATHSAMPLE and parse output files
+  to obtain the desired quantities (i.e. rate constants, mean first passage times, groups identified by REGROUPFREE, etc.)
+
+"""
 
 import re
 import numpy as np
@@ -19,6 +33,7 @@ from pathlib import Path
 import subprocess
 
 INDEX_OF_KEYWORD_VALUE = 15
+#path to bin for compiled programs
 PATHSAMPLE = "/home/dk588/svn/PATHSAMPLE/build/gfortran/PATHSAMPLE"
 disconnectionDPS = "/home/dk588/svn/DISCONNECT/source/disconnectionDPS"
 
@@ -32,7 +47,7 @@ def write_communities(self, communities, commdat):
     communities : dict
         mapping from minima ID (1-indexed) to community ID (1-indexed)
     commdat : .dat file name
-        file to which to write communitiy assignments (0-indexed)
+        full path to file to which to write communitiy assignments (0-indexed)
 
     """
     commdat = Path(commdat)
@@ -44,6 +59,29 @@ def write_communities(self, communities, commdat):
             f.write(f'{np.array(communities[min]) - 1}\n')
 
 class ParsedPathsample(object):
+    """ Class to parse input keywords and output files
+    utilized by the PATHSAMPLE program. To initialize a ``ParsedPathsample`` object,
+    supply the constructor with the `pathdata` argument, which should include a full path
+    to the pathdata file.
+
+    Attributes
+    ----------
+    path : Path object
+        path to directory containing all relevant input files, including `pathdata` file, which specifies input keywords.
+    input : dict
+        dictionary containing PATHSAMPLE keywords and their values
+    output : dict
+        dictionary mapping observables to their values parsed from PATHSAMPLE output files.
+    numInA : int
+        Number of minima in A.
+    numInB : int
+        Number of minima in B.
+    minA : list
+        IDs of minima in A set (0-indexed)
+    minB : list
+        IDs of minima in B set (0-indexed)
+
+    """
 
     def __init__(self, pathdata, outfile=None):
         self.output = {} #dictionary of output (i.e. temperature, rates)
@@ -61,10 +99,18 @@ class ParsedPathsample(object):
 
     def parse_minA_and_minB(self, minA, minB):
         """Read in the number of minima and the minima IDs in the A and B sets
-        from the min.A and min.B files. Note, minima IDs in these files
-        correspond to line numbers in min.data. However, in this class, we
-        subtract 1 from the IDs to correspond to indices in the python data
-        strustructure."""
+        from the min.A and min.B files and set the self.minA, self.numInA,
+        self.minB and self.numInB attributes. Note, minima IDs in these files
+        correspond to line numbers in min.data which are (1-indexed).
+
+        Parameters
+        ----------
+        minA : str or Path object
+            full path to min.A file
+        minB : str or Path object
+            full path to min.B file
+    
+        """
         Aids = []
         with open(minA) as f:
             for line in f:
@@ -100,7 +146,7 @@ class ParsedPathsample(object):
 
     def define_A_and_B(self, numInA, numInB, sorted=True, mindata=None):
         """Define an A and B set as a function of the number of minima in A
-        and B. """
+        and B based on their energies. """
         if sorted:
             #min.A and min.B are already sorted by energy
             #just change numInA and numInB
@@ -124,7 +170,7 @@ class ParsedPathsample(object):
 
     def write_minA_minB(self, minA, minB):
         """Write a min.A and min.B file based on minIDs
-        specified in self.minA and self.minB"""
+        specified in self.minA and self.minB."""
         with open(minA,'w') as f:
             f.write(str(self.numInA)+'\n') #first line is number of minima
             for min in self.minA:
@@ -136,8 +182,9 @@ class ParsedPathsample(object):
                 f.write(str(min+1)+'\n')
 
     def parse_output(self, outfile):
-        """Searches for output of various subroutines of pathsample,
-        including NGT and WAITPDF.
+        """Parses PATHSAMPLE output for key quantities printed out by the
+        NGT and WAITPDF subroutines, namely Temperature, kSS, kNSS, kF, and MFPTs
+        for the A->B and B->A directions. Stores quantities in self.output.
         """
         with open(outfile) as f:
             for line in f:
@@ -167,9 +214,8 @@ class ParsedPathsample(object):
                         break
 
     def parse_GT_intermediates(self, outfile):
-        """Returns a DataFrame of GT quantities, including branching
-        probabilities and curly T_Ab, after disconnection of sources.
-        TODO: debug, right now it does not work
+        """Returns a pandas DataFrame of GT quantities, including branching
+        probabilities and MFPTs from individual source nodes, after disconnection of sources.
         """
         raise NotImplementedError('This function has not been implemented yet.')
 
@@ -289,53 +335,192 @@ class ParsedPathsample(object):
         os.system(f"{disconnectionDPS}")
         os.system("evince tree.ps")
 
+    def parse_input(self, pathdatafile):
+        """Store keywords in `pathdata` file as a dictionary
+        mapping to values, which are read in as strings.
+        """
+        name_value_re = re.compile('([_A-Za-z0-9][_A-Za-z0-9]*)\s*(.*)\s*')
 
-    def calc_community_MFPTs(self, communities, temp):
-        """ Calculate a matrix of MFPTs between communities."""
+        with open(pathdatafile) as f:
+            for line in f:
+                if not line or line[0]=='!':
+                    continue
+                match = name_value_re.match(line)
+                if match is None:
+                    continue
+                name, value = match.groups()
+                self.input.update({name: value})
+
+    def write_input(self, pathdatafile):
+        """Writes out a valid pathdata file based on keywords
+        in self.input"""
+        with open(pathdatafile, 'w') as f:
+            #first 3 lines are garbage
+            #f.write('! PATHSAMPLE input file generated from\n')
+            #f.write('! ParsedPathsample class\n\n')
+            for name in self.input:
+                name_length = len(name)
+                #the value of the keyword begins on the 15th index of the line
+                #add the appropriate number of spaces before the value
+                numspaces = INDEX_OF_KEYWORD_VALUE - name_length
+                f.write(str(name).upper() + ' '*numspaces + str(self.input[name]) + '\n')
+
+    def append_input(self, name, value):
+        """Add a new keyword or update an existing keyword to the PATHSAMPLE input."""
+        self.input.update({name: value})
+
+    def comment_input(self, name):
+        """Delete a keyword from pathdata file."""
+        self.input.pop(name, None)
+
+
+class ScanPathsample(object):
+    """ Interface to run the REGROUPFREE, DUMPINFOMAP, NGT, and WAITPDF
+    subroutines of the PATHSAMPLE program. Uses the ``ParsedPathsample``
+    class to control input parameters and and parse output.
+    
+    Attributes
+    ----------
+    pathdatafile : str or Path object
+        full path to `pathdata` file, which stores input keywords for the PATHSAMPLE program.
+    parse : ParsedPathsample object
+        stores input and output of PATHSAMPLE runs.
+    path : Path object
+        full path to directory containing all input and output files.
+    suffix : str
+        suffix of `rates_{suffix}.csv` file. Defaults to ''
+    outbase : str
+        prefix for PATHSAMPLE output files. Defaults to 'out'
+
+    """
+
+
+    def __init__(self, pathdata, outbase=None, suffix=''):
+        self.pathdatafile = pathdata #base input file to modify
+        self.parse = ParsedPathsample(pathdata=pathdata)
+        self.path = Path(pathdata).parent.absolute()
+        self.suffix = suffix #suffix of rates_{suffix}.csv file output
+        self.outbase = outbase #prefix for pathsample output files
+        if outbase is None:
+            self.outbase = 'out'
+
+    def get_intermicrostate_mfpts_GT_PATHSAMPLE(temp, n=None):
+        """Use PATHSAMPLE to compute the matrix of inter-microstate MFPTs
+        between all pairs of the `n` nodes at the specified temperature `temp`.
+
+        Parameters
+        ----------
+        temp : float
+            Temperature at which to run GT calculations.
+        n : int
+            Number of nodes.
+        
+        Returns
+        -------
+        mfpt : np.ndarray[float64] (n,n)
+            Matrix of inter-minima MFPTs.
+
+        """
 
         files_to_modify = [self.path/'min.A', self.path/'min.B']
+        if n is None:
+            mindata = np.loadtxt(self.path/'min.data')
+            n = mindata.shape[0]
         for f in files_to_modify:
+            if not f.exists():
+                print(f'File {f} does not exists')
+                raise FileNotFoundError 
             os.system(f'mv {f} {f}.original')
-
-        N = len(communities)
-        MFPT = np.zeros((N,N))
-        for ci in range(N):
-            for cj in range(N):
-                if ci < cj:
-                    self.minA = np.array(communities[ci+1]) - 1
-                    self.numInA = len(communities[ci+1])
-                    self.minB = np.array(communities[cj+1]) - 1
-                    self.numInB = len(communities[cj+1])
-                    self.write_minA_minB(self.path/'min.A', self.path/'min.B')
-                    self.append_input('NGT', '0 T')
-                    self.append_input('TEMPERATURE', f'{temp}')
-                    self.write_input(self.path/'pathdata')
+        
+        parse = self.parse
+        parse.append_input('NGT', '0 T')
+        parse.comment_input('WAITPDF')
+        parse.append_input('TEMPERATURE', f'{temp}')
+        parse.write_input(self.path/'pathdata')
+        mfpt = np.zeros((n,n))
+        for i in range(n):
+            for j in range(n):
+                if i < j:
+                    parse.minA = [i] 
+                    parse.numInA = 1
+                    parse.minB = [j]
+                    parse.numInB = 1
+                    parse.write_minA_minB(self.path/'min.A', self.path/'min.B')
                     #run PATHSAMPLE
-                    outfile = open(self.path/f'out.{ci+1}.{cj+1}.T{temp}','w')
-                    subprocess.run(f"{PATHSAMPLE}", stdout=outfile,
-                                   cwd=self.path)
+                    outfile_name = self.path/f'out.{i+1}.{j+1}.T{temp}'
+                    outfile = open(outfile_name, 'w')
+                    subprocess.run(f"{PATHSAMPLE}", stderr=subprocess.STDOUT, stdout=outfile, cwd=self.path)
                     #parse output
-                    self.parse_output(outfile=self.path/f'out.{ci+1}.{cj+1}.T{temp}')
-                    MFPT[ci, cj] = 1./self.output['kAB']
-                    MFPT[cj, ci] = 1./self.output['kBA']
+                    parse.parse_output(outfile=self.path/f'out.{i+1}.{j+1}.T{temp}')
+                    mfpt[i, j] = parse.output['MFPTAB']
+                    mfpt[j, i] = parse.output['MFPTBA']
+                    Path(outfile_name).unlink()
+                    print(f'Calculated MFPT for states ({i}, {j})')
 
         #restore original min.A and min.B files
         for f in files_to_modify:
             os.system(f'mv {f}.original {f}')
 
-        return MFPT
+        return mfpt
+
+    def get_MFPTAB_PATHSAMPLE(self, A, B, communities, temp, n):
+        """Run a single GT calculation using the READRATES keyword in PATHSAMPLE
+        to get the A<->B mean first passage time at specified temperatire.
+        
+        Parameters
+        ----------
+        A : int
+            community ID (0-indexed) of A set.
+        B : int
+            community ID (0-indexed) of B set.
+        communities : dict
+            dictionary mapping community IDs (1-indexed) to node IDs (1-indexed).
+        temp : float
+            temperature at which to run PATHSAMPLE calculations.
+        n : int
+            number of nodes, needed for READRATES keyword.
+
+        Returns
+        -------
+        MFPTAB : float
+            Mean first passage time A <- B
+        MFPTBA : float
+            Mean first passage time B <- A
+
+        """
+
+        parse = self.parse
+        files_to_modify = [self.path/'min.A', self.path/'min.B']
+        for f in files_to_modify:
+            if not f.exists():
+                print(f'File {f} does not exists')
+                raise FileNotFoundError 
+            os.system(f'mv {f} {f}.original')
+        #update min.A and min.B with nodes in A and B
+        parse.minA = np.array(communities[A+1]) - 1
+        parse.numInA = len(communities[A+1])
+        parse.minB = np.array(communities[B+1]) - 1
+        parse.numInB = len(communities[B+1])
+        parse.write_minA_minB(self.path/'min.A', self.path/'min.B')
+        parse.append_input('NGT', '0 T')
+        parse.append_input('TEMPERATURE', f'{temp}')
+        parse.append_input('READRATES', f'{n}')
+        parse.write_input(self.path/'pathdata')
+        #run PATHSAMPLE
+        outfile = open(self.path/f'out.{A+1}.{B+1}.T{temp}', 'w')
+        subprocess.run(f"{PATHSAMPLE}", stdout=outfile, cwd=self.path)
+        #parse output
+        parse.parse_output(outfile=self.path/f'out.{A+1}.{B+1}.T{temp}')
+        return parse.output['MFPTAB'], parse.output['MFPTBA']
 
 
-    def calc_inter_community_rates(self, C1, C2, temp):
-        """Calculate k_{C1<-C2} using NGT. Here, C1 and C2 are community IDs
+    def calc_inter_community_rates_GT(self, C1, C2, communities):
+        """Calculate k_{C1<-C2} using GT. Here, C1 and C2 are community IDs
         (i.e. groups identified in DUMPGROUPS file from REGROUPFREE). This
         function isolates the minima in C1 union C2 and the transition states
         that connect them and feeds this subnetwork into PATHSAMPLE, using the
         NGT keyword to calculate inter-community rates."""
 
-        #extract community assignments from REGROUPFREE
-        communities = self.parse_dumpgroups(self.path/f'minima_groups.{temp:.10f}',
-                                    grouptomin=True)
         #minima to isolate
         mintoisolate = communities[C1] + communities[C2]
         #parse min.data and write a new min.data file with isolated minima
@@ -353,7 +538,7 @@ class ParsedPathsample(object):
                         #so will have to re-number min.A,min.B,ts.data
                         newmindata.write(line)
                         j += 1
-
+                    
         #exclude transition states in ts.data that connect minima not in C1/2
         ogtsdata = pd.read_csv(self.path/'ts.data', sep='\s+', header=None,
                                names=['nrg','fvibts','pointgroup','min1','min2','itx','ity','itz'])
@@ -391,13 +576,11 @@ class ParsedPathsample(object):
         minInC2 = []
         for j in communities[C2]:
             minInC2.append(newmin[j] - 1)
-        self.minA = minInC1
-        self.minB = minInC2
-        self.numInA = numInC1
-        self.numInB = numInC2
-        self.write_minA_minB(self.path/f'min.A.{C1}', self.path/f'min.B.{C2}')
-        self.append_input('NGT', '0 T')
-        self.write_input(self.path/'pathdata')
+        self.parse.minA = minInC1
+        self.parse.minB = minInC2
+        self.parse.numInA = numInC1
+        self.parse.numInB = numInC2
+        self.parse.write_minA_minB(self.path/f'min.A.{C1}', self.path/f'min.B.{C2}')
         #run PATHSAMPLE
         files_to_modify = [self.path/'min.A', self.path/'min.B',
                            self.path/'min.data', self.path/'ts.data']
@@ -410,94 +593,74 @@ class ParsedPathsample(object):
         outfile = open(self.path/f'out.{C1}.{C2}.T{temp}','w')
         subprocess.run(f"{PATHSAMPLE}", stdout=outfile, cwd=self.path)
         #parse output
-        self.parse_output(outfile=self.path/f'out.{C1}.{C2}.T{temp}')
+        self.parse.parse_output(outfile=self.path/f'out.{C1}.{C2}.T{temp}')
         for f in files_to_modify:
             os.system(f'mv {f}.old {f}')
         #return rates k(C1<-C2), k(C2<-C1)
-        return self.output['kAB'], self.output['kBA']
+        return self.parse.output['kAB'], self.parse.output['kBA']
 
-    def construct_coarse_rate_matrix(self, temp):
-        """ Calculate inter-community rate constants using communities defined
-        by minima_groups file at specified temperature. Returns a NxN rate
-        matrimatrix where N is the number of communities."""
+    def get_intercommunity_MFPTs_GT_PATHSAMPLE(self, temp, communities):
+        """Use PATHSAMPLE to compute the matrix of true MFPTs between communities.
 
-        #extract community assignments from REGROUPFREE
-        communities = self.parse_dumpgroups(self.path/f'minima_groups.{temp:.10f}',
-                                    grouptomin=True)
-        N = len(communities.keys())
-        print(N)
-        R = np.zeros((N,N))
-        for i in range(N):
-            for j in range(N):
-                if i < j:
-                    try:
-                        Rij, Rji = self.calc_inter_community_rates(i+1, j+1, temp)
-                    except:
-                        print(f'PATHSAMPLE errored out for communities {i} and {j}')
-                        continue
-                    R[i, j] = Rij
-                    R[j, i] = Rji
-        for i in range(N):
-            R[i, i] = -np.sum(R[:, i])
-        return R
+        Parameters
+        ----------
+        temp : float
+            Temperature at which to calculate inter-community MFPTs.
+        communities: dict
+            dictionary mapping community IDs (1-indexed) to node IDs (1-indexed).
 
-    def parse_input(self, pathdata):
-        """Store keywords in pathdata as a dictionary.
-        Note: stores all values as strings
+        Returns
+        -------
+        MFPT : np.ndarray[float64] (ncomms, ncomms)
+            matrix of inter-community MFPTs computed with PATHSAMPLE
+
         """
-        name_value_re = re.compile('([_A-Za-z0-9][_A-Za-z0-9]*)\s*(.*)\s*')
 
-        with open(pathdata) as f:
-            for line in f:
-                if not line or line[0]=='!':
-                    continue
-                match = name_value_re.match(line)
-                if match is None:
-                    continue
-                name, value = match.groups()
-                self.input.update({name: value})
+        parse = self.parse
+        files_to_modify = [self.path/'min.A', self.path/'min.B']
+        for f in files_to_modify:
+            if not f.exists():
+                print(f'File {f} does not exists')
+                raise FileNotFoundError 
+            os.system(f'mv {f} {f}.original')
+        N = len(communities)
+        MFPT = np.zeros((N,N))
+        for ci in range(N):
+            for cj in range(N):
+                if ci < cj:
+                    parse.minA = np.array(communities[ci+1]) - 1
+                    parse.numInA = len(communities[ci+1])
+                    parse.minB = np.array(communities[cj+1]) - 1
+                    parse.numInB = len(communities[cj+1])
+                    parse.write_minA_minB(self.path/'min.A', self.path/'min.B')
+                    #os.system(f'cat {self.path}/min.A')
+                    #os.system(f'cat {self.path}/min.B')
+                    parse.append_input('NGT', '0 T')
+                    parse.append_input('TEMPERATURE', f'{temp}')
+                    parse.write_input(self.path/'pathdata')
+                    #run PATHSAMPLE
+                    outfile = open(self.path/f'out.{ci+1}.{cj+1}.T{temp}', 'w')
+                    subprocess.run(f"{PATHSAMPLE}", stdout=outfile, cwd=self.path)
+                    #parse output
+                    parse.parse_output(outfile=self.path/f'out.{ci+1}.{cj+1}.T{temp}')
+                    MFPT[ci, cj] = parse.output['MFPTAB']
+                    MFPT[cj, ci] = parse.output['MFPTBA']
 
-    def write_input(self, pathdatafile):
-        """Writes out a valid pathdata file based on keywords
-        in self.input"""
-        with open(pathdatafile, 'w') as f:
-            #first 3 lines are garbage
-            #f.write('! PATHSAMPLE input file generated from\n')
-            #f.write('! ParsedPathsample class\n\n')
-            for name in self.input:
-                name_length = len(name)
-                #the value of the keyword begins on the 15th index of the line
-                #add the appropriate number of spaces before the value
-                numspaces = INDEX_OF_KEYWORD_VALUE - name_length
-                f.write(str(name).upper() + ' '*numspaces + str(self.input[name]) + '\n')
+        #restore original min.A and min.B files
+        for f in files_to_modify:
+            os.system(f'mv {f}.original {f}')
 
-    def append_input(self, name, value):
-        """Add a keywrod."""
-        self.input.update({name: value})
-
-    def comment_input(self, name):
-        """Delete a keyword from pathdata file."""
-        self.input.pop(name, None)
-
-class ScanPathsample(object):
-
-    def __init__(self, pathdata, outbase=None, suffix=''):
-        self.pathdatafile = pathdata #base input file to modify
-        self.parse = ParsedPathsample(pathdata=pathdata)
-        self.path = Path(pathdata).parent.absolute()
-        self.suffix = suffix #suffix of rates_{suffix}.csv file output
-        self.outbase = 'out' #prefix for pathsample output files
-        if outbase is not None:
-            self.outbase = outbase
+        return MFPT
 
     def dump_rates_full_network(self, temp=None):
-        """ Dump rate matrix K_ij from full network as well as stationary
-        probabilities p_ij using DUMP_INFOMAP keyword.
+        """ Dump rate matrix and stationary probabilities calculated in the
+        PATHSAMPLE setup using the DUMP_INFOMAP keyword. Writes out `ts_conns.dat`,
+        `ts_weights.dat`, and `stat_prob.dat` files.
 
         Note
         ----
-        Make sure that any existing `stat_prob.dat` and `ts_weights.dat` files
-        are deleted from the self.path directory.
+        Make sure that any existing `stat_prob.dat`, `ts_conns.dat`, and `ts_weights.dat` files
+        are deleted from the `self.path` directory.
         """
         files_to_write = [self.path/'ts_weights.dat',
                           self.path/'stat_prob.dat']
@@ -527,11 +690,11 @@ class ScanPathsample(object):
             os.system(f'mv {f} {self.path}/{f.stem}_T{temp:.2f}.dat')
 
     def dump_rates_from_local_equilibrium_approx(self, temp):
-        """ Dump out the rates and stationary probabilities of a coarse-grained
-        network resulting from the REGROUPFREE routine. Should write out a
-        ts_weights.dat and stat_prob.dat file (consistent with Daniel's
-        formats).
-        TODO: debug DUMPINFOMAP keyword."""
+        """ Dump rate matrix and stationary probabilities of the coarse-grained
+        network resulting from the REGROUPFREE routine run at temperature `temp`. 
+        Writes out `ts_conns.dat`, `ts_weights.dat`, and `stat_prob.dat` files 
+        representing the regrouped network.
+        """
 
         files_to_write = [self.path/'ts_weights.dat',
                           self.path/'stat_prob.dat']
@@ -568,7 +731,23 @@ class ScanPathsample(object):
             os.system(f"mv {f}.original {f}")
 
     def run_NGT_regrouped(self, Gthresh, temp):
-        """After each regrouping, calculate kNGT on regrouped minima."""
+        """After running REGROUPFREE at threshold `Gthresh` and temperature `temp`, 
+        calculate rates using NGT on regrouped minima.
+        
+        Parameters
+        ----------
+        Gthresh : float
+            Free energy regrouping threshold used by REGROUPFREE.
+        temp : float
+            Temperature.
+
+        Returns
+        -------
+        rates : dict
+            dictionary of NGT output quantities, including MFPT, kF, kSS, and kNSS 
+            for the A<-B and B<-A directions.
+
+        """
         #Rename regrouped files to min.A and min.B to pass as input to PATHSAMPLE
         files_to_modify = [self.path/'min.A', self.path/'min.B',
                            self.path/'min.data', self.path/'ts.data']
@@ -599,7 +778,8 @@ class ScanPathsample(object):
         return rates
 
     def run_NGT_exact(self, temp):
-        #compare to exact kNSS calculation without free energy regrouping
+        """Run a single GT calculation using the PATHSAMPLE program 
+        at the specified temperature `temp` with inputs specified by the self.parse class."""
         self.parse.comment_input('REGROUPFREE')
         self.parse.comment_input('DUMPGROUPS')
         self.parse.append_input('NGT', '0 T')
@@ -620,8 +800,25 @@ class ScanPathsample(object):
         return rates
 
     def run_regroup(self, temp, value, NGTpostregroup=False):
-        """Run REGROUPFREE once at a threshold given by value
-        and a temperature given by temp."""
+        """Run REGROUPFREE once at a threshold given by `value`
+        and a temperature given by `temp` 
+        
+        Parameters
+        ----------
+        temp : float
+            Temperature.
+        value : float
+            Free energy regrouping threshold for REGROUPFREE.
+        NGTpostregroup : bool
+            If True, a single GT calculation is run on the regrouped network.
+            Defaults to False.
+
+        Returns
+        -------
+        df : pandas DataFrame
+            single row with columns temp, Gthresh, and rates computed on regrouped network
+
+        """
 
         df = pd.DataFrame()
         #update input
@@ -689,11 +886,23 @@ class ScanPathsample(object):
         print(f"Computed rate constants for regrouped minima with threshold {value}")
         return df
 
-    def scan_regroup(self, name, values, temp, NGTpostregroup=False):
-        """Re-run PATHSAMPLE calculations for different `values` of the
-        REGROUPFREE threshold. Extract output defined by outputkey and run NGT
-        on the regrouped minima to get the SS/NSS rate constants."""
-        corrected_name = str(name).upper()
+    def scan_regroup(self, values, temp, NGTpostregroup=False):
+        """ Run the REGROUPFREE routine for a range of regrouping thresholds.
+        Calculate A<->B rates on regrouped networks and original network and
+        save to a csv file.
+
+        Parameters
+        ----------
+        values : array-like
+            Free energy regrouping thresholds.
+        temp : float
+            Temperature.
+        NGTpostregroup : bool
+            If True, a single GT calculation is run on each regrouped network.
+            Defaults to False.
+
+        """
+        
         csv = Path(f'csvs/rates_{self.suffix}.csv')
         dfs = []
         for value in values:
@@ -710,9 +919,12 @@ class ScanPathsample(object):
         #write updated file to csv
         bigdf.to_csv(csv, index=False)
 
-    def scan_temp(self, name, values):
-        """Re-run PATHSAMPLE at different temperatures specified by values and
-        extract kNSSAB and kNSSBA from the NGT keyword output."""
+    def scan_temp(self, values, name='TEMPERATURE'):
+        """Run PATHSAMPLE over a range of temperatures specified by `values` and
+        extract rates from the NGT keyword output which are written to a csv file. 
+        This function can also be used to scan any other single keyword by specifying
+        the `name` and a range of values.
+        """
         corrected_name = str(name).upper()
         csv = Path(f'rates_{self.suffix}.csv')
         dfs = []
@@ -758,7 +970,7 @@ class ScanPathsample(object):
 useful tasks. """
 
 def scan_product_states(numinAs, numinBs, temps):
-    """Calculate kNSS using NGT for various definitions of A and
+    """Calculate rates using NGT for various definitions of A and
     B sets."""
     if len(numinAs) != len(numinBs):
         raise ValueError('numinAs and numinBs must have the same shape')
@@ -779,7 +991,7 @@ def scan_product_states(numinAs, numinBs, temps):
         print(f'Num in A: {numinAs[i]}, Num in B: {numinBs[i]}')
 
 def scan_Gthresh_and_temp(temps, nrgthreshs):
-    """ Calculate rates at different free energy thresholds for regrouping and
+    """ Calculate rates at different free energy regrouping thresholds and
     at different temperatures. """
 
     suffix = 'Gthresh_temp_scan3'
@@ -807,7 +1019,17 @@ def scan_Gthresh_and_temp(temps, nrgthreshs):
     olddf.to_csv('csvs/rates_Gthresh_temp_scan4.csv')
 
 def dump_ktn_info_scan(path, temps, nrgthreshs=None):
-    """Dumpt all .dat files based on temp/Gthresh scan."""
+    """Dump `stat_prob.dat`, `ts_conns.dat`, and `ts_weights.dat` files for each
+    temperature in `temps`, and one `communites.dat` file for each (temperature, Gthresh) pair.
+    
+    Parameters
+    ----------
+    temps : array-like
+        Temperatures at which to dump rate matrix and stationary probabilities with DUMPINFO keyword.
+    nrgthreshs: array-like
+        Free energy regrouping thresholds used for previous runs of REGROUPFREE. Defaults to None.
+
+    """
     scan = ScanPathsample(Path(path)/'pathdata')
     for temp in temps:
         scan.dump_rates_full_network(temp)
@@ -817,4 +1039,6 @@ def dump_ktn_info_scan(path, temps, nrgthreshs=None):
             for thresh in nrgthreshs:
                 communities = scan.parse.parse_dumpgroups(scan.path/f'G{thresh:.1f}/minima_groups.{temp:.10f}.G{thresh:.1f}')
                 write_communities(communities, scan.path/f'communities_G{thresh:.2f}_T{temp:.2f}.dat')
+
+
 

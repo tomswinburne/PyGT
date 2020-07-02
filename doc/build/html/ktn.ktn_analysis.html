@@ -158,27 +158,15 @@
             
   <div class="section" id="module-graph_tran.ktn.ktn_analysis">
 <span id="graph-tran-ktn-ktn-analysis"></span><h1>graph_tran.ktn.ktn_analysis<a class="headerlink" href="#module-graph_tran.ktn.ktn_analysis" title="Permalink to this headline">¶</a></h1>
+<p>Dimensionality Reduction of Markov chains</p>
 <p>This module provides functions to analyze and estimate coarse-grained continuous-time
-Markov chains given a partiion of the <span class="math notranslate nohighlight">\(V\)</span> nodes into <span class="math notranslate nohighlight">\(N&lt;V\)</span> communities.
+Markov chains given a partiioning <span class="math notranslate nohighlight">\(\mathcal{C} = \{I, J, ...\}\)</span> of the <span class="math notranslate nohighlight">\(V\)</span> nodes into <span class="math notranslate nohighlight">\(N&lt;V\)</span> communities.
 Various formulations for the inter-community rates are implemented, including the local
 equilibrium approximation, Hummer-Szabo relation, and other expressions.</p>
-<p>The module is
-designed to interface with both the Python and Fortran implementations of the GT algorithm.</p>
-<p>Deepti Kannan 2020</p>
 <dl class="class">
 <dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN">
-<em class="property">class </em><code class="descclassname">graph_tran.ktn.ktn_analysis.</code><code class="descname">Analyze_KTN</code><span class="sig-paren">(</span><em>path</em>, <em>communities=None</em>, <em>commdata=None</em>, <em>temp=None</em>, <em>thresh=None</em>, <em>pathsample=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">graph_tran.ktn.ktn_analysis.</code><code class="descname">Analyze_KTN</code><span class="sig-paren">(</span><em>path</em>, <em>communities=None</em>, <em>commdata=None</em>, <em>temp=None</em>, <em>thresh=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN" title="Permalink to this definition">¶</a></dt>
 <dd><p>Analyze a KTN with a specified community structure.</p>
-<dl class="method">
-<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.calc_inter_community_rates_NGT">
-<code class="descname">calc_inter_community_rates_NGT</code><span class="sig-paren">(</span><em>C1</em>, <em>C2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.calc_inter_community_rates_NGT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.calc_inter_community_rates_NGT" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate k_{C1&lt;-C2} using NGT. Here, C1 and C2 are community IDs
-(i.e. groups identified in DUMPGROUPS file from REGROUPFREE). This
-function isolates the minima in C1 union C2 and the transition states
-that connect them and feeds this subnetwork into PATHSAMPLE, using the
-NGT keyword to calculate inter-community rates.</p>
-</dd></dl>
-
 <dl class="method">
 <dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.calculate_eigenfunction_error">
 <code class="descname">calculate_eigenfunction_error</code><span class="sig-paren">(</span><em>m</em>, <em>K</em>, <em>R</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.calculate_eigenfunction_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.calculate_eigenfunction_error" title="Permalink to this definition">¶</a></dt>
@@ -189,10 +177,18 @@ TODO: test on small system for which we are confident in eigenvectors.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_matrix_Hummer_Szabo">
-<code class="descname">construct_coarse_matrix_Hummer_Szabo</code><span class="sig-paren">(</span><em>temp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.construct_coarse_matrix_Hummer_Szabo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_matrix_Hummer_Szabo" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate the coarse-grained rate matrix using the Hummer-Szabo
-relation, aka eqn. (12) in Hummer &amp; Szabo (2015) J.Phys.Chem.B.</p>
+<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_Hummer_Szabo">
+<code class="descname">construct_coarse_rate_matrix_Hummer_Szabo</code><span class="sig-paren">(</span><em>temp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.construct_coarse_rate_matrix_Hummer_Szabo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_Hummer_Szabo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the optimal coarse-grained rate matrix using the Hummer-Szabo
+relation, aka Eqn. (12) in Hummer &amp; Szabo <em>J. Phys. Chem. B.</em> (2015).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_KKRA">
+<code class="descname">construct_coarse_rate_matrix_KKRA</code><span class="sig-paren">(</span><em>temp</em>, <em>GT=True</em>, <em>mfpt=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.construct_coarse_rate_matrix_KKRA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_KKRA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate optimal coarse-grained rate matrix using Eqn. (79)
+of Kells et al. <em>J. Chem. Phys.</em> (2020), aka the KKRA expression
+in Eqn. (10) of Kannan et al. <em>J. Chem. Phys.</em> (2020).</p>
 </dd></dl>
 
 <dl class="method">
@@ -203,69 +199,11 @@ equilibrium approximation (LEA).</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_NGT">
-<code class="descname">construct_coarse_rate_matrix_NGT</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.construct_coarse_rate_matrix_NGT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_NGT" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate inter-community rate constants using communities defined
-by minima_groups file at specified temperature. Returns a NxN rate
-matrimatrix where N is the number of communities.</p>
-</dd></dl>
-
-<dl class="method">
 <dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_from_MFPTs">
-<code class="descname">construct_coarse_rate_matrix_from_MFPTs</code><span class="sig-paren">(</span><em>temp</em>, <em>GT=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.construct_coarse_rate_matrix_from_MFPTs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_from_MFPTs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate a rate matrix using  MFPTs between communities.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_AB">
-<code class="descname">get_MFPT_AB</code><span class="sig-paren">(</span><em>A</em>, <em>B</em>, <em>temp</em>, <em>n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.get_MFPT_AB"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_AB" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run a single GT calculation using the READRATES keyword in PATHSAMPLE
-to get the A&lt;-&gt;B mean first passage time at specified temperatire.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_between_communities">
-<code class="descname">get_MFPT_between_communities</code><span class="sig-paren">(</span><em>K</em>, <em>pi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.get_MFPT_between_communities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_between_communities" title="Permalink to this definition">¶</a></dt>
-<dd><p>Use Tom’s linear solver method to extract MFPTs between communities
-using a rate matrix K. Equivalent to Eqn. (14) in Swinbourne &amp; Wales
-2020.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_between_communities_GT">
-<code class="descname">get_MFPT_between_communities_GT</code><span class="sig-paren">(</span><em>temp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.get_MFPT_between_communities_GT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_between_communities_GT" title="Permalink to this definition">¶</a></dt>
-<dd><p>Use PATHSAMPLE to compute MFPTs between communities
-using a rate matrix K.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_between_states_GT">
-<code class="descname">get_MFPT_between_states_GT</code><span class="sig-paren">(</span><em>temp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.get_MFPT_between_states_GT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_between_states_GT" title="Permalink to this definition">¶</a></dt>
-<dd><p>Use PATHSAMPLE to compute MFPTs between states
-using a rate matrix K.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_from_Kmat">
-<code class="descname">get_MFPT_from_Kmat</code><span class="sig-paren">(</span><em>K</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.get_MFPT_from_Kmat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_from_Kmat" title="Permalink to this definition">¶</a></dt>
-<dd><p>Use Tom’s linear solver method to extract MFPTs from a rate matrix
-K. Equivalent to Eqn. (14) in Swinburne &amp; Wales (2020).</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.get_approx_kells_cluster_passage_times">
-<code class="descname">get_approx_kells_cluster_passage_times</code><span class="sig-paren">(</span><em>pi</em>, <em>commpi</em>, <em>mfpt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.get_approx_kells_cluster_passage_times"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_approx_kells_cluster_passage_times" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute an approximation to t_JI as defined in Eqn. 66 in Kells, Rosta,
-Annibale (2019) in which we assume that all mfpt’s tji from any state i
-in I to any state j in J are the same. In this approximation, whose
-accuracy depends on the degree of metastability, we can approximate
-t_JI by a single mfpt between i* and j* where i* and j* are the local minima of I
-and J respectively.
-NOTE: problem with local min is that they may have very little
-occupation probability, in which case it doesnt make sense to choose
-it.
-Other possibility: keep choosing (i,j) pairs and montecarlo sample them
-and take an average or something?</p>
+<code class="descname">construct_coarse_rate_matrix_from_MFPTs</code><span class="sig-paren">(</span><em>temp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.construct_coarse_rate_matrix_from_MFPTs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_from_MFPTs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate a rate matrix using  MFPTs between communities.
+Note that the true-intercommunity MFPTs cannot be used to construct
+a reduced Markov chain that satisfies detailed balance.</p>
 </dd></dl>
 
 <dl class="method">
@@ -292,15 +230,54 @@ thethe stationary probabilities of the nodes in each community.</p>
 <dl class="method">
 <dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.get_free_energies_from_rates">
 <code class="descname">get_free_energies_from_rates</code><span class="sig-paren">(</span><em>R</em>, <em>thresh</em>, <em>temp</em>, <em>kB=1.0</em>, <em>planck=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.get_free_energies_from_rates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_free_energies_from_rates" title="Permalink to this definition">¶</a></dt>
-<dd><p>Estimate free energies of all super states and transition states
-between super states from an arbitrary rate matrix R.</p>
+<dd><p>Estimate free energies of all macrostates and transition states
+between macrostates from an arbitrary rate matrix R. Write out a <cite>min.data</cite>
+and <cite>ts.data</cite> file for coarse-grained network.</p>
+<p>TODO: Get largest connected component of coarse-grained rate matrix.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">It is better to write the coarse-grained matrix to a <cite>rate_matrix.dat</cite>
+file specifying all of the entries of the matrix in dense format, and then
+use this file as input to PATHSAMPLE as opposed to attepting to write out <cite>min.data</cite>
+or <cite>ts.data</cite> files representing the coarse-grained network.</p>
+</div>
 </dd></dl>
 
 <dl class="method">
-<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.get_kells_cluster_passage_times">
-<code class="descname">get_kells_cluster_passage_times</code><span class="sig-paren">(</span><em>pi</em>, <em>commpi</em>, <em>mfpt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.get_kells_cluster_passage_times"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_kells_cluster_passage_times" title="Permalink to this definition">¶</a></dt>
-<dd><p>Comppute the t_JI as defined in Eqn. 66 in Kells, Rosta,
-Annibale (2019).</p>
+<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.get_intercommunity_MFPTs_linear_solve">
+<code class="descname">get_intercommunity_MFPTs_linear_solve</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.get_intercommunity_MFPTs_linear_solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_intercommunity_MFPTs_linear_solve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the true MFPTs between communities by inverting the non-absorbing
+rate matrix. Equivalent to Eqn. (14) in Swinbourne &amp; Wales <em>JCTC</em> (2020).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.get_intercommunity_weighted_MFPTs">
+<code class="descname">get_intercommunity_weighted_MFPTs</code><span class="sig-paren">(</span><em>pi</em>, <em>commpi</em>, <em>mfpt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.get_intercommunity_weighted_MFPTs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_intercommunity_weighted_MFPTs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Comppute the matrix <span class="math notranslate nohighlight">\(\textbf{t}_{\rm C}\)</span> of appropriately weighted
+inter-community MFPTs, as defined in Eq. (18) in Kannan et al. <em>J. Chem. Phys.</em>
+(2020).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.get_intermicrostate_mfpts_fundamental_matrix">
+<code class="descname">get_intermicrostate_mfpts_fundamental_matrix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.get_intermicrostate_mfpts_fundamental_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_intermicrostate_mfpts_fundamental_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the matrix of inter-microstate MFPTs between all pairs of nodes
+using Eq. (6) of Kannan et al. <em>J. Chem. Phys.</em> (2020).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.get_intermicrostate_mfpts_linear_solve">
+<code class="descname">get_intermicrostate_mfpts_linear_solve</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.get_intermicrostate_mfpts_linear_solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_intermicrostate_mfpts_linear_solve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the matrix of inter-microstate MFPTs between all pairs of nodes
+by solving a system of linear equations given by Eq.(8) of
+Kannan et al. <em>J. Chem. Phys.</em> (2020).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.get_thetaIJ">
+<code class="descname">get_thetaIJ</code><span class="sig-paren">(</span><em>pi</em>, <em>commpi</em>, <em>mfpt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.get_thetaIJ"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_thetaIJ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the matrix <span class="math notranslate nohighlight">\(\theta\)</span> defined in Eq. (16) in Kannan et al.
+<em>J. Chem. Phys.</em> (2020).</p>
 </dd></dl>
 
 <dl class="method">
@@ -329,40 +306,13 @@ coarse-grained rate matrix R compared to the full matrix K.</p>
 </table>
 </dd></dl>
 
-<dl class="method">
-<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.hummer_szabo_from_mfpt">
-<code class="descname">hummer_szabo_from_mfpt</code><span class="sig-paren">(</span><em>temp</em>, <em>GT=True</em>, <em>mfpt=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.hummer_szabo_from_mfpt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.hummer_szabo_from_mfpt" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate Hummer-Szabo coarse-grained rate matrix using Eqn. (72)
-of Kells et al. (2019) paper on correlation functions and the Kemeny
-constant.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="graph_tran.ktn.ktn_analysis.Analyze_KTN.mfpt_from_correlation">
-<code class="descname">mfpt_from_correlation</code><span class="sig-paren">(</span><em>K</em>, <em>pi</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#Analyze_KTN.mfpt_from_correlation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.Analyze_KTN.mfpt_from_correlation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate the matrix of mean first passage times using Eq. (49) of KRA
-JCP paper.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="data">
-<dt id="graph_tran.ktn.ktn_analysis.PATHSAMPLE">
-<code class="descclassname">graph_tran.ktn.ktn_analysis.</code><code class="descname">PATHSAMPLE</code><em class="property"> = '/home/dk588/svn/PATHSAMPLE/build/gfortran/PATHSAMPLE'</em><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.PATHSAMPLE" title="Permalink to this definition">¶</a></dt>
-<dd><p>Functions to analyze KTNs without any community structure.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="graph_tran.ktn.ktn_analysis.calc_eigenvectors">
 <code class="descclassname">graph_tran.ktn.ktn_analysis.</code><code class="descname">calc_eigenvectors</code><span class="sig-paren">(</span><em>K</em>, <em>k</em>, <em>which_eig='SM'</em>, <em>norm=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#calc_eigenvectors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.calc_eigenvectors" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="graph_tran.ktn.ktn_analysis.calc_mfpt_AB_tom">
-<code class="descclassname">graph_tran.ktn.ktn_analysis.</code><code class="descname">calc_mfpt_AB_tom</code><span class="sig-paren">(</span><em>temps</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#calc_mfpt_AB_tom"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.calc_mfpt_AB_tom" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate the mean first passage time A&lt;-B and B&lt;-A on the full network
-for each of the temperatures specified using Tom’s absorbing Markov chain
-method.</p>
+<dd><p>Calculate <cite>k</cite> dominant eigenvectors and eigenvalues of sparse matrix
+using the implictly restarted Arnoldi method.</p>
 </dd></dl>
 
 <dl class="function">
@@ -391,19 +341,6 @@ thatthat <span class="math notranslate nohighlight">\(k_{ij} \pi_j = k_{ji} \pi_
 </tbody>
 </table>
 </dd></dl>
-
-<dl class="function">
-<dt id="graph_tran.ktn.ktn_analysis.compare_HS_LEA">
-<code class="descclassname">graph_tran.ktn.ktn_analysis.</code><code class="descname">compare_HS_LEA</code><span class="sig-paren">(</span><em>temps</em>, <em>nrgthreshs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#compare_HS_LEA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.compare_HS_LEA" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate coarse-grained rate matrices using the Hummer-Szabo, NGT, and LEA
-methods and compute kAB/kBA using NGT to be compared to the rates on the
-fulfull network.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="graph_tran.ktn.ktn_analysis.compute_HS_matrices">
-<code class="descclassname">graph_tran.ktn.ktn_analysis.</code><code class="descname">compute_HS_matrices</code><span class="sig-paren">(</span><em>temp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#compute_HS_matrices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.compute_HS_matrices" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 <dl class="function">
 <dt id="graph_tran.ktn.ktn_analysis.construct_transition_matrix">
@@ -443,7 +380,8 @@ number.</p>
 <dl class="function">
 <dt id="graph_tran.ktn.ktn_analysis.read_ktn_info">
 <code class="descclassname">graph_tran.ktn.ktn_analysis.</code><code class="descname">read_ktn_info</code><span class="sig-paren">(</span><em>self</em>, <em>suffix</em>, <em>log=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn/ktn_analysis.html#read_ktn_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn.ktn_analysis.read_ktn_info" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Read in input files <cite>stat_prob.dat</cite> and <cite>ts_weights.dat</cite> describing Markov chain.</p>
+</dd></dl>
 
 </div>
 

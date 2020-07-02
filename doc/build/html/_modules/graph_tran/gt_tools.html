@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.1
+                0.1.0
               </div>
             
           
@@ -86,11 +86,13 @@
             
                 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial with graph_tran</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../ktn_io.html">graph_tran.ktn_io</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../gt_tools.html">graph_tran.gt_tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../fpt_stats.html">graph_tran.fpt_stats</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../ktn.ktn_analysis.html">graph_tran.ktn.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.partialGT.html">dimred.partialGT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.ktn_analysis.html">dimred.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../conversion.html">graph_tran.conversion</a></li>
 </ul>
 
@@ -158,10 +160,10 @@
   <h1>Source code for graph_tran.gt_tools</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Iteratively remove nodes from a Markov chain with graph transformation.</span>
-
+<span class="sd">Iteratively remove nodes from a Markov chain with graph transformation</span>
+<span class="sd">----------------------------------------------------------------------</span>
 <span class="sd">Implements the core GT algorithm for eliminating nodes from a Markov chain</span>
-<span class="sd">in blocks, or one at a time. For use with the `graph_tran.lib.ktn_io` module, </span>
+<span class="sd">in blocks, or one at a time. For use with the `graph_tran.ktn_io` module, </span>
 <span class="sd">which reads the input files describing the original Markov chain.</span>
 
 <span class="sd">The graph transformation algorithm requires a branching probability matrix</span>
@@ -184,14 +186,14 @@
 <span class="sd">    \end{eqnarray}</span>
 
 <span class="sd">A matrix version of the above equations permits the removal of blocks of nodes</span>
-<span class="sd">simulatenously. [2]_ In practice, the larger the block of nodes, the less</span>
+<span class="sd">simulatenously. [3]_ In practice, the larger the block of nodes, the less</span>
 <span class="sd">numerically stable the block-GT operation will be.</span>
 
 <span class="sd">.. note::</span>
 <span class="sd">	</span>
 <span class="sd">	Install the `tqdm` package for progress bars.</span>
 
-<span class="sd">.. [2] T. D. Swinburne, D. J. Wales, *JCTC* (2020)</span>
+<span class="sd">.. [3] T. D. Swinburne, D. J. Wales, *JCTC* (2020)</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -464,10 +466,10 @@
 		<span class="k">return</span> <span class="n">Bij</span><span class="p">,</span><span class="n">iDjj</span><span class="p">,</span><span class="kc">True</span><span class="c1">#,ts,tm</span></div>
 
 
-<div class="viewcode-block" id="gt_seq"><a class="viewcode-back" href="../../gt_tools.html#graph_tran.gt_tools.gt_seq">[docs]</a><span class="k">def</span> <span class="nf">gt_seq</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">rm_reg</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">D</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">DD</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">trmb</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">dense</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">condThresh</span><span class="o">=</span><span class="mf">1.0e10</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="gt_seq"><a class="viewcode-back" href="../../gt_tools.html#graph_tran.gt_tools.gt_seq">[docs]</a><span class="k">def</span> <span class="nf">gt_seq</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">rm_reg</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">escape_rates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">DD</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">trmb</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">dense</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">condThresh</span><span class="o">=</span><span class="mf">1.0e10</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 	<span class="n">Ndense</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span><span class="n">force_sparse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">screen</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">retK</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-	<span class="sd">&quot;&quot;&quot; Main function for GT code. By default, takes in a branching probability matrix, :math:`\textbf{B}`,</span>
-<span class="sd">	in sparse format and a vector of inverse waiting times, :math:`\textbf{D}`. If :math:`\textbf{B}` is supplied in dense format, </span>
+	<span class="sa">r</span><span class="sd">&quot;&quot;&quot; Main function for GT code. By default, takes in a branching probability matrix, :math:`\textbf{B}`,</span>
+<span class="sd">	in sparse format and a vector of escape_rates, aka inverse waiting times. If :math:`\textbf{B}` is supplied in dense format, </span>
 <span class="sd">	then `dense` should be set to True.</span>
 
 <span class="sd">	Parameters</span>
@@ -478,7 +480,7 @@
 <span class="sd">		selects out states to eliminate with GT</span>
 <span class="sd">	B : array-like[float] (N,N)</span>
 <span class="sd">		Branching probability matrix in dense or sparse format.</span>
-<span class="sd">	D : array-like[float] (N,)</span>
+<span class="sd">	escape_rates : array-like[float] (N,)</span>
 <span class="sd">		array of inverse waiting times.</span>
 <span class="sd">	DD : array-like[float] (N, N)</span>
 <span class="sd">		diagonal matrix with elements corresponding to inverse waiting times. </span>
@@ -500,7 +502,7 @@
 	<span class="n">retry</span><span class="o">=</span><span class="mi">0</span>
 	<span class="c1">#total number of states to remove</span>
 	<span class="n">NI</span> <span class="o">=</span> <span class="n">rm_reg</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-
+	<span class="n">D</span> <span class="o">=</span> <span class="n">escape_rates</span>
 	<span class="k">if</span> <span class="ow">not</span> <span class="n">DD</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 		<span class="n">iD</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">NI</span><span class="p">)</span>
 		<span class="n">iDD</span> <span class="o">=</span> <span class="n">DD</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>

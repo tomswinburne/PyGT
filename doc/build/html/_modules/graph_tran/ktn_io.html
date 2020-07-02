@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.1
+                0.1.0
               </div>
             
           
@@ -86,11 +86,13 @@
             
                 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial with graph_tran</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../ktn_io.html">graph_tran.ktn_io</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../gt_tools.html">graph_tran.gt_tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../fpt_stats.html">graph_tran.fpt_stats</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../ktn.ktn_analysis.html">graph_tran.ktn.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.partialGT.html">dimred.partialGT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.ktn_analysis.html">dimred.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../conversion.html">graph_tran.conversion</a></li>
 </ul>
 
@@ -157,21 +159,28 @@
             
   <h1>Source code for graph_tran.ktn_io</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="sa">r</span><span class="sd">&quot;&quot;&quot; Read in input files describing the Markov chain to analyze.</span>
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">Read in input files describing the Markov chain to analyze</span>
+<span class="sd">----------------------------------------------------------</span>
 
 <span class="sd">This module reads in the following input files:</span>
 
 <span class="sd">Files defining A and B sets</span>
-<span class="sd">---------------------------</span>
+<span class="sd">...........................</span>
+
 <span class="sd">min.A: single-column[int], (N_A + 1, )</span>
 <span class="sd">    First line contains the number of nodes in community A.</span>
 <span class="sd">    Subsequent lines contain the node ID (1-indexed) of the nodes belonging to A.</span>
 <span class="sd">min.B: single-column[int], (N_B + 1, )</span>
 <span class="sd">    First line contains the number of nodes in community B.</span>
 <span class="sd">    Subsequent lines contain the node ID (1-indexed) of the nodes belonging to B.</span>
+<span class="sd">communities.dat : single-column (nnnodes,)</span>
+<span class="sd">    used by DISCOTRESS and ktn_analysis module; each line contains community ID (0-indexed)</span>
+<span class="sd">    of the node specified by the line number in the file</span>
 
 <span class="sd">Files describing stationary points of energy landscape</span>
-<span class="sd">------------------------------------------------------</span>
+<span class="sd">......................................................</span>
+
 <span class="sd">The following files are designed to describe a Markov chain in which nodes</span>
 <span class="sd">correspond to potential or free energy minima, and edges correspond to the</span>
 <span class="sd">transition states that connect them. These files are also used as input to</span>
@@ -286,6 +295,46 @@
     <span class="n">keep</span><span class="p">[</span><span class="n">Aind</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">A_states</span> <span class="o">=</span> <span class="n">keep</span><span class="p">[</span><span class="n">index_sel</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">A_states</span><span class="p">,</span><span class="n">B_states</span></div>
+
+<div class="viewcode-block" id="read_communities"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.read_communities">[docs]</a><span class="k">def</span> <span class="nf">read_communities</span><span class="p">(</span><span class="n">commdat</span><span class="p">,</span> <span class="n">index_sel</span><span class="p">,</span> <span class="n">screen</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Read in a single column file called communities.dat where each line</span>
+<span class="sd">    is the community ID (zero-indexed) of the minima given by the line</span>
+<span class="sd">    number. Produces boolean arrays, one per community, selecting out the</span>
+<span class="sd">    nodes that belong to each community.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    commdat : .dat file</span>
+<span class="sd">        single-column file containing community IDs of each minimum</span>
+<span class="sd">    index_sel : (N,) boolean array</span>
+<span class="sd">        selects out the largest connected component of the network</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    communities : dict</span>
+<span class="sd">        mapping from community ID (0-indexed) to a boolean array</span>
+<span class="sd">        of shape (len(index_sel), ) which selects out the states in that community.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">communities</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">commdat</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">minID</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">groupID</span> <span class="o">=</span>  <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="c1">#number from 0 to N-1</span>
+            <span class="k">if</span> <span class="n">groupID</span> <span class="ow">in</span> <span class="n">communities</span><span class="p">:</span>
+                <span class="n">communities</span><span class="p">[</span><span class="n">groupID</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">minID</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">communities</span><span class="p">[</span><span class="n">groupID</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">minID</span><span class="p">]</span>
+    
+    <span class="k">for</span> <span class="n">ci</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">communities</span><span class="p">)):</span>
+        <span class="c1">#create a new index_selector to select out the minima in community ci</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">index_sel</span><span class="o">.</span><span class="n">size</span><span class="p">,</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">keep</span><span class="p">[</span><span class="n">communities</span><span class="p">[</span><span class="n">ci</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1">#re-assign communities[ci] to be the index-selector for the maximally connected component of the graph</span>
+        <span class="n">communities</span><span class="p">[</span><span class="n">ci</span><span class="p">]</span> <span class="o">=</span> <span class="n">keep</span><span class="p">[</span><span class="n">index_sel</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">screen</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Community </span><span class="si">{</span><span class="n">ci</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">keep</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">communities</span></div>
 
 <div class="viewcode-block" id="load_mat"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.load_mat">[docs]</a><span class="k">def</span> <span class="nf">load_mat</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="n">Nmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">Emax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">beta</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span><span class="n">screen</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">discon</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Load in min.data and ts.data files, calculate rates, and find connected</span>
@@ -433,6 +482,57 @@
     <span class="n">B</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">iD</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">B</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">],</span> <span class="n">s</span><span class="p">,</span> <span class="n">Emin</span><span class="p">,</span> <span class="n">sel</span></div>
 
+<div class="viewcode-block" id="load_CTMC"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.load_CTMC">[docs]</a><span class="k">def</span> <span class="nf">load_CTMC</span><span class="p">(</span><span class="n">K</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Setup a GT calculation for a transition rate matrix representing</span>
+<span class="sd">    a continuous-time Markov chain.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    K : array-like (nnodes, nnodes)</span>
+<span class="sd">        Rate matrix with elements :math:`K_{ij}` corresponding to the :math:`i \leftarrow j` transition rate</span>
+<span class="sd">        and diagonal elements :math:`K_{ii} = \sum_\gamma K_{\gamma i}` such that the columns of :math:`\textbf{K}` sum to zero.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    B : np.ndarray[float64] (nnodes, nnodes)</span>
+<span class="sd">        Branching probability matrix in dense format, used as input to GT</span>
+<span class="sd">    escape_rates : np.ndarray[float64] (nnodes,)</span>
+<span class="sd">        Array of inverse waiting times of nodes, used as input to GT</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#check that columns of K sum to zero</span>
+    <span class="k">assert</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1.E-10</span><span class="p">))</span>
+    <span class="n">Q</span> <span class="o">=</span> <span class="n">K</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">K</span><span class="p">))</span>
+    <span class="n">escape_rates</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">Q</span><span class="nd">@np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">escape_rates</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">B</span><span class="p">,</span> <span class="n">escape_rates</span></div>
+
+<div class="viewcode-block" id="load_DTMC"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.load_DTMC">[docs]</a><span class="k">def</span> <span class="nf">load_DTMC</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">tau_lag</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Setup a GT calculation for a transition probability matrix representing</span>
+<span class="sd">    a discrete-time Markov chain.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T : array-like (nnodes, nnodes)</span>
+<span class="sd">        Discrete-time, column-stochastic transition probability matrix.</span>
+<span class="sd">    tau_lag : float</span>
+<span class="sd">        Lag time at which `T` was estimated.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    B : np.ndarray[float64] (nnodes, nnodes)</span>
+<span class="sd">        Branching probability matrix in dense format, used as input to GT</span>
+<span class="sd">    escape_rates : np.ndarray[float64] (nnodes,)</span>
+<span class="sd">        Array of inverse waiting times of nodes, used as input to GT</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">nnodes</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="c1">#check that T is column-stochastic</span>
+    <span class="k">assert</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nnodes</span><span class="p">)</span> <span class="o">-</span> <span class="n">T</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span><span class="o">&lt;</span><span class="mf">1.E-10</span><span class="p">))</span>
+    <span class="n">escape_rates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">tau_lag</span><span class="p">,</span> <span class="n">nnodes</span><span class="p">)</span>
+    <span class="n">B</span><span class="o">=</span><span class="n">T</span>
+    <span class="k">return</span> <span class="n">B</span><span class="p">,</span> <span class="n">escape_rates</span></div>
 
 <div class="viewcode-block" id="load_save_mat"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.load_save_mat">[docs]</a><span class="k">def</span> <span class="nf">load_save_mat</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;../../data/LJ38&quot;</span><span class="p">,</span><span class="n">beta</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span><span class="n">Nmax</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span><span class="n">Emax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">generate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">TE</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">screen</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 	<span class="n">name</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -478,7 +578,6 @@
 	<span class="n">K</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">K</span><span class="o">.</span><span class="n">data</span>
 
 	<span class="k">return</span> <span class="n">beta</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">kt</span><span class="p">,</span> <span class="n">kcon</span><span class="p">,</span> <span class="n">Emin</span><span class="p">,</span> <span class="n">sel</span></div>
-
 
 
 <div class="viewcode-block" id="load_save_mat_gt"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.load_save_mat_gt">[docs]</a><span class="k">def</span> <span class="nf">load_save_mat_gt</span><span class="p">(</span><span class="n">keep_ind</span><span class="p">,</span><span class="n">beta</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;../../data/LJ38&quot;</span><span class="p">,</span><span class="n">Nmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">Emax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">generate</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>

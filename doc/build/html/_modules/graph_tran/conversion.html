@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.1
+                0.1.0
               </div>
             
           
@@ -86,11 +86,13 @@
             
                 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial with graph_tran</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../ktn_io.html">graph_tran.ktn_io</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../gt_tools.html">graph_tran.gt_tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../fpt_stats.html">graph_tran.fpt_stats</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../ktn.ktn_analysis.html">graph_tran.ktn.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.partialGT.html">dimred.partialGT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.ktn_analysis.html">dimred.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../conversion.html">graph_tran.conversion</a></li>
 </ul>
 
@@ -156,42 +158,44 @@
            <div itemprop="articleBody">
             
   <h1>Source code for graph_tran.conversion</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;File Conversions</span>
-
-<span class="sd">The KTN_python module includes python GT tools, KTN analysis tools, and</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">File Conversions </span>
+<span class="sd">----------------</span>
+<span class="sd">The `graph_tran` package includes python GT tools, dimensionality reduction tools, and</span>
 <span class="sd">ways to talk to the external programs PATHSAMPLE and DISCOTRESS. </span>
-<span class="sd">To unify these four software packages, this script converts between </span>
-<span class="sd">different file formats for representing KTNs.</span>
+<span class="sd">To unify these three software packages, this script converts between </span>
+<span class="sd">different file formats for representing Markov chains.</span>
 
 <span class="sd">Community Files</span>
-<span class="sd">---------------</span>
+<span class="sd">...............</span>
 <span class="sd">communities.dat : single-column (nnnodes,)</span>
 <span class="sd">    used by DISCOTRESS and ktn_tools; each line contains community ID (0-indexed)</span>
 <span class="sd">    of the node specified by the line number in the file</span>
-<span class="sd">minima.groups : output of DUMPGROUPS keyword from REGROUPFREE routine in PATHSAMPLE</span>
-<span class="sd">    used by ParsePathsample class in ktn package to write a communities.dat file. </span>
-<span class="sd">    So conversion is absent from this file.</span>
 
-<span class="sd">Community data structures:</span>
-<span class="sd">--------------------------</span>
-<span class="sd">ktn.communities : dictionary mapping community IDs (1-indexed) to minima IDs (1-indexed)</span>
-<span class="sd">    file format used in ktn_analysis</span>
-<span class="sd">pgt.communities : dictionary mapping community IDs (0-indexed) to boolean list (nnodes,)</span>
-<span class="sd">    Boolean list selects out the nodes in that community; used in gt_tools</span>
+<span class="sd">Community data structures</span>
+<span class="sd">.........................</span>
+<span class="sd">Analyze_KTN.communities : dictionary mapping community IDs (1-indexed) to node IDs (1-indexed)</span>
+<span class="sd">    Data structure used in ktn_analysis</span>
+<span class="sd">ktn_io.communities : dictionary mapping community IDs (0-indexed) to boolean array (nnodes,)</span>
+<span class="sd">    Boolean array selects out the nodes in that community; used in gt_tools</span>
 
 <span class="sd">Rate matrix files</span>
-<span class="sd">-----------------</span>
-<span class="sd">rate_matrix.dat : (nnodes, nnodes) rate matrix entries printed in dense format</span>
-<span class="sd">min.data, ts.data : input to PATHSAMPLE (unnecessary if rate_matrix.dat is present)</span>
+<span class="sd">.................</span>
+<span class="sd">rate_matrix.dat : (nnodes, nnodes) </span>
+<span class="sd">    rate matrix entries printed in dense format</span>
+<span class="sd">min.data, ts.data : </span>
+<span class="sd">    input to PATHSAMPLE (unnecessary if rate_matrix.dat is present)</span>
 <span class="sd">ts_weights.dat : single column, ln(kij), (2*nts, )</span>
-<span class="sd">    used in DISCOTRESS, output of DUMPINFO, kij first line, kji second line, etc.</span>
+<span class="sd">    used in DISCOTRESS, output of DUMPINFO keyword in PATHSAMPLE, kij first line, kji second line, etc.</span>
 <span class="sd">ts_conns.dat   : double columns, i &lt;-&gt; j, (nts, )</span>
-<span class="sd">    used in DISCOTRESS, output of DUMPINFO</span>
+<span class="sd">    used in DISCOTRESS, output of DUMPINFO keyword in PATHSAMPLE</span>
 
 <span class="sd">Rate matrix variables</span>
-<span class="sd">---------------------</span>
-<span class="sd">Q : in GT code, Q is actually -K and is typically in sparse format</span>
-<span class="sd">ktn.K : in ktn code, K is the same as -Q and is in dense format</span>
+<span class="sd">.....................</span>
+<span class="sd">pgt.Q</span>
+<span class="sd">    in GT code, Q is actually -K and is typically in sparse format</span>
+<span class="sd">Analyze_KTN.K</span>
+<span class="sd">    in ktn code, K is the same as -Q and is in dense format</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -264,12 +268,12 @@
                 <span class="n">ts_weights</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">K</span><span class="p">[</span><span class="n">ix</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">iy</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="dump_stat_probs"><a class="viewcode-back" href="../../conversion.html#graph_tran.conversion.dump_stat_probs">[docs]</a><span class="k">def</span> <span class="nf">dump_stat_probs</span><span class="p">(</span><span class="n">pi</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%.20G</span><span class="s1">&#39;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Dump a stat_prob.dat file.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot; Dump a stat_prob.dat file containing the stationary probabilities of nodes.&quot;&quot;&quot;</span>
     <span class="n">pi</span> <span class="o">=</span> <span class="n">pi</span><span class="o">/</span><span class="n">pi</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
     <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">/</span><span class="s1">&#39;stat_prob</span><span class="si">{suffix}</span><span class="s1">.dat&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">pi</span><span class="p">),</span> <span class="n">fmt</span><span class="o">=</span><span class="n">fmt</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="read_ktn_info"><a class="viewcode-back" href="../../conversion.html#graph_tran.conversion.read_ktn_info">[docs]</a><span class="k">def</span> <span class="nf">read_ktn_info</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Read in Daniel&#39;s files stat_prob.dat, ts_weights.dat, and ts_conns.dat</span>
+    <span class="sd">&quot;&quot;&quot; Read input files stat_prob.dat, ts_weights.dat, and ts_conns.dat</span>
 <span class="sd">    and return a rate matrix and vector of stationary probabilities.&quot;&quot;&quot;</span>
 
     <span class="n">logpi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">data_path</span><span class="o">/</span><span class="sa">f</span><span class="s1">&#39;stat_prob</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">.dat&#39;</span><span class="p">)</span>
@@ -306,8 +310,8 @@
 <span class="sd">&quot;&quot;&quot; Converting between community data structures. &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="ktn_comms_from_gt_comms"><a class="viewcode-back" href="../../conversion.html#graph_tran.conversion.ktn_comms_from_gt_comms">[docs]</a><span class="k">def</span> <span class="nf">ktn_comms_from_gt_comms</span><span class="p">(</span><span class="n">gt_comms</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Convert the GT-style dictionary of communities to a format</span>
-<span class="sd">    compatible with the ktn_analysis class.</span>
+    <span class="sd">&quot;&quot;&quot; Convert the dictionary of communities used in `gt_tools` to a format</span>
+<span class="sd">    compatible with the `ktn_analysis` module.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -326,11 +330,24 @@
     <span class="k">return</span> <span class="n">ktn_comms</span></div>
 
 <div class="viewcode-block" id="write_AB_communities_from_gt"><a class="viewcode-back" href="../../conversion.html#graph_tran.conversion.write_AB_communities_from_gt">[docs]</a><span class="k">def</span> <span class="nf">write_AB_communities_from_gt</span><span class="p">(</span><span class="n">gt_comms</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Write a communities.dat file containing just 2 communities;</span>
-<span class="sd">    all nodes in B U I are assigned to community 0, and all nodes in</span>
-<span class="sd">    absorbing A assigned to community 1. Useful for simulating A&lt;-B</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Write a communities.dat file containing just 2 communities;</span>
+<span class="sd">    all nodes in :math:`(\mathcal{B}\cup\mathcal{I})` are assigned to community 0, and all nodes in</span>
+<span class="sd">    absorbing macrostate :math:`(\mathcal{A})` assigned to community 1. Useful for simulating A&lt;-B</span>
 <span class="sd">    transition paths with DISCOTRESS.</span>
-<span class="sd">    Note: A and B are 0-indexed IDs of communities A and B respectively.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gt_comms: dict</span>
+<span class="sd">        community IDs (0-indexed) to boolean array selectors (nnodes,)</span>
+<span class="sd">    A : int</span>
+<span class="sd">        community ID of the absorbing macrostate</span>
+<span class="sd">    B : int</span>
+<span class="sd">        community ID of the source macrostate</span>
+<span class="sd">    data_path : str or Path object</span>
+<span class="sd">        path to directory where file should be written</span>
+<span class="sd">    suffix : str</span>
+<span class="sd">        suffix for file name `communities{suffix}.dat`</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">AS</span> <span class="o">=</span> <span class="n">gt_comms</span><span class="p">[</span><span class="n">A</span><span class="p">]</span>
@@ -342,7 +359,19 @@
     <span class="n">write_gt_comms</span><span class="p">(</span><span class="n">AB_comms</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="n">suffix</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="write_gt_comms"><a class="viewcode-back" href="../../conversion.html#graph_tran.conversion.write_gt_comms">[docs]</a><span class="k">def</span> <span class="nf">write_gt_comms</span><span class="p">(</span><span class="n">gt_comms</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Write a communities.dat file from GT-style communities dictionary.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot; Write a single-column `communities.dat` file from communities dictionary</span>
+<span class="sd">    as defined in the `ktn_io` module.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gt_comms: dict</span>
+<span class="sd">        community IDs (0-indexed) to boolean array selectors (nnodes,)</span>
+<span class="sd">    data_path : str or Path object</span>
+<span class="sd">        path to directory where file should be written</span>
+<span class="sd">    suffix : str</span>
+<span class="sd">        suffix for file name `communities{suffix}.dat`</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gt_comms</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;gt_comms is empty.&#39;</span><span class="p">)</span>
     <span class="c1">#all community selector arrays have same length</span>
@@ -355,16 +384,17 @@
     <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">/</span><span class="sa">f</span><span class="s1">&#39;communities</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">.dat&#39;</span><span class="p">,</span> <span class="n">commIDs</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="write_ktn_comms"><a class="viewcode-back" href="../../conversion.html#graph_tran.conversion.write_ktn_comms">[docs]</a><span class="k">def</span> <span class="nf">write_ktn_comms</span><span class="p">(</span><span class="n">ktn_comms</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Write a single-column file `commdat` where each line is the</span>
-<span class="sd">    community ID (zero-indexed) of the minima given by the line</span>
-<span class="sd">    number.</span>
+    <span class="sd">&quot;&quot;&quot; Write a single-column `communities.dat` file from communities dictionary</span>
+<span class="sd">    as defined in the `ktn_analysis` module.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    communities : dict</span>
+<span class="sd">    ktn_comms : dict</span>
 <span class="sd">        mapping from community ID (1-indexed) to minima ID (1-indexed)</span>
-<span class="sd">    commdat : .dat file name</span>
-<span class="sd">        file to which to write communitiy assignments (0-indexed)</span>
+<span class="sd">    data_path : str or Path object</span>
+<span class="sd">        path to directory where file should be written</span>
+<span class="sd">    suffix : str</span>
+<span class="sd">        suffix for file name `communities{suffix}.dat`</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">commdat</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">/</span><span class="sa">f</span><span class="s1">&#39;communities</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">.dat&#39;</span>
@@ -383,8 +413,22 @@
 
 <div class="viewcode-block" id="write_minA_minB"><a class="viewcode-back" href="../../conversion.html#graph_tran.conversion.write_minA_minB">[docs]</a><span class="k">def</span> <span class="nf">write_minA_minB</span><span class="p">(</span><span class="n">ktn_comms</span><span class="p">,</span> <span class="n">Aind</span><span class="p">,</span> <span class="n">Bind</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Write a min.A and min.B file based on minIDs</span>
-<span class="sd">    in the communities with IDs Aind and Bind. community IDs are 1-indexed</span>
-<span class="sd">    as are minIDs.&quot;&quot;&quot;</span>
+<span class="sd">    in the communities with IDs Aind and Bind. </span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ktn_comms : dict</span>
+<span class="sd">        mapping from community ID (1-indexed) to minima ID (1-indexed)</span>
+<span class="sd">    Aind : int</span>
+<span class="sd">        community ID (1-indexed) of A region</span>
+<span class="sd">    Bind : int</span>
+<span class="sd">        community ID (1-indexed) of B region</span>
+<span class="sd">    data_path : str or Path object</span>
+<span class="sd">        path to directory where file should be written</span>
+<span class="sd">    suffix : str</span>
+<span class="sd">        suffix for file names `min.A{suffix}` and `min.B{suffix}`     </span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">minima_in_A</span> <span class="o">=</span> <span class="n">ktn_comms</span><span class="p">[</span><span class="n">Aind</span><span class="p">]</span>
     <span class="n">minima_in_B</span> <span class="o">=</span> <span class="n">ktn_comms</span><span class="p">[</span><span class="n">Bind</span><span class="p">]</span>
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">data_path</span><span class="o">/</span><span class="sa">f</span><span class="s1">&#39;min.A</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>

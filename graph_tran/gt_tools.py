@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""
-Iteratively remove nodes from a Markov chain with graph transformation.
-
+Iteratively remove nodes from a Markov chain with graph transformation
+----------------------------------------------------------------------
 Implements the core GT algorithm for eliminating nodes from a Markov chain
 in blocks, or one at a time. For use with the `graph_tran.ktn_io` module, 
 which reads the input files describing the original Markov chain.
@@ -26,14 +26,14 @@ to
     \end{eqnarray}
 
 A matrix version of the above equations permits the removal of blocks of nodes
-simulatenously. [2]_ In practice, the larger the block of nodes, the less
+simulatenously. [3]_ In practice, the larger the block of nodes, the less
 numerically stable the block-GT operation will be.
 
 .. note::
 	
 	Install the `tqdm` package for progress bars.
 
-.. [2] T. D. Swinburne, D. J. Wales, *JCTC* (2020)
+.. [3] T. D. Swinburne, D. J. Wales, *JCTC* (2020)
 
 """
 
@@ -306,10 +306,10 @@ def gtDD(B,iD,iDD,sel,timeit=False,dense=False):
 		return Bij,iDjj,True#,ts,tm
 
 
-def gt_seq(N,rm_reg,B,D=None,DD=None,trmb=1,dense=False,condThresh=1.0e10,order=None,
+def gt_seq(N,rm_reg,B,escape_rates=None,DD=None,trmb=1,dense=False,condThresh=1.0e10,order=None,
 	Ndense=500,force_sparse=True,screen=False,retK=False):
-	""" Main function for GT code. By default, takes in a branching probability matrix, :math:`\textbf{B}`,
-	in sparse format and a vector of inverse waiting times, :math:`\textbf{D}`. If :math:`\textbf{B}` is supplied in dense format, 
+	r""" Main function for GT code. By default, takes in a branching probability matrix, :math:`\textbf{B}`,
+	in sparse format and a vector of escape_rates, aka inverse waiting times. If :math:`\textbf{B}` is supplied in dense format, 
 	then `dense` should be set to True.
 
 	Parameters
@@ -320,11 +320,11 @@ def gt_seq(N,rm_reg,B,D=None,DD=None,trmb=1,dense=False,condThresh=1.0e10,order=
 		selects out states to eliminate with GT
 	B : array-like[float] (N,N)
 		Branching probability matrix in dense or sparse format.
-	D : array-like[float] (N,)
+	escape_rates : array-like[float] (N,)
 		array of inverse waiting times.
 	DD : array-like[float] (N, N)
 		diagonal matrix with elements corresponding to inverse waiting times. 
-		Alternative input to `D`. Defaults to None.
+		Alternative input to `escape_rates`. Defaults to None.
 	trmb : int
 		Number of states to remove in a given block. Defaults to 1.
 	dense : bool
@@ -342,7 +342,7 @@ def gt_seq(N,rm_reg,B,D=None,DD=None,trmb=1,dense=False,condThresh=1.0e10,order=
 	retry=0
 	#total number of states to remove
 	NI = rm_reg.sum()
-
+	D = escape_rates
 	if not DD is None:
 		iD=np.zeros(NI)
 		iDD = DD.copy()

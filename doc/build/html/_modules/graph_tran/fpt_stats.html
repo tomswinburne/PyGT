@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.1
+                0.1.0
               </div>
             
           
@@ -86,11 +86,13 @@
             
                 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Tutorial with graph_tran</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../ktn_io.html">graph_tran.ktn_io</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../gt_tools.html">graph_tran.gt_tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../fpt_stats.html">graph_tran.fpt_stats</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../ktn.ktn_analysis.html">graph_tran.ktn.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.partialGT.html">dimred.partialGT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.ktn_analysis.html">dimred.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../conversion.html">graph_tran.conversion</a></li>
 </ul>
 
@@ -158,11 +160,15 @@
   <h1>Source code for graph_tran.fpt_stats</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Calculate first passage time statistics with graph transformation.</span>
-
-<span class="sd">Contains wrappers to `lib.gt_tools` to calculate the mean first passage times</span>
+<span class="sd">Calculate first passage time statistics with graph transformation</span>
+<span class="sd">-----------------------------------------------------------------</span>
+<span class="sd">Contains wrappers to `graph_tran.gt_tools` to calculate the mean first passage times</span>
 <span class="sd">and phenomenological rate constants between endpoint macrostates</span>
 <span class="sd">:math:`\mathcal{A}` and :math:`\mathcal{B}`.</span>
+
+<span class="sd">.. note::</span>
+<span class="sd">    </span>
+<span class="sd">    Install the `pathos` package to parallelize MFPT computations.</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -180,51 +186,10 @@
 <span class="kn">import</span> <span class="nn">scipy</span> <span class="k">as</span> <span class="nn">sp</span>
 <span class="kn">import</span> <span class="nn">scipy.linalg</span> <span class="k">as</span> <span class="nn">spla</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
-
-<div class="viewcode-block" id="read_communities"><a class="viewcode-back" href="../../fpt_stats.html#graph_tran.fpt_stats.read_communities">[docs]</a><span class="k">def</span> <span class="nf">read_communities</span><span class="p">(</span><span class="n">commdat</span><span class="p">,</span> <span class="n">index_sel</span><span class="p">,</span> <span class="n">screen</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Read in a single column file called communities.dat where each line</span>
-<span class="sd">    is the community ID (zero-indexed) of the minima given by the line</span>
-<span class="sd">    number. Produces boolean arrays, one per community, selecting out the</span>
-<span class="sd">    nodes that belong to each community.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    commdat : .dat file</span>
-<span class="sd">        single-column file containing community IDs of each minimum</span>
-<span class="sd">    index_sel : (N,) boolean array</span>
-<span class="sd">        selects out the largest connected component of the network</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    communities : dict</span>
-<span class="sd">        mapping from community ID (0-indexed) to a boolean array</span>
-<span class="sd">        of shape (len(index_sel), ) which selects out the states in that community.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">communities</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">commdat</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">minID</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
-            <span class="n">groupID</span> <span class="o">=</span>  <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="c1">#number from 0 to N-1</span>
-            <span class="k">if</span> <span class="n">groupID</span> <span class="ow">in</span> <span class="n">communities</span><span class="p">:</span>
-                <span class="n">communities</span><span class="p">[</span><span class="n">groupID</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">minID</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">communities</span><span class="p">[</span><span class="n">groupID</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">minID</span><span class="p">]</span>
-    
-    <span class="k">for</span> <span class="n">ci</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">communities</span><span class="p">)):</span>
-        <span class="c1">#create a new index_selector to select out the minima in community ci</span>
-        <span class="n">keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">index_sel</span><span class="o">.</span><span class="n">size</span><span class="p">,</span><span class="nb">bool</span><span class="p">)</span>
-        <span class="n">keep</span><span class="p">[</span><span class="n">communities</span><span class="p">[</span><span class="n">ci</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="c1">#re-assign communities[ci] to be the index-selector for the maximally connected component of the graph</span>
-        <span class="n">communities</span><span class="p">[</span><span class="n">ci</span><span class="p">]</span> <span class="o">=</span> <span class="n">keep</span><span class="p">[</span><span class="n">index_sel</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">screen</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Community </span><span class="si">{</span><span class="n">ci</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">keep</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-        
-    <span class="k">return</span> <span class="n">communities</span></div>
-
+<span class="kn">from</span> <span class="nn">pathos.multiprocessing</span> <span class="kn">import</span> <span class="n">ProcessingPool</span> <span class="k">as</span> <span class="n">Pool</span>
 
 <div class="viewcode-block" id="compute_passage_stats"><a class="viewcode-back" href="../../fpt_stats.html#graph_tran.fpt_stats.compute_passage_stats">[docs]</a><span class="k">def</span> <span class="nf">compute_passage_stats</span><span class="p">(</span><span class="n">AS</span><span class="p">,</span> <span class="n">BS</span><span class="p">,</span> <span class="n">BF</span><span class="p">,</span> <span class="n">Q</span><span class="p">,</span> <span class="n">dopdf</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compute the A-&gt;B and B-&gt;A first passage time distribution, </span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute the A-&gt;B and B-&gt;A first passage time distribution, </span>
 <span class="sd">    first moment, and second moment using eigendecomposition.</span>
 
 <span class="sd">    Parameters</span>
@@ -243,9 +208,10 @@
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    tau : (4,) array-like</span>
-<span class="sd">        &lt;tau&gt;_BA, &lt;tau^2&gt;_BA, &lt;tau&gt;_AB, &lt;tau^2&gt;_AB</span>
+<span class="sd">        First and second moments of first passage time distribution for A-&gt;B and B-&gt;A [:math:`\mathcal{T}_{\mathcal{B}\mathcal{A}}`, :math:`\mathcal{V}_{\mathcal{B}\mathcal{A}}`, :math:`\mathcal{T}_{\mathcal{A}\mathcal{B}}`, :math:`\mathcal{V}_{\mathcal{A}\mathcal{B}}`]</span>
 <span class="sd">    pt : (4, 400) array-like</span>
-<span class="sd">        time in multiples of &lt;tau&gt; and p(t)*&lt;tau&gt; for A-&gt;B and B-&gt;A</span>
+<span class="sd">        time in multiples of :math:`\left&lt;t\right&gt;` and first passage time distribution :math:`p(t)\left&lt;t\right&gt;` for A-&gt;B and B-&gt;A</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1">#&lt;tauBA&gt;, &lt;tau^2BA&gt;, &lt;tauAB&gt;, &lt;tau^2AB&gt;</span>
@@ -302,8 +268,8 @@
         <span class="k">return</span> <span class="n">tau</span></div>
 
 <div class="viewcode-block" id="compute_escape_stats"><a class="viewcode-back" href="../../fpt_stats.html#graph_tran.fpt_stats.compute_escape_stats">[docs]</a><span class="k">def</span> <span class="nf">compute_escape_stats</span><span class="p">(</span><span class="n">BS</span><span class="p">,</span> <span class="n">BF</span><span class="p">,</span> <span class="n">Q</span><span class="p">,</span> <span class="n">tau_escape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dopdf</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compute escape time distribution and first and second moment</span>
-<span class="sd">    from the basin specified by BS using eigendecomposition.</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute escape time distribution and first and second moment</span>
+<span class="sd">    from the basin specified by `BS` using eigendecomposition.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -323,9 +289,9 @@
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    tau : (2,) array-like</span>
-<span class="sd">        &lt;tau&gt;_B, &lt;tau^2&gt;_B</span>
+<span class="sd">        First and second moments of escape time distribution, [:math:`\left&lt;t\right&gt;_{\mathcal{B}}`, :math:`\left&lt;t^2 \right&gt;_{\mathcal{B}}`]</span>
 <span class="sd">    pt : (2, 400) array-like</span>
-<span class="sd">        time in multiples of &lt;tau_escape&gt; and p(t)*&lt;tau_escape&gt; </span>
+<span class="sd">        time in multiples of :math:`\left&lt;t\right&gt;` and escape time distribution :math:`p(t)\left&lt;t\right&gt;` </span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1">#&lt;tau&gt;, &lt;tau^2&gt;</span>
@@ -354,8 +320,8 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">tau</span></div>
 
-<div class="viewcode-block" id="get_intermicrostate_mfpts_GT"><a class="viewcode-back" href="../../fpt_stats.html#graph_tran.fpt_stats.get_intermicrostate_mfpts_GT">[docs]</a><span class="k">def</span> <span class="nf">get_intermicrostate_mfpts_GT</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compute matrix of inter-microstate MFPTs with GT.</span>
+<div class="viewcode-block" id="get_intermicrostate_mfpts_GT"><a class="viewcode-back" href="../../fpt_stats.html#graph_tran.fpt_stats.get_intermicrostate_mfpts_GT">[docs]</a><span class="k">def</span> <span class="nf">get_intermicrostate_mfpts_GT</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">pool_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute matrix of inter-microstate MFPTs with GT.</span>
 <span class="sd">    </span>
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -363,13 +329,15 @@
 <span class="sd">        Effective temperature :math:`k_B T`.</span>
 <span class="sd">    data_path : str or Path</span>
 <span class="sd">        Path to data containing min.data, ts.data files.</span>
+<span class="sd">    pool_size : int</span>
+<span class="sd">        Number of cores over which to parallelize computation.</span>
 <span class="sd">    </span>
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    mfpt : np.ndarray[float64] (N,N)</span>
 <span class="sd">        matrix of inter-microstate MFPTs between all pairs of nodes</span>
 <span class="sd">    rho : np.ndarray[float64] (N,)</span>
-<span class="sd">        stationary distribution of Markov chain, :math:`\bm{\pi}`</span>
+<span class="sd">        stationary distribution of Markov chain</span>
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -382,16 +350,33 @@
     <span class="n">rho</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">BF</span><span class="p">)</span>
     <span class="n">rho</span> <span class="o">/=</span> <span class="n">rho</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
     <span class="n">mfpt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">))</span>
+    
+    <span class="n">matrix_elements</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">j</span><span class="p">:</span>
-                <span class="n">MFPTAB</span><span class="p">,</span> <span class="n">MFPTBA</span> <span class="o">=</span> <span class="n">compute_MFPTAB</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-                <span class="n">mfpt</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">MFPTAB</span>
-                <span class="n">mfpt</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">MFPTBA</span>
+                <span class="n">matrix_elements</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">))</span>
+    
+    <span class="k">def</span> <span class="nf">given_ij</span><span class="p">(</span><span class="n">ij</span><span class="p">):</span>
+        <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">ij</span>
+        <span class="n">MFPTAB</span><span class="p">,</span> <span class="n">MFPTBA</span> <span class="o">=</span> <span class="n">compute_MFPTAB</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">MFPTAB</span><span class="p">,</span> <span class="n">MFPTBA</span>
+    
+    <span class="k">if</span> <span class="n">pool_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">ij</span> <span class="ow">in</span> <span class="n">matrix_elements</span><span class="p">:</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">ij</span>
+            <span class="n">mfpt</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">],</span> <span class="n">mfpt</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">given_ij</span><span class="p">(</span><span class="n">ij</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">pool_size</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">given_ij</span><span class="p">,</span> <span class="n">matrix_elements</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">matrix_elements</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="n">mfpt</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">],</span> <span class="n">mfpt</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+
     <span class="k">return</span> <span class="n">mfpt</span><span class="p">,</span> <span class="n">rho</span></div>
 
-<div class="viewcode-block" id="compute_MFPTAB"><a class="viewcode-back" href="../../fpt_stats.html#graph_tran.fpt_stats.compute_MFPTAB">[docs]</a><span class="k">def</span> <span class="nf">compute_MFPTAB</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">escape_rates</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute the inter-microstate i&lt;-&gt;j MFPT using GT. </span>
+<div class="viewcode-block" id="compute_MFPTAB"><a class="viewcode-back" href="../../fpt_stats.html#graph_tran.fpt_stats.compute_MFPTAB">[docs]</a><span class="k">def</span> <span class="nf">compute_MFPTAB</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">escape_rates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute the inter-microstate :math:`i\leftrightarrow j` MFPT using GT. </span>
 
 <span class="sd">    Unlike ``compute_rates()`` function, which assumes there is at least 2 microstates</span>
 <span class="sd">    in the absorbing macrostate, this function does not require knowledge of equilibrium</span>
@@ -421,8 +406,14 @@
 <span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="k">if</span> <span class="n">K</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">escape_rates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Either escape_rates or K must be specified.&#39;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">escape_rates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="n">escape_rates</span>
     <span class="k">if</span> <span class="n">K</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+
     <span class="n">N</span> <span class="o">=</span> <span class="n">B</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">AS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
     <span class="n">AS</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
@@ -431,7 +422,7 @@
     <span class="c1">#GT away all I states</span>
     <span class="n">inter_region</span> <span class="o">=</span> <span class="o">~</span><span class="p">(</span><span class="n">AS</span><span class="o">+</span><span class="n">BS</span><span class="p">)</span>
     <span class="c1">#left with a 2-state network</span>
-    <span class="n">rB</span><span class="p">,</span> <span class="n">rD</span><span class="p">,</span> <span class="n">rQ</span><span class="p">,</span> <span class="n">rN</span><span class="p">,</span> <span class="n">retry</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">gt_seq</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="p">,</span><span class="n">rm_reg</span><span class="o">=</span><span class="n">inter_region</span><span class="p">,</span><span class="n">B</span><span class="o">=</span><span class="n">B</span><span class="p">,</span><span class="n">D</span><span class="o">=</span><span class="n">D</span><span class="p">,</span><span class="n">retK</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">trmb</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">rB</span><span class="p">,</span> <span class="n">rD</span><span class="p">,</span> <span class="n">rQ</span><span class="p">,</span> <span class="n">rN</span><span class="p">,</span> <span class="n">retry</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">gt_seq</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="p">,</span><span class="n">rm_reg</span><span class="o">=</span><span class="n">inter_region</span><span class="p">,</span><span class="n">B</span><span class="o">=</span><span class="n">B</span><span class="p">,</span><span class="n">escape_rates</span><span class="o">=</span><span class="n">D</span><span class="p">,</span><span class="n">retK</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">trmb</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="n">rB</span> <span class="o">=</span> <span class="n">rB</span><span class="o">.</span><span class="n">todense</span><span class="p">()</span>
     <span class="c1">#escape time tau_F</span>
     <span class="n">tau_Fs</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">rD</span>
@@ -445,8 +436,9 @@
     <span class="n">MFPTAB</span> <span class="o">=</span> <span class="n">tau_Fs</span><span class="p">[</span><span class="n">r_BS</span><span class="p">]</span><span class="o">/</span><span class="n">P_AB</span>
     <span class="k">return</span> <span class="n">MFPTAB</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">MFPTBA</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="compute_rates"><a class="viewcode-back" href="../../fpt_stats.html#graph_tran.fpt_stats.compute_rates">[docs]</a><span class="k">def</span> <span class="nf">compute_rates</span><span class="p">(</span><span class="n">AS</span><span class="p">,</span> <span class="n">BS</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">escape_rates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initA</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initB</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">BF</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">MFPTonly</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fullGT</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Calculate kSS, kNSS, kF, k*, kQSD, MFPT, and committors for the transition path</span>
+<div class="viewcode-block" id="compute_rates"><a class="viewcode-back" href="../../fpt_stats.html#graph_tran.fpt_stats.compute_rates">[docs]</a><span class="k">def</span> <span class="nf">compute_rates</span><span class="p">(</span><span class="n">AS</span><span class="p">,</span> <span class="n">BS</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">escape_rates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initA</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">initB</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">BF</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+    <span class="n">MFPTonly</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fullGT</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pool_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Calculate kSS, kNSS, kF, k*, kQSD, and MFPT for the transition path</span>
 <span class="sd">    ensemble AS --&gt; BS from rate matrix K. K can be the matrix of an original</span>
 <span class="sd">    Markov chain, or a partially graph-transformed Markov chain. </span>
 <span class="sd">    </span>
@@ -473,7 +465,6 @@
 <span class="sd">   </span>
 <span class="sd">    TODO: include equations for kSS, kNSS, etc.</span>
 <span class="sd">    TODO: debug case where A and B each only contain one state.</span>
-<span class="sd">    TODO: parallelize fullGT calculation so it isn&#39;t so slow.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -497,12 +488,14 @@
 <span class="sd">        normalized initial occupation probabilities in :math:`\mathcal{A}` set.</span>
 <span class="sd">        Defaults to Boltzmann distribution if BF is specified.</span>
 <span class="sd">    BF : array-like (N,)</span>
-<span class="sd">        Free energies of nodes, used to compute Boltzmann :math:`\pi_i =\rm{exp}^{-\beta F}`.</span>
+<span class="sd">        Free energies of nodes, used to compute Boltzmann :math:`\pi_i =\rm{exp}(-\beta F_i)/\sum_i \rm{exp}(-\beta F_i)`.</span>
 <span class="sd">    MFPTonly : bool</span>
 <span class="sd">        If True, only MFPTs are calculated (rate calculations ignored).</span>
 <span class="sd">    fullGT : bool</span>
 <span class="sd">        If True, all source nodes are isolated with GT to obtain the average</span>
 <span class="sd">        MFPT.</span>
+<span class="sd">    pool_size : int</span>
+<span class="sd">        Number of cores over which to parallelize fullGT computation.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -540,13 +533,14 @@
         <span class="n">initB</span> <span class="o">=</span> <span class="n">rhoB</span><span class="o">/</span><span class="n">rhoB</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
 
     <span class="c1">#use GT to renormalize away all I states</span>
-    <span class="n">rB</span><span class="p">,</span> <span class="n">rD</span><span class="p">,</span> <span class="n">rQ</span><span class="p">,</span> <span class="n">rN</span><span class="p">,</span> <span class="n">retry</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">gt_seq</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="p">,</span><span class="n">rm_reg</span><span class="o">=</span><span class="n">inter_region</span><span class="p">,</span><span class="n">B</span><span class="o">=</span><span class="n">B</span><span class="p">,</span><span class="n">D</span><span class="o">=</span><span class="n">D</span><span class="p">,</span><span class="n">retK</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">trmb</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">rB</span><span class="p">,</span> <span class="n">rD</span><span class="p">,</span> <span class="n">rQ</span><span class="p">,</span> <span class="n">rN</span><span class="p">,</span> <span class="n">retry</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">gt_seq</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="p">,</span><span class="n">rm_reg</span><span class="o">=</span><span class="n">inter_region</span><span class="p">,</span><span class="n">B</span><span class="o">=</span><span class="n">B</span><span class="p">,</span><span class="n">escape_rates</span><span class="o">=</span><span class="n">D</span><span class="p">,</span><span class="n">retK</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">trmb</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="c1">#first do A-&gt;B direction, then B-&gt;A</span>
     <span class="c1">#r_s is the non-absorbing region (A first, then B)</span>
     <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
     <span class="n">dirs</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;BA&#39;</span><span class="p">,</span> <span class="s1">&#39;AB&#39;</span><span class="p">]</span>
     <span class="n">inits</span> <span class="o">=</span> <span class="p">[</span><span class="n">initA</span><span class="p">,</span> <span class="n">initB</span><span class="p">]</span>
+
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">r_s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="n">r_AS</span><span class="p">,</span> <span class="n">r_BS</span><span class="p">])</span> <span class="p">:</span>
         <span class="c1">#local equilibrium distribution in r_s</span>
         <span class="n">rho</span> <span class="o">=</span> <span class="n">inits</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
@@ -559,14 +553,14 @@
             <span class="n">T_Ba</span> <span class="o">=</span> <span class="n">invQ</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="c1">#compare to individual T_Ba quantities from further GT compression</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">r_s</span><span class="o">.</span><span class="n">sum</span><span class="p">()):</span>
-                <span class="c1">#remove all nodes in A except for a</span>
+            <span class="k">def</span> <span class="nf">disconnect_sources</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+                <span class="c1">#disconnect all source nodes except for `s`</span>
                 <span class="n">rm_reg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">rN</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
                 <span class="n">rm_reg</span><span class="p">[</span><span class="n">r_s</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="n">aind</span> <span class="o">=</span> <span class="n">r_s</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="n">a</span><span class="p">]</span>
+                <span class="n">aind</span> <span class="o">=</span> <span class="n">r_s</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="n">s</span><span class="p">]</span>
                 <span class="c1">#print(f&#39;Disconnecting source node {aind}&#39;)</span>
-                <span class="n">rm_reg</span><span class="p">[</span><span class="n">r_s</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="n">a</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">False</span>
-                <span class="n">rfB</span><span class="p">,</span> <span class="n">rfD</span><span class="p">,</span> <span class="n">rfQ</span><span class="p">,</span> <span class="n">rfN</span><span class="p">,</span> <span class="n">retry</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">gt_seq</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="n">rN</span><span class="p">,</span><span class="n">rm_reg</span><span class="o">=</span><span class="n">rm_reg</span><span class="p">,</span><span class="n">B</span><span class="o">=</span><span class="n">rB</span><span class="p">,</span><span class="n">D</span><span class="o">=</span><span class="n">rD</span><span class="p">,</span><span class="n">trmb</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">retK</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">Ndense</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">rm_reg</span><span class="p">[</span><span class="n">r_s</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="n">s</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">rfB</span><span class="p">,</span> <span class="n">rfD</span><span class="p">,</span> <span class="n">rfQ</span><span class="p">,</span> <span class="n">rfN</span><span class="p">,</span> <span class="n">retry</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">gt_seq</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="n">rN</span><span class="p">,</span><span class="n">rm_reg</span><span class="o">=</span><span class="n">rm_reg</span><span class="p">,</span><span class="n">B</span><span class="o">=</span><span class="n">rB</span><span class="p">,</span><span class="n">escape_rates</span><span class="o">=</span><span class="n">rD</span><span class="p">,</span><span class="n">trmb</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">retK</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">Ndense</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="n">rfB</span> <span class="o">=</span> <span class="n">rfB</span><span class="o">.</span><span class="n">todense</span><span class="p">()</span>
                 <span class="c1">#escape time tau_F</span>
                 <span class="n">tau_Fs</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">rfD</span>
@@ -574,9 +568,16 @@
                 <span class="n">rf_s</span> <span class="o">=</span> <span class="n">r_s</span><span class="p">[</span><span class="o">~</span><span class="n">rm_reg</span><span class="p">]</span>
                 <span class="c1">#tau_a^F / P_Ba^F</span>
                 <span class="n">P_Ba</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">rfB</span><span class="p">[</span><span class="o">~</span><span class="n">rf_s</span><span class="p">,:][:,</span><span class="n">rf_s</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="n">T_Ba</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="o">=</span> <span class="n">tau_Fs</span><span class="p">[</span><span class="n">rf_s</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">P_Ba</span>
-        <span class="c1">#MFPT_BA = (T_Ba@rho)</span>
-        <span class="n">tau</span> <span class="o">=</span> <span class="n">T_Ba</span><span class="nd">@rho</span>
+                <span class="k">return</span> <span class="n">tau_Fs</span><span class="p">[</span><span class="n">rf_s</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">P_Ba</span>
+
+            <span class="k">if</span> <span class="n">pool_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">r_s</span><span class="o">.</span><span class="n">sum</span><span class="p">()):</span>
+                    <span class="n">T_Ba</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">disconnect_sources</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">pool_size</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
+                    <span class="n">T_Ba</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">disconnect_sources</span><span class="p">,</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">r_s</span><span class="o">.</span><span class="n">sum</span><span class="p">())])</span>
+            <span class="c1">#MFPT_BA = (T_Ba@rho)</span>
+            <span class="n">tau</span> <span class="o">=</span> <span class="n">T_Ba</span><span class="nd">@rho</span>
         <span class="n">df</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;MFPT</span><span class="si">{</span><span class="n">dirs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">tau</span><span class="p">]</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Rates: SS, NSS, QSD, k*, kF</span>
@@ -607,7 +608,7 @@
     <span class="k">return</span> <span class="n">df</span>     </div>
     
     
-<div class="viewcode-block" id="rates_cycle"><a class="viewcode-back" href="../../fpt_stats.html#graph_tran.fpt_stats.rates_cycle">[docs]</a><span class="k">def</span> <span class="nf">rates_cycle</span><span class="p">(</span><span class="n">temps</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="rates_cycle"><a class="viewcode-back" href="../../fpt_stats.html#graph_tran.fpt_stats.rates_cycle">[docs]</a><span class="k">def</span> <span class="nf">rates_cycle</span><span class="p">(</span><span class="n">temps</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Compute rates and mean first passage times between A and B sets for a range of temperatures.</span>
 <span class="sd">    </span>
 <span class="sd">    Parameters</span>
@@ -616,6 +617,8 @@
 <span class="sd">        list of temperatures at which to compute A&lt;-&gt;B rates</span>
 <span class="sd">    data_path : str or Path object</span>
 <span class="sd">        path to data</span>
+<span class="sd">    suffix : str</span>
+<span class="sd">        suffix for output file name `ratecycle{suffix}.csv`</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>

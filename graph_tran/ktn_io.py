@@ -1,19 +1,26 @@
 # -*- coding: utf-8 -*-
-r""" Read in input files describing the Markov chain to analyze.
+r""" 
+Read in input files describing the Markov chain to analyze
+----------------------------------------------------------
 
 This module reads in the following input files:
 
 Files defining A and B sets
----------------------------
+...........................
+
 min.A: single-column[int], (N_A + 1, )
     First line contains the number of nodes in community A.
     Subsequent lines contain the node ID (1-indexed) of the nodes belonging to A.
 min.B: single-column[int], (N_B + 1, )
     First line contains the number of nodes in community B.
     Subsequent lines contain the node ID (1-indexed) of the nodes belonging to B.
+communities.dat : single-column (nnnodes,)
+    used by DISCOTRESS and ktn_analysis module; each line contains community ID (0-indexed)
+    of the node specified by the line number in the file
 
 Files describing stationary points of energy landscape
-------------------------------------------------------
+......................................................
+
 The following files are designed to describe a Markov chain in which nodes
 correspond to potential or free energy minima, and edges correspond to the
 transition states that connect them. These files are also used as input to
@@ -128,6 +135,46 @@ def load_AB(data_path,index_sel=None):
     keep[Aind] = True
     A_states = keep[index_sel]
     return A_states,B_states
+
+def read_communities(commdat, index_sel, screen=False):
+    """Read in a single column file called communities.dat where each line
+    is the community ID (zero-indexed) of the minima given by the line
+    number. Produces boolean arrays, one per community, selecting out the
+    nodes that belong to each community.
+
+    Parameters
+    ----------
+    commdat : .dat file
+        single-column file containing community IDs of each minimum
+    index_sel : (N,) boolean array
+        selects out the largest connected component of the network
+
+    Returns
+    -------
+    communities : dict
+        mapping from community ID (0-indexed) to a boolean array
+        of shape (len(index_sel), ) which selects out the states in that community.
+    """
+
+    communities = {}
+    with open(commdat, 'r') as f:
+        for minID, line in enumerate(f, 0):
+            groupID =  int(line) #number from 0 to N-1
+            if groupID in communities:
+                communities[groupID].append(minID)
+            else:
+                communities[groupID] = [minID]
+    
+    for ci in range(len(communities)):
+        #create a new index_selector to select out the minima in community ci
+        keep = np.zeros(index_sel.size,bool)
+        keep[communities[ci]] = True
+        #re-assign communities[ci] to be the index-selector for the maximally connected component of the graph
+        communities[ci] = keep[index_sel]
+        if screen:
+            print(f'Community {ci}: {keep.sum()}')
+        
+    return communities
 
 def load_mat(path,Nmax=None,Emax=None,beta=1.0,screen=False,discon=False):
     """ Load in min.data and ts.data files, calculate rates, and find connected
@@ -275,6 +322,57 @@ def load_mat(path,Nmax=None,Emax=None,beta=1.0,screen=False,discon=False):
     B = K.dot(iD)
     return B, K, D, N, GSD['E'], s, Emin, sel
 
+def load_CTMC(K):
+    r""" Setup a GT calculation for a transition rate matrix representing
+    a continuous-time Markov chain.
+    
+    Parameters
+    ----------
+    K : array-like (nnodes, nnodes)
+        Rate matrix with elements :math:`K_{ij}` corresponding to the :math:`i \leftarrow j` transition rate
+        and diagonal elements :math:`K_{ii} = \sum_\gamma K_{\gamma i}` such that the columns of :math:`\textbf{K}` sum to zero.
+
+    Returns
+    -------
+    B : np.ndarray[float64] (nnodes, nnodes)
+        Branching probability matrix in dense format, used as input to GT
+    escape_rates : np.ndarray[float64] (nnodes,)
+        Array of inverse waiting times of nodes, used as input to GT
+
+    """
+    #check that columns of K sum to zero
+    assert(np.all(K.sum(axis=0) < 1.E-10))
+    Q = K - np.diag(np.diag(K))
+    escape_rates = -1*np.diag(K)
+    B = Q@np.diag(1./escape_rates)
+    return B, escape_rates
+
+def load_DTMC(T, tau_lag):
+    r""" Setup a GT calculation for a transition probability matrix representing
+    a discrete-time Markov chain.
+
+    Parameters
+    ----------
+    T : array-like (nnodes, nnodes)
+        Discrete-time, column-stochastic transition probability matrix.
+    tau_lag : float
+        Lag time at which `T` was estimated.
+
+    Returns
+    -------
+    B : np.ndarray[float64] (nnodes, nnodes)
+        Branching probability matrix in dense format, used as input to GT
+    escape_rates : np.ndarray[float64] (nnodes,)
+        Array of inverse waiting times of nodes, used as input to GT
+
+    """
+
+    nnodes = T.shape[0]
+    #check that T is column-stochastic
+    assert(np.all(np.abs(np.ones(nnodes) - T.sum(axis=0))<1.E-10))
+    escape_rates = np.tile(1./tau_lag, nnodes)
+    B=T
+    return B, escape_rates
 
 def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,Emax=None,generate=True,TE=False,screen=False):
 	name = path.split("/")[-1]
@@ -320,7 +418,6 @@ def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,Emax=None,generate=T
 	K.data = 1.0/K.data
 
 	return beta, B, K, D, N, U, S, kt, kcon, Emin, sel
-
 
 
 def load_save_mat_gt(keep_ind,beta=10.0,path="../../data/LJ38",Nmax=None,Emax=None,generate=True):

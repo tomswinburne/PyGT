@@ -35,7 +35,7 @@
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="graph_tran 2020 documentation" href="index.html"/>
         <link rel="next" title="graph_tran.gt_tools" href="gt_tools.html"/>
-        <link rel="prev" title="Tutorial with graph_tran" href="tutorial.html"/> 
+        <link rel="prev" title="graph_tran: Analyzing Metastable Markov Chains" href="index.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.1
+                0.1.0
               </div>
             
           
@@ -87,15 +87,20 @@
             
                 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial with graph_tran</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">graph_tran.ktn_io</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#files-defining-a-and-b-sets">Files defining A and B sets</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#files-describing-stationary-points-of-energy-landscape">Files describing stationary points of energy landscape</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#read-in-input-files-describing-the-markov-chain-to-analyze">Read in input files describing the Markov chain to analyze</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#files-defining-a-and-b-sets">Files defining A and B sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#files-describing-stationary-points-of-energy-landscape">Files describing stationary points of energy landscape</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="gt_tools.html">graph_tran.gt_tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="fpt_stats.html">graph_tran.fpt_stats</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ktn.ktn_analysis.html">graph_tran.ktn.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.partialGT.html">dimred.partialGT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.ktn_analysis.html">dimred.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conversion.html">graph_tran.conversion</a></li>
 </ul>
 
@@ -162,10 +167,11 @@
             
   <div class="section" id="module-graph_tran.ktn_io">
 <span id="graph-tran-ktn-io"></span><h1>graph_tran.ktn_io<a class="headerlink" href="#module-graph_tran.ktn_io" title="Permalink to this headline">¶</a></h1>
-<p>Read in input files describing the Markov chain to analyze.</p>
+<div class="section" id="read-in-input-files-describing-the-markov-chain-to-analyze">
+<h2>Read in input files describing the Markov chain to analyze<a class="headerlink" href="#read-in-input-files-describing-the-markov-chain-to-analyze" title="Permalink to this headline">¶</a></h2>
 <p>This module reads in the following input files:</p>
 <div class="section" id="files-defining-a-and-b-sets">
-<h2>Files defining A and B sets<a class="headerlink" href="#files-defining-a-and-b-sets" title="Permalink to this headline">¶</a></h2>
+<h3>Files defining A and B sets<a class="headerlink" href="#files-defining-a-and-b-sets" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt>min.A: single-column[int], (N_A + 1, )</dt>
 <dd>First line contains the number of nodes in community A.
@@ -173,10 +179,13 @@ Subsequent lines contain the node ID (1-indexed) of the nodes belonging to A.</d
 <dt>min.B: single-column[int], (N_B + 1, )</dt>
 <dd>First line contains the number of nodes in community B.
 Subsequent lines contain the node ID (1-indexed) of the nodes belonging to B.</dd>
+<dt>communities.dat <span class="classifier-delimiter">:</span> <span class="classifier">single-column (nnnodes,)</span></dt>
+<dd>used by DISCOTRESS and ktn_analysis module; each line contains community ID (0-indexed)
+of the node specified by the line number in the file</dd>
 </dl>
 </div>
 <div class="section" id="files-describing-stationary-points-of-energy-landscape">
-<h2>Files describing stationary points of energy landscape<a class="headerlink" href="#files-describing-stationary-points-of-energy-landscape" title="Permalink to this headline">¶</a></h2>
+<h3>Files describing stationary points of energy landscape<a class="headerlink" href="#files-describing-stationary-points-of-energy-landscape" title="Permalink to this headline">¶</a></h3>
 <p>The following files are designed to describe a Markov chain in which nodes
 correspond to potential or free energy minima, and edges correspond to the
 transition states that connect them. These files are also used as input to
@@ -212,6 +221,54 @@ index_sel.</p>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
 <li><strong>A_states</strong> (<em>array-like[bool] (index_sel.size, )</em>) – boolean array that selects out the A states</li>
 <li><strong>B_states</strong> (<em>array-like[bool] (index_sel.size, )</em>) – boolean array that selects out the B states</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.ktn_io.load_CTMC">
+<code class="descclassname">graph_tran.ktn_io.</code><code class="descname">load_CTMC</code><span class="sig-paren">(</span><em>K</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn_io.html#load_CTMC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn_io.load_CTMC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setup a GT calculation for a transition rate matrix representing
+a continuous-time Markov chain.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>K</strong> (<em>array-like</em><em> (</em><em>nnodes</em><em>, </em><em>nnodes</em><em>)</em>) – Rate matrix with elements <span class="math notranslate nohighlight">\(K_{ij}\)</span> corresponding to the <span class="math notranslate nohighlight">\(i \leftarrow j\)</span> transition rate
+and diagonal elements <span class="math notranslate nohighlight">\(K_{ii} = \sum_\gamma K_{\gamma i}\)</span> such that the columns of <span class="math notranslate nohighlight">\(\textbf{K}\)</span> sum to zero.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
+<li><strong>B</strong> (<em>np.ndarray[float64] (nnodes, nnodes)</em>) – Branching probability matrix in dense format, used as input to GT</li>
+<li><strong>escape_rates</strong> (<em>np.ndarray[float64] (nnodes,)</em>) – Array of inverse waiting times of nodes, used as input to GT</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.ktn_io.load_DTMC">
+<code class="descclassname">graph_tran.ktn_io.</code><code class="descname">load_DTMC</code><span class="sig-paren">(</span><em>T</em>, <em>tau_lag</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn_io.html#load_DTMC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn_io.load_DTMC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setup a GT calculation for a transition probability matrix representing
+a discrete-time Markov chain.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>T</strong> (<em>array-like</em><em> (</em><em>nnodes</em><em>, </em><em>nnodes</em><em>)</em>) – Discrete-time, column-stochastic transition probability matrix.</li>
+<li><strong>tau_lag</strong> (<em>float</em>) – Lag time at which <cite>T</cite> was estimated.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>B</strong> (<em>np.ndarray[float64] (nnodes, nnodes)</em>) – Branching probability matrix in dense format, used as input to GT</li>
+<li><strong>escape_rates</strong> (<em>np.ndarray[float64] (nnodes,)</em>) – Array of inverse waiting times of nodes, used as input to GT</li>
 </ul>
 </p>
 </td>
@@ -293,11 +350,40 @@ Diagonal elements are 0.</li>
 
 </dd></dl>
 
+<dl class="function">
+<dt id="graph_tran.ktn_io.read_communities">
+<code class="descclassname">graph_tran.ktn_io.</code><code class="descname">read_communities</code><span class="sig-paren">(</span><em>commdat</em>, <em>index_sel</em>, <em>screen=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/ktn_io.html#read_communities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn_io.read_communities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in a single column file called communities.dat where each line
+is the community ID (zero-indexed) of the minima given by the line
+number. Produces boolean arrays, one per community, selecting out the
+nodes that belong to each community.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>commdat</strong> (<em>dat file</em>) – single-column file containing community IDs of each minimum</li>
+<li><strong>index_sel</strong> (<em>(</em><em>N</em><em>,</em><em>) </em><em>boolean array</em>) – selects out the largest connected component of the network</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>communities</strong> – mapping from community ID (0-indexed) to a boolean array
+of shape (len(index_sel), ) which selects out the states in that community.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="class">
 <dt id="graph_tran.ktn_io.timer">
 <em class="property">class </em><code class="descclassname">graph_tran.ktn_io.</code><code class="descname">timer</code><a class="reference internal" href="_modules/graph_tran/ktn_io.html#timer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.ktn_io.timer" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+</div>
 </div>
 </div>
 
@@ -311,7 +397,7 @@ Diagonal elements are 0.</li>
         <a href="gt_tools.html" class="btn btn-neutral float-right" title="graph_tran.gt_tools" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="tutorial.html" class="btn btn-neutral" title="Tutorial with graph_tran" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral" title="graph_tran: Analyzing Metastable Markov Chains" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

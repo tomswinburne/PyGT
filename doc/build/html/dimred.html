@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Search &mdash; graph_tran 2020 documentation</title>
+  <title>dimred: Dimensionality Reduction of Markov Chains &mdash; graph_tran 2020 documentation</title>
   
 
   
@@ -32,8 +32,10 @@
   
         <link rel="index" title="Index"
               href="genindex.html"/>
-        <link rel="search" title="Search" href="#"/>
-    <link rel="top" title="graph_tran 2020 documentation" href="index.html"/> 
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="graph_tran 2020 documentation" href="index.html"/>
+        <link rel="next" title="dimred.partialGT" href="dimred.partialGT.html"/>
+        <link rel="prev" title="graph_tran.fpt_stats" href="fpt_stats.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -69,7 +71,7 @@
 
           
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="#" method="get">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -84,11 +86,11 @@
             
             
                 <p class="caption"><span class="caption-text">Contents:</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="ktn_io.html">graph_tran.ktn_io</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gt_tools.html">graph_tran.gt_tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="fpt_stats.html">graph_tran.fpt_stats</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">dimred: Dimensionality Reduction of Markov Chains</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dimred.partialGT.html">dimred.partialGT</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dimred.ktn_analysis.html">dimred.ktn_analysis</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a></li>
@@ -137,10 +139,14 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Search</li>
+      <li>dimred: Dimensionality Reduction of Markov Chains</li>
     
     
       <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/dimred.rst.txt" rel="nofollow"> View page source</a>
+          
         
       </li>
     
@@ -152,23 +158,46 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <noscript>
-  <div id="fallback" class="admonition warning">
-    <p class="last">
-      Please activate JavaScript to enable the search
-      functionality.
-    </p>
-  </div>
-  </noscript>
+  <span class="target" id="module-graph_tran.dimred"></span><div class="section" id="dimred-dimensionality-reduction-of-markov-chains">
+<h1>dimred: Dimensionality Reduction of Markov Chains<a class="headerlink" href="#dimred-dimensionality-reduction-of-markov-chains" title="Permalink to this headline">¶</a></h1>
+<p>The <cite>dimred</cite> sub-package of <cite>graph_tran</cite> contains functions to analysize
+a continuous-time Markov chain parameterized by a rate matrix <span class="math notranslate nohighlight">\(\textbf{K}\)</span>, as well as estimate a
+reduced Markov chain from a given community structure. The package has the
+capability to interface with the graph transformation tools available in
+<cite>graph_tran/gt_tools</cite> as well as the external PATHSAMPLE program, which also has an
+implementation of the GT algorithm in the Fortran language.</p>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dimred.partialGT.html">dimred.partialGT</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dimred.partialGT.html#partial-graph-transformation-a-dimensionality-reduction-strategy">Partial graph transformation: A dimensionality reduction strategy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.ktn_analysis.html">dimred.ktn_analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dimred.ktn_analysis.html#optimal-markovian-coarse-graining-given-a-community-structure">Optimal Markovian coarse-graining given a community structure</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dimred.pathsample_wrapper.html#wrapper-to-pathsample-implementation-of-graph-transformation">Wrapper to PATHSAMPLE implementation of graph transformation</a></li>
+</ul>
+</li>
+</ul>
+</div>
 
-  
-  <div id="search-results">
-  
-  </div>
 
            </div>
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="dimred.partialGT.html" class="btn btn-neutral float-right" title="dimred.partialGT" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="fpt_stats.html" class="btn btn-neutral" title="graph_tran.fpt_stats" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>
@@ -208,7 +237,6 @@
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
       <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-      <script type="text/javascript" src="_static/searchtools.js"></script>
 
   
 
@@ -224,14 +252,7 @@
           SphinxRtdTheme.StickyNav.enable();
       });
   </script>
-  
-  <script type="text/javascript">
-    jQuery(function() { Search.loadIndex("searchindex.js"); });
-  </script>
-  
-  <script type="text/javascript" id="searchindexloader"></script>
    
-
 
 </body>
 </html>

@@ -34,7 +34,7 @@
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="graph_tran 2020 documentation" href="#"/>
-        <link rel="next" title="Tutorial with graph_tran" href="tutorial.html"/> 
+        <link rel="next" title="graph_tran.ktn_io" href="ktn_io.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.1
+                0.1.0
               </div>
             
           
@@ -86,11 +86,13 @@
             
                 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial with graph_tran</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ktn_io.html">graph_tran.ktn_io</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gt_tools.html">graph_tran.gt_tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="fpt_stats.html">graph_tran.fpt_stats</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ktn.ktn_analysis.html">graph_tran.ktn.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.partialGT.html">dimred.partialGT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.ktn_analysis.html">dimred.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conversion.html">graph_tran.conversion</a></li>
 </ul>
 
@@ -172,21 +174,21 @@ from discrete path sampling.</p>
 <p>We also include code for two different approaches to the dimensionality reduction
 of Markov chains using the graph transformation algorithm. In the first
 approach, we consider the problem of estimating a reduced Markov chain given a partitioning of
-the original Markov chain into communities of microstates (nodes). Various
+the original Markov chain into communities of microstates (nodes). <a class="footnote-reference" href="#id3" id="id1">[1]</a> Various
 implementations of the inter-community rates are provided, including the
 simplest expression given by the local equilibrium approximation, as well as
 the optimal rates originally derived by Hummer and Szabo. In the second
-approach, which we call partial graph transformation, <a class="footnote-reference" href="#id4" id="id1">[3]</a> select nodes that
+approach, which we call partial graph transformation, <a class="footnote-reference" href="#id4" id="id2">[2]</a> select nodes that
 contribute the least to global dynamics are renormalized away with graph
 transformation. The result is a smaller-dimensional Markov chain that is
 better-conditioned for further numerical analysis.</p>
-<p>All methods are discussed in detail in the following manuscript, which should
-also be cited when using this software. <a class="footnote-reference" href="#id3" id="id2">[1]</a></p>
+<p>All methods are discussed in detail in the following manuscripts, which should
+also be cited when using this software:</p>
 <table class="docutils footnote" frame="void" id="id3" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td><ol class="first last upperalpha simple" start="4">
-<li>Kannan, D. J. Sharpe, T. D. Swinburne, D. J. Wales, “Estimating reduced Markov chains from mean first passage times using graph transformation.” <em>J. Chem. Phys.</em> (2020)</li>
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><ol class="first last upperalpha simple" start="4">
+<li>Kannan, D. J. Sharpe, T. D. Swinburne, D. J. Wales, “Dimensionality reduction of Markov chains from mean first passage times using graph transformation.” <em>J. Chem. Phys.</em> (2020)</li>
 </ol>
 </td></tr>
 </tbody>
@@ -194,7 +196,7 @@ also be cited when using this software. <a class="footnote-reference" href="#id3
 <table class="docutils footnote" frame="void" id="id4" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[3]</a></td><td><ol class="first last upperalpha simple" start="4">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><ol class="first last upperalpha simple" start="4">
 <li>Kannan, D. J. Sharpe, T. D. Swinburne, D. J. Wales, “Dimensionality reduction of complex networks with graph transformation” <em>Phys. Rev. E.</em> (2020)</li>
 </ol>
 </td></tr>
@@ -204,25 +206,33 @@ also be cited when using this software. <a class="footnote-reference" href="#id3
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial with graph_tran</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#getting-started">Getting Started</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#input-files">Input Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#computing-mean-first-passage-times">Computing Mean First Passage Times</a></li>
-</ul>
-</li>
 <li class="toctree-l1"><a class="reference internal" href="ktn_io.html">graph_tran.ktn_io</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ktn_io.html#files-defining-a-and-b-sets">Files defining A and B sets</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ktn_io.html#files-describing-stationary-points-of-energy-landscape">Files describing stationary points of energy landscape</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ktn_io.html#read-in-input-files-describing-the-markov-chain-to-analyze">Read in input files describing the Markov chain to analyze</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="gt_tools.html">graph_tran.gt_tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="fpt_stats.html">graph_tran.fpt_stats</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ktn.ktn_analysis.html">graph_tran.ktn.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gt_tools.html">graph_tran.gt_tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gt_tools.html#iteratively-remove-nodes-from-a-markov-chain-with-graph-transformation">Iteratively remove nodes from a Markov chain with graph transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fpt_stats.html">graph_tran.fpt_stats</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fpt_stats.html#calculate-first-passage-time-statistics-with-graph-transformation">Calculate first passage time statistics with graph transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.partialGT.html">dimred.partialGT</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dimred.partialGT.html#partial-graph-transformation-a-dimensionality-reduction-strategy">Partial graph transformation: A dimensionality reduction strategy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.ktn_analysis.html">dimred.ktn_analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dimred.ktn_analysis.html#optimal-markovian-coarse-graining-given-a-community-structure">Optimal Markovian coarse-graining given a community structure</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dimred.pathsample_wrapper.html#wrapper-to-pathsample-implementation-of-graph-transformation">Wrapper to PATHSAMPLE implementation of graph transformation</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="conversion.html">graph_tran.conversion</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="conversion.html#community-files">Community Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="conversion.html#community-data-structures">Community data structures:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="conversion.html#rate-matrix-files">Rate matrix files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="conversion.html#rate-matrix-variables">Rate matrix variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="conversion.html#file-conversions">File Conversions</a></li>
 </ul>
 </li>
 </ul>
@@ -244,7 +254,7 @@ also be cited when using this software. <a class="footnote-reference" href="#id3
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="tutorial.html" class="btn btn-neutral float-right" title="Tutorial with graph_tran" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="ktn_io.html" class="btn btn-neutral float-right" title="graph_tran.ktn_io" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
     </div>

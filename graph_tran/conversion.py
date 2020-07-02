@@ -1,39 +1,41 @@
-"""File Conversions
-
-The KTN_python module includes python GT tools, KTN analysis tools, and
+"""
+File Conversions 
+----------------
+The `graph_tran` package includes python GT tools, dimensionality reduction tools, and
 ways to talk to the external programs PATHSAMPLE and DISCOTRESS. 
-To unify these four software packages, this script converts between 
-different file formats for representing KTNs.
+To unify these three software packages, this script converts between 
+different file formats for representing Markov chains.
 
 Community Files
----------------
+...............
 communities.dat : single-column (nnnodes,)
     used by DISCOTRESS and ktn_tools; each line contains community ID (0-indexed)
     of the node specified by the line number in the file
-minima.groups : output of DUMPGROUPS keyword from REGROUPFREE routine in PATHSAMPLE
-    used by ParsePathsample class in ktn package to write a communities.dat file. 
-    So conversion is absent from this file.
 
-Community data structures:
---------------------------
-ktn.communities : dictionary mapping community IDs (1-indexed) to minima IDs (1-indexed)
-    file format used in ktn_analysis
-pgt.communities : dictionary mapping community IDs (0-indexed) to boolean list (nnodes,)
-    Boolean list selects out the nodes in that community; used in gt_tools
+Community data structures
+.........................
+Analyze_KTN.communities : dictionary mapping community IDs (1-indexed) to node IDs (1-indexed)
+    Data structure used in ktn_analysis
+ktn_io.communities : dictionary mapping community IDs (0-indexed) to boolean array (nnodes,)
+    Boolean array selects out the nodes in that community; used in gt_tools
 
 Rate matrix files
------------------
-rate_matrix.dat : (nnodes, nnodes) rate matrix entries printed in dense format
-min.data, ts.data : input to PATHSAMPLE (unnecessary if rate_matrix.dat is present)
+.................
+rate_matrix.dat : (nnodes, nnodes) 
+    rate matrix entries printed in dense format
+min.data, ts.data : 
+    input to PATHSAMPLE (unnecessary if rate_matrix.dat is present)
 ts_weights.dat : single column, ln(kij), (2*nts, )
-    used in DISCOTRESS, output of DUMPINFO, kij first line, kji second line, etc.
+    used in DISCOTRESS, output of DUMPINFO keyword in PATHSAMPLE, kij first line, kji second line, etc.
 ts_conns.dat   : double columns, i <-> j, (nts, )
-    used in DISCOTRESS, output of DUMPINFO
+    used in DISCOTRESS, output of DUMPINFO keyword in PATHSAMPLE
 
 Rate matrix variables
----------------------
-Q : in GT code, Q is actually -K and is typically in sparse format
-ktn.K : in ktn code, K is the same as -Q and is in dense format
+.....................
+pgt.Q
+    in GT code, Q is actually -K and is typically in sparse format
+Analyze_KTN.K
+    in ktn code, K is the same as -Q and is in dense format
 
 """
 import numpy as np
@@ -106,12 +108,12 @@ def ts_weights_conns_from_K(K, data_path, suffix=''):
                 ts_weights.write(f'{np.log(K[ix[i], iy[i]])}\n')
 
 def dump_stat_probs(pi, data_path, suffix='', fmt='%.20G'):
-    """ Dump a stat_prob.dat file."""
+    """ Dump a stat_prob.dat file containing the stationary probabilities of nodes."""
     pi = pi/pi.sum()
     np.savetxt(Path(data_path)/'stat_prob{suffix}.dat', np.log(pi), fmt=fmt)
 
 def read_ktn_info(data_path, suffix='', log=False):
-    """ Read in Daniel's files stat_prob.dat, ts_weights.dat, and ts_conns.dat
+    """ Read input files stat_prob.dat, ts_weights.dat, and ts_conns.dat
     and return a rate matrix and vector of stationary probabilities."""
 
     logpi = np.loadtxt(data_path/f'stat_prob{suffix}.dat')
@@ -148,8 +150,8 @@ def read_ktn_info(data_path, suffix='', log=False):
 """ Converting between community data structures. """
 
 def ktn_comms_from_gt_comms(gt_comms):
-    """ Convert the GT-style dictionary of communities to a format
-    compatible with the ktn_analysis class.
+    """ Convert the dictionary of communities used in `gt_tools` to a format
+    compatible with the `ktn_analysis` module.
 
     Parameters
     ----------
@@ -168,11 +170,24 @@ def ktn_comms_from_gt_comms(gt_comms):
     return ktn_comms
 
 def write_AB_communities_from_gt(gt_comms, A, B, data_path, suffix=''):
-    """ Write a communities.dat file containing just 2 communities;
-    all nodes in B U I are assigned to community 0, and all nodes in
-    absorbing A assigned to community 1. Useful for simulating A<-B
+    r""" Write a communities.dat file containing just 2 communities;
+    all nodes in :math:`(\mathcal{B}\cup\mathcal{I})` are assigned to community 0, and all nodes in
+    absorbing macrostate :math:`(\mathcal{A})` assigned to community 1. Useful for simulating A<-B
     transition paths with DISCOTRESS.
-    Note: A and B are 0-indexed IDs of communities A and B respectively.
+
+    Parameters
+    ----------
+    gt_comms: dict
+        community IDs (0-indexed) to boolean array selectors (nnodes,)
+    A : int
+        community ID of the absorbing macrostate
+    B : int
+        community ID of the source macrostate
+    data_path : str or Path object
+        path to directory where file should be written
+    suffix : str
+        suffix for file name `communities{suffix}.dat`
+
     """
 
     AS = gt_comms[A]
@@ -184,7 +199,19 @@ def write_AB_communities_from_gt(gt_comms, A, B, data_path, suffix=''):
     write_gt_comms(AB_comms, data_path, suffix=suffix)
 
 def write_gt_comms(gt_comms, data_path, suffix=''):
-    """ Write a communities.dat file from GT-style communities dictionary."""
+    """ Write a single-column `communities.dat` file from communities dictionary
+    as defined in the `ktn_io` module.
+
+    Parameters
+    ----------
+    gt_comms: dict
+        community IDs (0-indexed) to boolean array selectors (nnodes,)
+    data_path : str or Path object
+        path to directory where file should be written
+    suffix : str
+        suffix for file name `communities{suffix}.dat`
+
+    """
     if len(gt_comms) < 1:
         raise ValueError('gt_comms is empty.')
     #all community selector arrays have same length
@@ -197,16 +224,17 @@ def write_gt_comms(gt_comms, data_path, suffix=''):
     np.savetxt(Path(data_path)/f'communities{suffix}.dat', commIDs, fmt='%d')
 
 def write_ktn_comms(ktn_comms, data_path, suffix=''):
-    """ Write a single-column file `commdat` where each line is the
-    community ID (zero-indexed) of the minima given by the line
-    number.
+    """ Write a single-column `communities.dat` file from communities dictionary
+    as defined in the `ktn_analysis` module.
 
     Parameters
     ----------
-    communities : dict
+    ktn_comms : dict
         mapping from community ID (1-indexed) to minima ID (1-indexed)
-    commdat : .dat file name
-        file to which to write communitiy assignments (0-indexed)
+    data_path : str or Path object
+        path to directory where file should be written
+    suffix : str
+        suffix for file name `communities{suffix}.dat`
 
     """
     commdat = Path(data_path)/f'communities{suffix}.dat'
@@ -225,8 +253,22 @@ def write_ktn_comms(ktn_comms, data_path, suffix=''):
 
 def write_minA_minB(ktn_comms, Aind, Bind, data_path, suffix=''):
     """Write a min.A and min.B file based on minIDs
-    in the communities with IDs Aind and Bind. community IDs are 1-indexed
-    as are minIDs."""
+    in the communities with IDs Aind and Bind. 
+
+    Parameters
+    ----------
+    ktn_comms : dict
+        mapping from community ID (1-indexed) to minima ID (1-indexed)
+    Aind : int
+        community ID (1-indexed) of A region
+    Bind : int
+        community ID (1-indexed) of B region
+    data_path : str or Path object
+        path to directory where file should be written
+    suffix : str
+        suffix for file names `min.A{suffix}` and `min.B{suffix}`     
+
+    """
     minima_in_A = ktn_comms[Aind]
     minima_in_B = ktn_comms[Bind]
     with open(data_path/f'min.A{suffix}','w') as f:

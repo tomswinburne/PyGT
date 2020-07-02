@@ -34,7 +34,7 @@
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="graph_tran 2020 documentation" href="index.html"/>
-        <link rel="prev" title="graph_tran.ktn.ktn_analysis" href="ktn.ktn_analysis.html"/> 
+        <link rel="prev" title="dimred.pathsample_wrapper" href="dimred.pathsample_wrapper.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.1
+                0.1.0
               </div>
             
           
@@ -86,18 +86,21 @@
             
                 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html#input-files">Input Files</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html#computing-mean-first-passage-times">Computing Mean First Passage Times</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ktn_io.html">graph_tran.ktn_io</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gt_tools.html">graph_tran.gt_tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="fpt_stats.html">graph_tran.fpt_stats</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ktn.ktn_analysis.html">graph_tran.ktn.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.partialGT.html">dimred.partialGT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.ktn_analysis.html">dimred.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">graph_tran.conversion</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#community-files">Community Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#community-data-structures">Community data structures:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#rate-matrix-files">Rate matrix files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#rate-matrix-variables">Rate matrix variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#file-conversions">File Conversions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#community-files">Community Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#community-data-structures">Community data structures</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rate-matrix-files">Rate matrix files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rate-matrix-variables">Rate matrix variables</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -165,47 +168,50 @@
             
   <div class="section" id="module-graph_tran.conversion">
 <span id="graph-tran-conversion"></span><h1>graph_tran.conversion<a class="headerlink" href="#module-graph_tran.conversion" title="Permalink to this headline">¶</a></h1>
-<p>File Conversions</p>
-<p>The KTN_python module includes python GT tools, KTN analysis tools, and
+<div class="section" id="file-conversions">
+<h2>File Conversions<a class="headerlink" href="#file-conversions" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>graph_tran</cite> package includes python GT tools, dimensionality reduction tools, and
 ways to talk to the external programs PATHSAMPLE and DISCOTRESS.
-To unify these four software packages, this script converts between
-different file formats for representing KTNs.</p>
+To unify these three software packages, this script converts between
+different file formats for representing Markov chains.</p>
 <div class="section" id="community-files">
-<h2>Community Files<a class="headerlink" href="#community-files" title="Permalink to this headline">¶</a></h2>
+<h3>Community Files<a class="headerlink" href="#community-files" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
 <dt>communities.dat <span class="classifier-delimiter">:</span> <span class="classifier">single-column (nnnodes,)</span></dt>
 <dd>used by DISCOTRESS and ktn_tools; each line contains community ID (0-indexed)
 of the node specified by the line number in the file</dd>
-<dt>minima.groups <span class="classifier-delimiter">:</span> <span class="classifier">output of DUMPGROUPS keyword from REGROUPFREE routine in PATHSAMPLE</span></dt>
-<dd>used by ParsePathsample class in ktn package to write a communities.dat file.
-So conversion is absent from this file.</dd>
 </dl>
 </div>
 <div class="section" id="community-data-structures">
-<h2>Community data structures:<a class="headerlink" href="#community-data-structures" title="Permalink to this headline">¶</a></h2>
+<h3>Community data structures<a class="headerlink" href="#community-data-structures" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
-<dt>ktn.communities <span class="classifier-delimiter">:</span> <span class="classifier">dictionary mapping community IDs (1-indexed) to minima IDs (1-indexed)</span></dt>
-<dd>file format used in ktn_analysis</dd>
-<dt>pgt.communities <span class="classifier-delimiter">:</span> <span class="classifier">dictionary mapping community IDs (0-indexed) to boolean list (nnodes,)</span></dt>
-<dd>Boolean list selects out the nodes in that community; used in gt_tools</dd>
+<dt>Analyze_KTN.communities <span class="classifier-delimiter">:</span> <span class="classifier">dictionary mapping community IDs (1-indexed) to node IDs (1-indexed)</span></dt>
+<dd>Data structure used in ktn_analysis</dd>
+<dt>ktn_io.communities <span class="classifier-delimiter">:</span> <span class="classifier">dictionary mapping community IDs (0-indexed) to boolean array (nnodes,)</span></dt>
+<dd>Boolean array selects out the nodes in that community; used in gt_tools</dd>
 </dl>
 </div>
 <div class="section" id="rate-matrix-files">
-<h2>Rate matrix files<a class="headerlink" href="#rate-matrix-files" title="Permalink to this headline">¶</a></h2>
-<p>rate_matrix.dat : (nnodes, nnodes) rate matrix entries printed in dense format
-min.data, ts.data : input to PATHSAMPLE (unnecessary if rate_matrix.dat is present)
-ts_weights.dat : single column, ln(kij), (2*nts, )</p>
-<blockquote>
-<div>used in DISCOTRESS, output of DUMPINFO, kij first line, kji second line, etc.</div></blockquote>
+<h3>Rate matrix files<a class="headerlink" href="#rate-matrix-files" title="Permalink to this headline">¶</a></h3>
 <dl class="docutils">
+<dt>rate_matrix.dat <span class="classifier-delimiter">:</span> <span class="classifier">(nnodes, nnodes)</span></dt>
+<dd>rate matrix entries printed in dense format</dd>
+<dt>min.data, ts.data :</dt>
+<dd>input to PATHSAMPLE (unnecessary if rate_matrix.dat is present)</dd>
+<dt>ts_weights.dat <span class="classifier-delimiter">:</span> <span class="classifier">single column, ln(kij), (2*nts, )</span></dt>
+<dd>used in DISCOTRESS, output of DUMPINFO keyword in PATHSAMPLE, kij first line, kji second line, etc.</dd>
 <dt>ts_conns.dat <span class="classifier-delimiter">:</span> <span class="classifier">double columns, i &lt;-&gt; j, (nts, )</span></dt>
-<dd>used in DISCOTRESS, output of DUMPINFO</dd>
+<dd>used in DISCOTRESS, output of DUMPINFO keyword in PATHSAMPLE</dd>
 </dl>
 </div>
 <div class="section" id="rate-matrix-variables">
-<h2>Rate matrix variables<a class="headerlink" href="#rate-matrix-variables" title="Permalink to this headline">¶</a></h2>
-<p>Q : in GT code, Q is actually -K and is typically in sparse format
-ktn.K : in ktn code, K is the same as -Q and is in dense format</p>
+<h3>Rate matrix variables<a class="headerlink" href="#rate-matrix-variables" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>pgt.Q</dt>
+<dd>in GT code, Q is actually -K and is typically in sparse format</dd>
+<dt>Analyze_KTN.K</dt>
+<dd>in ktn code, K is the same as -Q and is in dense format</dd>
+</dl>
 <dl class="function">
 <dt id="graph_tran.conversion.K_from_Q">
 <code class="descclassname">graph_tran.conversion.</code><code class="descname">K_from_Q</code><span class="sig-paren">(</span><em>Q</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#K_from_Q"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.K_from_Q" title="Permalink to this definition">¶</a></dt>
@@ -242,14 +248,14 @@ can also be used to get Q from K, although that’s a less useful conversion.</p
 <dl class="function">
 <dt id="graph_tran.conversion.dump_stat_probs">
 <code class="descclassname">graph_tran.conversion.</code><code class="descname">dump_stat_probs</code><span class="sig-paren">(</span><em>pi</em>, <em>data_path</em>, <em>suffix=''</em>, <em>fmt='%.20G'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#dump_stat_probs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.dump_stat_probs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Dump a stat_prob.dat file.</p>
+<dd><p>Dump a stat_prob.dat file containing the stationary probabilities of nodes.</p>
 </dd></dl>
 
 <dl class="function">
 <dt id="graph_tran.conversion.ktn_comms_from_gt_comms">
 <code class="descclassname">graph_tran.conversion.</code><code class="descname">ktn_comms_from_gt_comms</code><span class="sig-paren">(</span><em>gt_comms</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#ktn_comms_from_gt_comms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.ktn_comms_from_gt_comms" title="Permalink to this definition">¶</a></dt>
-<dd><p>Convert the GT-style dictionary of communities to a format
-compatible with the ktn_analysis class.</p>
+<dd><p>Convert the dictionary of communities used in <cite>gt_tools</cite> to a format
+compatible with the <cite>ktn_analysis</cite> module.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -267,7 +273,7 @@ compatible with the ktn_analysis class.</p>
 <dl class="function">
 <dt id="graph_tran.conversion.read_ktn_info">
 <code class="descclassname">graph_tran.conversion.</code><code class="descname">read_ktn_info</code><span class="sig-paren">(</span><em>data_path</em>, <em>suffix=''</em>, <em>log=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#read_ktn_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.read_ktn_info" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read in Daniel’s files stat_prob.dat, ts_weights.dat, and ts_conns.dat
+<dd><p>Read input files stat_prob.dat, ts_weights.dat, and ts_conns.dat
 and return a rate matrix and vector of stationary probabilities.</p>
 </dd></dl>
 
@@ -285,31 +291,59 @@ TODO: figure out how to get ts_weights.dat from sparse matrix</p>
 <dt id="graph_tran.conversion.write_AB_communities_from_gt">
 <code class="descclassname">graph_tran.conversion.</code><code class="descname">write_AB_communities_from_gt</code><span class="sig-paren">(</span><em>gt_comms</em>, <em>A</em>, <em>B</em>, <em>data_path</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#write_AB_communities_from_gt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.write_AB_communities_from_gt" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write a communities.dat file containing just 2 communities;
-all nodes in B U I are assigned to community 0, and all nodes in
-absorbing A assigned to community 1. Useful for simulating A&lt;-B
-transition paths with DISCOTRESS.
-Note: A and B are 0-indexed IDs of communities A and B respectively.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="graph_tran.conversion.write_gt_comms">
-<code class="descclassname">graph_tran.conversion.</code><code class="descname">write_gt_comms</code><span class="sig-paren">(</span><em>gt_comms</em>, <em>data_path</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#write_gt_comms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.write_gt_comms" title="Permalink to this definition">¶</a></dt>
-<dd><p>Write a communities.dat file from GT-style communities dictionary.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="graph_tran.conversion.write_ktn_comms">
-<code class="descclassname">graph_tran.conversion.</code><code class="descname">write_ktn_comms</code><span class="sig-paren">(</span><em>ktn_comms</em>, <em>data_path</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#write_ktn_comms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.write_ktn_comms" title="Permalink to this definition">¶</a></dt>
-<dd><p>Write a single-column file <cite>commdat</cite> where each line is the
-community ID (zero-indexed) of the minima given by the line
-number.</p>
+all nodes in <span class="math notranslate nohighlight">\((\mathcal{B}\cup\mathcal{I})\)</span> are assigned to community 0, and all nodes in
+absorbing macrostate <span class="math notranslate nohighlight">\((\mathcal{A})\)</span> assigned to community 1. Useful for simulating A&lt;-B
+transition paths with DISCOTRESS.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>communities</strong> (<em>dict</em>) – mapping from community ID (1-indexed) to minima ID (1-indexed)</li>
-<li><strong>commdat</strong> (<em>dat file name</em>) – file to which to write communitiy assignments (0-indexed)</li>
+<li><strong>gt_comms</strong> (<em>dict</em>) – community IDs (0-indexed) to boolean array selectors (nnodes,)</li>
+<li><strong>A</strong> (<em>int</em>) – community ID of the absorbing macrostate</li>
+<li><strong>B</strong> (<em>int</em>) – community ID of the source macrostate</li>
+<li><strong>data_path</strong> (<em>str</em><em> or </em><em>Path object</em>) – path to directory where file should be written</li>
+<li><strong>suffix</strong> (<em>str</em>) – suffix for file name <cite>communities{suffix}.dat</cite></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.conversion.write_gt_comms">
+<code class="descclassname">graph_tran.conversion.</code><code class="descname">write_gt_comms</code><span class="sig-paren">(</span><em>gt_comms</em>, <em>data_path</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#write_gt_comms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.write_gt_comms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a single-column <cite>communities.dat</cite> file from communities dictionary
+as defined in the <cite>ktn_io</cite> module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>gt_comms</strong> (<em>dict</em>) – community IDs (0-indexed) to boolean array selectors (nnodes,)</li>
+<li><strong>data_path</strong> (<em>str</em><em> or </em><em>Path object</em>) – path to directory where file should be written</li>
+<li><strong>suffix</strong> (<em>str</em>) – suffix for file name <cite>communities{suffix}.dat</cite></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.conversion.write_ktn_comms">
+<code class="descclassname">graph_tran.conversion.</code><code class="descname">write_ktn_comms</code><span class="sig-paren">(</span><em>ktn_comms</em>, <em>data_path</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#write_ktn_comms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.write_ktn_comms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a single-column <cite>communities.dat</cite> file from communities dictionary
+as defined in the <cite>ktn_analysis</cite> module.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>ktn_comms</strong> (<em>dict</em>) – mapping from community ID (1-indexed) to minima ID (1-indexed)</li>
+<li><strong>data_path</strong> (<em>str</em><em> or </em><em>Path object</em>) – path to directory where file should be written</li>
+<li><strong>suffix</strong> (<em>str</em>) – suffix for file name <cite>communities{suffix}.dat</cite></li>
 </ul>
 </td>
 </tr>
@@ -321,10 +355,25 @@ number.</p>
 <dt id="graph_tran.conversion.write_minA_minB">
 <code class="descclassname">graph_tran.conversion.</code><code class="descname">write_minA_minB</code><span class="sig-paren">(</span><em>ktn_comms</em>, <em>Aind</em>, <em>Bind</em>, <em>data_path</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/conversion.html#write_minA_minB"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.conversion.write_minA_minB" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write a min.A and min.B file based on minIDs
-in the communities with IDs Aind and Bind. community IDs are 1-indexed
-as are minIDs.</p>
+in the communities with IDs Aind and Bind.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>ktn_comms</strong> (<em>dict</em>) – mapping from community ID (1-indexed) to minima ID (1-indexed)</li>
+<li><strong>Aind</strong> (<em>int</em>) – community ID (1-indexed) of A region</li>
+<li><strong>Bind</strong> (<em>int</em>) – community ID (1-indexed) of B region</li>
+<li><strong>data_path</strong> (<em>str</em><em> or </em><em>Path object</em>) – path to directory where file should be written</li>
+<li><strong>suffix</strong> (<em>str</em>) – suffix for file names <cite>min.A{suffix}</cite> and <cite>min.B{suffix}</cite></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
+</div>
 </div>
 </div>
 
@@ -336,7 +385,7 @@ as are minIDs.</p>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
       
-        <a href="ktn.ktn_analysis.html" class="btn btn-neutral" title="graph_tran.ktn.ktn_analysis" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="dimred.pathsample_wrapper.html" class="btn btn-neutral" title="dimred.pathsample_wrapper" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

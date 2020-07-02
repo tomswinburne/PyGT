@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.1
+                0.1.0
               </div>
             
           
@@ -86,11 +86,13 @@
             
                 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial with graph_tran</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ktn_io.html">graph_tran.ktn_io</a></li>
 <li class="toctree-l1"><a class="reference internal" href="gt_tools.html">graph_tran.gt_tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="fpt_stats.html">graph_tran.fpt_stats</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ktn.ktn_analysis.html">graph_tran.ktn.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.partialGT.html">dimred.partialGT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.ktn_analysis.html">dimred.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a></li>
 <li class="toctree-l1"><a class="reference internal" href="conversion.html">graph_tran.conversion</a></li>
 </ul>
 
@@ -161,10 +163,11 @@
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
  | <a href="#G"><strong>G</strong></a>
- | <a href="#H"><strong>H</strong></a>
+ | <a href="#I"><strong>I</strong></a>
  | <a href="#K"><strong>K</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
  | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
@@ -176,7 +179,11 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN">Analyze_KTN (class in graph_tran.ktn.ktn_analysis)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN">Analyze_KTN (class in graph_tran.dimred.ktn_analysis)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.append_input">append_input() (graph_tran.dimred.pathsample_wrapper.ParsedPathsample method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -184,25 +191,29 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.calc_eigenvectors">calc_eigenvectors() (in module graph_tran.ktn.ktn_analysis)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.calc_eigenvectors">calc_eigenvectors() (in module graph_tran.dimred.ktn_analysis)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.calc_inter_community_rates_NGT">calc_inter_community_rates_NGT() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.calc_inter_community_rates_GT">calc_inter_community_rates_GT() (graph_tran.dimred.pathsample_wrapper.ScanPathsample method)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.calc_mfpt_AB_tom">calc_mfpt_AB_tom() (in module graph_tran.ktn.ktn_analysis)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.calculate_eigenfunction_error">calculate_eigenfunction_error() (graph_tran.dimred.ktn_analysis.Analyze_KTN method)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.calculate_eigenfunction_error">calculate_eigenfunction_error() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.calculate_spectral_error">calculate_spectral_error() (in module graph_tran.dimred.ktn_analysis)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.calculate_spectral_error">calculate_spectral_error() (in module graph_tran.ktn.ktn_analysis)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.check_detailed_balance">check_detailed_balance() (in module graph_tran.dimred.ktn_analysis)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.check_detailed_balance">check_detailed_balance() (in module graph_tran.ktn.ktn_analysis)</a>
+      <li><a href="dimred.partialGT.html#graph_tran.dimred.partialGT.choose_nodes_to_remove">choose_nodes_to_remove() (in module graph_tran.dimred.partialGT)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.compare_HS_LEA">compare_HS_LEA() (in module graph_tran.ktn.ktn_analysis)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.commdata">commdata (graph_tran.dimred.ktn_analysis.Analyze_KTN attribute)</a>
 </li>
-      <li><a href="fpt_stats.html#graph_tran.fpt_stats.compute_escape_stats">compute_escape_stats() (in module graph_tran.fpt_stats)</a>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.comment_input">comment_input() (graph_tran.dimred.pathsample_wrapper.ParsedPathsample method)</a>
+</li>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.commpi">commpi (graph_tran.dimred.ktn_analysis.Analyze_KTN attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.compute_HS_matrices">compute_HS_matrices() (in module graph_tran.ktn.ktn_analysis)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.communities">communities (graph_tran.dimred.ktn_analysis.Analyze_KTN attribute)</a>
+</li>
+      <li><a href="fpt_stats.html#graph_tran.fpt_stats.compute_escape_stats">compute_escape_stats() (in module graph_tran.fpt_stats)</a>
 </li>
       <li><a href="fpt_stats.html#graph_tran.fpt_stats.compute_MFPTAB">compute_MFPTAB() (in module graph_tran.fpt_stats)</a>
 </li>
@@ -210,15 +221,15 @@
 </li>
       <li><a href="fpt_stats.html#graph_tran.fpt_stats.compute_rates">compute_rates() (in module graph_tran.fpt_stats)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_matrix_Hummer_Szabo">construct_coarse_matrix_Hummer_Szabo() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_from_MFPTs">construct_coarse_rate_matrix_from_MFPTs() (graph_tran.dimred.ktn_analysis.Analyze_KTN method)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_from_MFPTs">construct_coarse_rate_matrix_from_MFPTs() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_Hummer_Szabo">construct_coarse_rate_matrix_Hummer_Szabo() (graph_tran.dimred.ktn_analysis.Analyze_KTN method)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_LEA">construct_coarse_rate_matrix_LEA() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_KKRA">construct_coarse_rate_matrix_KKRA() (graph_tran.dimred.ktn_analysis.Analyze_KTN method)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_NGT">construct_coarse_rate_matrix_NGT() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.construct_coarse_rate_matrix_LEA">construct_coarse_rate_matrix_LEA() (graph_tran.dimred.ktn_analysis.Analyze_KTN method)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.construct_transition_matrix">construct_transition_matrix() (in module graph_tran.ktn.ktn_analysis)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.construct_transition_matrix">construct_transition_matrix() (in module graph_tran.dimred.ktn_analysis)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -226,13 +237,23 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.define_A_and_B">define_A_and_B() (graph_tran.dimred.pathsample_wrapper.ParsedPathsample method)</a>
+</li>
       <li><a href="gt_tools.html#graph_tran.gt_tools.direct_solve">direct_solve() (in module graph_tran.gt_tools)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.draw_disconnectivity_graph_AB">draw_disconnectivity_graph_AB() (graph_tran.dimred.pathsample_wrapper.ParsedPathsample method)</a>
 </li>
       <li><a href="conversion.html#graph_tran.conversion.dump_gephi_format">dump_gephi_format() (in module graph_tran.conversion)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.dump_ktn_info_scan">dump_ktn_info_scan() (in module graph_tran.dimred.pathsample_wrapper)</a>
+</li>
       <li><a href="conversion.html#graph_tran.conversion.dump_rate_mat">dump_rate_mat() (in module graph_tran.conversion)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.dump_rates_from_local_equilibrium_approx">dump_rates_from_local_equilibrium_approx() (graph_tran.dimred.pathsample_wrapper.ScanPathsample method)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.dump_rates_full_network">dump_rates_full_network() (graph_tran.dimred.pathsample_wrapper.ScanPathsample method)</a>
 </li>
       <li><a href="conversion.html#graph_tran.conversion.dump_stat_probs">dump_stat_probs() (in module graph_tran.conversion)</a>
 </li>
@@ -242,41 +263,49 @@
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_approx_kells_cluster_passage_times">get_approx_kells_cluster_passage_times() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.get_comm_stat_probs">get_comm_stat_probs() (graph_tran.dimred.ktn_analysis.Analyze_KTN method)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_comm_stat_probs">get_comm_stat_probs() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.get_free_energies_from_rates">get_free_energies_from_rates() (graph_tran.dimred.ktn_analysis.Analyze_KTN method)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_free_energies_from_rates">get_free_energies_from_rates() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.get_intercommunity_MFPTs_GT_PATHSAMPLE">get_intercommunity_MFPTs_GT_PATHSAMPLE() (graph_tran.dimred.pathsample_wrapper.ScanPathsample method)</a>
+</li>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.get_intercommunity_MFPTs_linear_solve">get_intercommunity_MFPTs_linear_solve() (graph_tran.dimred.ktn_analysis.Analyze_KTN method)</a>
+</li>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.get_intercommunity_weighted_MFPTs">get_intercommunity_weighted_MFPTs() (graph_tran.dimred.ktn_analysis.Analyze_KTN method)</a>
+</li>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.get_intermicrostate_mfpts_fundamental_matrix">get_intermicrostate_mfpts_fundamental_matrix() (graph_tran.dimred.ktn_analysis.Analyze_KTN method)</a>
 </li>
       <li><a href="fpt_stats.html#graph_tran.fpt_stats.get_intermicrostate_mfpts_GT">get_intermicrostate_mfpts_GT() (in module graph_tran.fpt_stats)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_kells_cluster_passage_times">get_kells_cluster_passage_times() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.get_intermicrostate_mfpts_GT_PATHSAMPLE">get_intermicrostate_mfpts_GT_PATHSAMPLE() (graph_tran.dimred.pathsample_wrapper.ScanPathsample method)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_AB">get_MFPT_AB() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.get_intermicrostate_mfpts_linear_solve">get_intermicrostate_mfpts_linear_solve() (graph_tran.dimred.ktn_analysis.Analyze_KTN method)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_between_communities">get_MFPT_between_communities() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.get_MFPTAB_PATHSAMPLE">get_MFPTAB_PATHSAMPLE() (graph_tran.dimred.pathsample_wrapper.ScanPathsample method)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_between_communities_GT">get_MFPT_between_communities_GT() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.get_thetaIJ">get_thetaIJ() (graph_tran.dimred.ktn_analysis.Analyze_KTN method)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_between_states_GT">get_MFPT_between_states_GT() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.get_timescale_error">get_timescale_error() (graph_tran.dimred.ktn_analysis.Analyze_KTN method)</a>
 </li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_MFPT_from_Kmat">get_MFPT_from_Kmat() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
-</li>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.get_timescale_error">get_timescale_error() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.get_timescales">get_timescales() (in module graph_tran.dimred.ktn_analysis)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.get_timescales">get_timescales() (in module graph_tran.ktn.ktn_analysis)</a>
-</li>
       <li><a href="index.html#module-graph_tran">graph_tran (module)</a>
 </li>
       <li><a href="conversion.html#module-graph_tran.conversion">graph_tran.conversion (module)</a>
 </li>
+      <li><a href="dimred.html#module-graph_tran.dimred">graph_tran.dimred (module)</a>
+</li>
+      <li><a href="dimred.ktn_analysis.html#module-graph_tran.dimred.ktn_analysis">graph_tran.dimred.ktn_analysis (module)</a>
+</li>
+      <li><a href="dimred.partialGT.html#module-graph_tran.dimred.partialGT">graph_tran.dimred.partialGT (module)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#module-graph_tran.dimred.pathsample_wrapper">graph_tran.dimred.pathsample_wrapper (module)</a>
+</li>
       <li><a href="fpt_stats.html#module-graph_tran.fpt_stats">graph_tran.fpt_stats (module)</a>
 </li>
       <li><a href="gt_tools.html#module-graph_tran.gt_tools">graph_tran.gt_tools (module)</a>
-</li>
-      <li><a href="ktn.ktn_analysis.html#module-graph_tran.ktn.ktn_analysis">graph_tran.ktn.ktn_analysis (module)</a>
 </li>
       <li><a href="ktn_io.html#module-graph_tran.ktn_io">graph_tran.ktn_io (module)</a>
 </li>
@@ -291,10 +320,10 @@
   </ul></td>
 </tr></table>
 
-<h2 id="H">H</h2>
+<h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.hummer_szabo_from_mfpt">hummer_szabo_from_mfpt() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.input">input (graph_tran.dimred.pathsample_wrapper.ParsedPathsample attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -302,10 +331,12 @@
 <h2 id="K">K</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="conversion.html#graph_tran.conversion.K_from_Q">K_from_Q() (in module graph_tran.conversion)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.K">K (graph_tran.dimred.ktn_analysis.Analyze_KTN attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="conversion.html#graph_tran.conversion.K_from_Q">K_from_Q() (in module graph_tran.conversion)</a>
+</li>
       <li><a href="conversion.html#graph_tran.conversion.ktn_comms_from_gt_comms">ktn_comms_from_gt_comms() (in module graph_tran.conversion)</a>
 </li>
   </ul></td>
@@ -316,10 +347,14 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="ktn_io.html#graph_tran.ktn_io.load_AB">load_AB() (in module graph_tran.ktn_io)</a>
 </li>
-      <li><a href="ktn_io.html#graph_tran.ktn_io.load_mat">load_mat() (in module graph_tran.ktn_io)</a>
+      <li><a href="ktn_io.html#graph_tran.ktn_io.load_CTMC">load_CTMC() (in module graph_tran.ktn_io)</a>
+</li>
+      <li><a href="ktn_io.html#graph_tran.ktn_io.load_DTMC">load_DTMC() (in module graph_tran.ktn_io)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="ktn_io.html#graph_tran.ktn_io.load_mat">load_mat() (in module graph_tran.ktn_io)</a>
+</li>
       <li><a href="ktn_io.html#graph_tran.ktn_io.load_mat_gt">load_mat_gt() (in module graph_tran.ktn_io)</a>
 </li>
       <li><a href="ktn_io.html#graph_tran.ktn_io.load_save_mat">load_save_mat() (in module graph_tran.ktn_io)</a>
@@ -336,7 +371,21 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.Analyze_KTN.mfpt_from_correlation">mfpt_from_correlation() (graph_tran.ktn.ktn_analysis.Analyze_KTN method)</a>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.minA">minA (graph_tran.dimred.pathsample_wrapper.ParsedPathsample attribute)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.minB">minB (graph_tran.dimred.pathsample_wrapper.ParsedPathsample attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.numInA">numInA (graph_tran.dimred.pathsample_wrapper.ParsedPathsample attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.numInB">numInB (graph_tran.dimred.pathsample_wrapper.ParsedPathsample attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -344,6 +393,12 @@
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.outbase">outbase (graph_tran.dimred.pathsample_wrapper.ScanPathsample attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.output">output (graph_tran.dimred.pathsample_wrapper.ParsedPathsample attribute)</a>
+</li>
       <li><a href="ktn_io.html#graph_tran.ktn_io.output_str">output_str (class in graph_tran.ktn_io)</a>
 </li>
   </ul></td>
@@ -352,11 +407,43 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.PATHSAMPLE">PATHSAMPLE (in module graph_tran.ktn.ktn_analysis)</a>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.parse">parse (graph_tran.dimred.pathsample_wrapper.ScanPathsample attribute)</a>
 </li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_dumpgroups">parse_dumpgroups() (graph_tran.dimred.pathsample_wrapper.ParsedPathsample method)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_GT_intermediates">parse_GT_intermediates() (graph_tran.dimred.pathsample_wrapper.ParsedPathsample method)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_input">parse_input() (graph_tran.dimred.pathsample_wrapper.ParsedPathsample method)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_minA_and_minB">parse_minA_and_minB() (graph_tran.dimred.pathsample_wrapper.ParsedPathsample method)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_output">parse_output() (graph_tran.dimred.pathsample_wrapper.ParsedPathsample method)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample">ParsedPathsample (class in graph_tran.dimred.pathsample_wrapper)</a>
+</li>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.path">path (graph_tran.dimred.ktn_analysis.Analyze_KTN attribute)</a>
+
+      <ul>
+        <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.path">(graph_tran.dimred.pathsample_wrapper.ParsedPathsample attribute)</a>
+</li>
+        <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.path">(graph_tran.dimred.pathsample_wrapper.ScanPathsample attribute)</a>
+</li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.pathdatafile">pathdatafile (graph_tran.dimred.pathsample_wrapper.ScanPathsample attribute)</a>
+</li>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.Analyze_KTN.pi">pi (graph_tran.dimred.ktn_analysis.Analyze_KTN attribute)</a>
+</li>
       <li><a href="ktn_io.html#graph_tran.ktn_io.printer">printer (class in graph_tran.ktn_io)</a>
+</li>
+      <li><a href="dimred.partialGT.html#graph_tran.dimred.partialGT.prune_all_basins">prune_all_basins() (in module graph_tran.dimred.partialGT)</a>
+</li>
+      <li><a href="dimred.partialGT.html#graph_tran.dimred.partialGT.prune_basins_sequentially">prune_basins_sequentially() (in module graph_tran.dimred.partialGT)</a>
+</li>
+      <li><a href="dimred.partialGT.html#graph_tran.dimred.partialGT.prune_intermediate_nodes">prune_intermediate_nodes() (in module graph_tran.dimred.partialGT)</a>
+</li>
+      <li><a href="dimred.partialGT.html#graph_tran.dimred.partialGT.prune_source">prune_source() (in module graph_tran.dimred.partialGT)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -366,21 +453,29 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="fpt_stats.html#graph_tran.fpt_stats.rates_cycle">rates_cycle() (in module graph_tran.fpt_stats)</a>
 </li>
-      <li><a href="fpt_stats.html#graph_tran.fpt_stats.read_communities">read_communities() (in module graph_tran.fpt_stats)</a>
+      <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.read_communities">read_communities() (in module graph_tran.dimred.ktn_analysis)</a>
 
       <ul>
-        <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.read_communities">(in module graph_tran.ktn.ktn_analysis)</a>
+        <li><a href="ktn_io.html#graph_tran.ktn_io.read_communities">(in module graph_tran.ktn_io)</a>
+</li>
+      </ul></li>
+      <li><a href="conversion.html#graph_tran.conversion.read_ktn_info">read_ktn_info() (in module graph_tran.conversion)</a>
+
+      <ul>
+        <li><a href="dimred.ktn_analysis.html#graph_tran.dimred.ktn_analysis.read_ktn_info">(in module graph_tran.dimred.ktn_analysis)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="conversion.html#graph_tran.conversion.read_ktn_info">read_ktn_info() (in module graph_tran.conversion)</a>
-
-      <ul>
-        <li><a href="ktn.ktn_analysis.html#graph_tran.ktn.ktn_analysis.read_ktn_info">(in module graph_tran.ktn.ktn_analysis)</a>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.remove_output">remove_output() (graph_tran.dimred.pathsample_wrapper.ScanPathsample method)</a>
 </li>
-      </ul></li>
       <li><a href="ktn_io.html#graph_tran.ktn_io.printer.restart">restart() (graph_tran.ktn_io.printer method)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.run_NGT_exact">run_NGT_exact() (graph_tran.dimred.pathsample_wrapper.ScanPathsample method)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.run_NGT_regrouped">run_NGT_regrouped() (graph_tran.dimred.pathsample_wrapper.ScanPathsample method)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.run_regroup">run_regroup() (graph_tran.dimred.pathsample_wrapper.ScanPathsample method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -388,6 +483,22 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.scan_Gthresh_and_temp">scan_Gthresh_and_temp() (in module graph_tran.dimred.pathsample_wrapper)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.scan_product_states">scan_product_states() (in module graph_tran.dimred.pathsample_wrapper)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.scan_regroup">scan_regroup() (graph_tran.dimred.pathsample_wrapper.ScanPathsample method)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.scan_temp">scan_temp() (graph_tran.dimred.pathsample_wrapper.ScanPathsample method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample">ScanPathsample (class in graph_tran.dimred.pathsample_wrapper)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.sort_A_and_B">sort_A_and_B() (graph_tran.dimred.pathsample_wrapper.ParsedPathsample method)</a>
+</li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ScanPathsample.suffix">suffix (graph_tran.dimred.pathsample_wrapper.ScanPathsample attribute)</a>
+</li>
       <li><a href="ktn_io.html#graph_tran.ktn_io.output_str.summary">summary() (graph_tran.ktn_io.output_str method)</a>
 </li>
   </ul></td>
@@ -414,14 +525,22 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="conversion.html#graph_tran.conversion.write_AB_communities_from_gt">write_AB_communities_from_gt() (in module graph_tran.conversion)</a>
 </li>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.write_communities">write_communities() (in module graph_tran.dimred.pathsample_wrapper)</a>
+</li>
       <li><a href="conversion.html#graph_tran.conversion.write_gt_comms">write_gt_comms() (in module graph_tran.conversion)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.write_input">write_input() (graph_tran.dimred.pathsample_wrapper.ParsedPathsample method)</a>
+</li>
       <li><a href="conversion.html#graph_tran.conversion.write_ktn_comms">write_ktn_comms() (in module graph_tran.conversion)</a>
 </li>
-      <li><a href="conversion.html#graph_tran.conversion.write_minA_minB">write_minA_minB() (in module graph_tran.conversion)</a>
+      <li><a href="dimred.pathsample_wrapper.html#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.write_minA_minB">write_minA_minB() (graph_tran.dimred.pathsample_wrapper.ParsedPathsample method)</a>
+
+      <ul>
+        <li><a href="conversion.html#graph_tran.conversion.write_minA_minB">(in module graph_tran.conversion)</a>
 </li>
+      </ul></li>
   </ul></td>
 </tr></table>
 

@@ -13,11 +13,10 @@ graph\_tran: Analyzing Metastable Markov Chains
    :maxdepth: 2
    :caption: Contents:
 
-   tutorial.rst
    ktn_io.rst
    gt_tools.rst
    fpt_stats.rst
-   ktn.ktn_analysis.rst
+   dimred.rst
    conversion.rst
 
 
