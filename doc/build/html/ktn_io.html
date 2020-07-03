@@ -298,9 +298,9 @@ components.</p>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
 <li><strong>B</strong> (<em>csr matrix (N,N)</em>) – sparse matrix of branching probabilities</li>
-<li><strong>K</strong> (<em>csr matrix (N,N)</em>) – sparse matrix where off-diagonal elements <span class="math notranslate nohighlight">\(K_{ij}\)</span> contain <span class="math notranslate nohighlight">\(i \leftarroq j\)</span> transition rates.
+<li><strong>K</strong> (<em>csr matrix (N,N)</em>) – sparse matrix where off-diagonal elements <span class="math notranslate nohighlight">\(K_{ij}\)</span> contain <span class="math notranslate nohighlight">\(i \leftarrow j\)</span> transition rates.
 Diagonal elements are 0.</li>
-<li><strong>D</strong> (<em>csr matrix (N,N)</em>) – sparse diagonal matrix with elements <span class="math notranslate nohighlight">\(D_{ii} = 1/ au_i\)</span> corresponding to inverse waiting times.</li>
+<li><strong>D</strong> (<em>csr matrix (N,N)</em>) – sparse diagonal matrix with elements <span class="math notranslate nohighlight">\(D_{ii} = 1/\tau_i\)</span> corresponding to inverse waiting times.</li>
 <li><strong>N</strong> (<em>int</em>) – number of nodes in the largest connected component of the Markov chain</li>
 <li><strong>u</strong> (<em>np.ndarray[float64] (N,)</em>) – energies of the N nodes in the Markov chain</li>
 <li><strong>s</strong> (<em>np.ndarray[float64] (N,)</em>) – entropies of the N nodes in the Markov chain</li>

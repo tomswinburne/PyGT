@@ -4,11 +4,12 @@
 Deepti Kannan, 2020"""
 
 #library code
-import lib.ktn_io as kio
-import lib.gt_tools as gt
-import lib.partialGT as pgt
-import lib.conversion as convert
-from ktn.ktn_analysis import *
+import graph_tran
+from graph_tran import ktn_io as kio
+from graph_tran import gt_tools as gt
+from graph_tran import fpt_stats as fpt
+from graph_tran import conversion as convert
+from graph_tran.dimred.ktn_analysis import *
 #other modules
 import numpy as np
 import scipy as sp
@@ -95,22 +96,22 @@ def compare_HS_LEA(temps, data_path=Path('KTN_data/32state'), theta=False):
         ktn.commpi = commpi
         ncomms = len(commpi)
         #MFPT calculations on full network
-        full_df = pgt.compute_rates(AS, BS, BF, B, D, K=K, fullGT=True)
+        full_df = pgt.compute_rates(AS, BS, B, escape_rates=D, K=K, BF=BF, fullGT=True)
         df['MFPTAB'] = full_df['MFPTAB']
         df['MFPTBA'] = full_df['MFPTBA']
         
         #compute coarse-grained networks: 4 versions of Hummer-Szabo + LEA
-        mfpt, pi = pgt.get_intermicrostate_mfpts_GT(temp, data_path)
+        mfpt, pi = fpt.get_intermicrostate_mfpts_GT(temp, data_path)
         labels = []
         matrices = []
         try:
-            Rhs = ktn.construct_coarse_matrix_Hummer_Szabo(temp)
+            Rhs = ktn.construct_coarse_rate_matrix_Hummer_Szabo()
             matrices.append(Rhs)
             labels.append('HS')
         except Exception as e:
             print(f'Hummer Szabo had the following error: {e}')
         try:
-            Rhs_kkra = ktn.hummer_szabo_from_mfpt(temp, GT=False, mfpt=mfpt)
+            Rhs_kkra = ktn.construct_coarse_rate_matrix_KKRA(mfpt=mfpt)
             matrices.append(Rhs_kkra)
             labels.append('KKRA')
         except Exception as e:
@@ -120,42 +121,42 @@ def compare_HS_LEA(temps, data_path=Path('KTN_data/32state'), theta=False):
         
         #weighted-MFPT with eigendecomposition for computer inter-microstate MFPTs
         try:
-            mfpt = ktn.get_MFPT_from_Kmat(Q)
+            mfpt = ktn.get_intermicrostate_mfpts_linear_solve()
             if theta:
-                pt = ktn.get_approx_kells_cluster_passage_times(pi, commpi, mfpt)
+                pt = ktn.get_thetaIJ(pi, commpi, mfpt)
             else:
-                pt = ktn.get_kells_cluster_passage_times(pi, commpi, mfpt)
+                pt = ktn.get_intercommunity_weighted_MFPTs(pi, commpi, mfpt)
             Rhs_invert = spla.inv(pt)@(np.diag(1./commpi) - np.ones((ncomms,ncomms)))
             matrices.append(Rhs_invert)
             labels.append('PTinvert_eig')
         except Exception as e:
-            print(f'Inversion of weighted-MFPTs had the following error: {e}')
+            print(f'Inversion of weighted-MFPTs from eigendecomposition had the following error: {e}')
 
         #weighted-MFPT with fundamental matrix for computing inter-microstate MFPTs
         try:
-            mfpt = ktn.mfpt_from_correlation(Q, pi)
+            mfpt = ktn.get_intermicrostate_mfpts_fundamental_matrix()
             if theta:
-                pt = ktn.get_approx_kells_cluster_passage_times(pi, commpi, mfpt)
+                pt = ktn.get_thetaIJ(pi, commpi, mfpt)
             else:
-                pt = ktn.get_kells_cluster_passage_times(pi, commpi, mfpt)
+                pt = ktn.get_intercommunity_weighted_MFPTs(pi, commpi, mfpt)
             Rhs_invert = spla.inv(pt)@(np.diag(1./commpi) - np.ones((ncomms,ncomms)))
             matrices.append(Rhs_invert)
             labels.append('PTinvert_fund')
         except Exception as e:
-            print(f'Inversion of weighted-MFPTs had the following error: {e}')
+            print(f'Inversion of weighted-MFPTs from fundamental matrix had the following error: {e}')
 
         #weighted-MFPT with GT for computing inter-microstate MFPTs
         try:
             mfpt, pi = pgt.get_intermicrostate_mfpts_GT(temp, data_path)
             if theta:
-                pt = ktn.get_approx_kells_cluster_passage_times(pi, commpi, mfpt)
+                pt = ktn.get_thetaIJ(pi, commpi, mfpt)
             else:
-                pt = ktn.get_kells_cluster_passage_times(pi, commpi, mfpt)
+                pt = ktn.get_intercommunity_weighted_MFPTs(pi, commpi, mfpt)
             Rhs_invert = spla.inv(pt)@(np.diag(1./commpi) - np.ones((ncomms,ncomms)))
             matrices.append(Rhs_invert)
             labels.append('PTinvert_GT')
         except Exception as e:
-            print(f'Inversion of weighted-MFPTs had the following error: {e}')
+            print(f'Inversion of weighted-MFPTs from GT had the following error: {e}')
         
         #try:
         #    Rhs_solve = spla.solve(pt, np.diag(1.0/commpi) - np.ones((ncomms,ncomms)))
@@ -178,11 +179,10 @@ def compare_HS_LEA(temps, data_path=Path('KTN_data/32state'), theta=False):
             """ get A->B and B->A mfpt on coarse network"""
             rK = R - np.diag(np.diag(R))
             escape_rates = -1*np.diag(R)
-            D = np.diag(escape_rates)
             B = rK@np.diag(1./escape_rates)
             Acomm = 0
             Bcomm = 3
-            MFPTAB, MFPTBA = pgt.compute_MFPTAB(Acomm, Bcomm, B, D, K=rK, dense=True)
+            MFPTAB, MFPTBA = pgt.compute_MFPTAB(Acomm, Bcomm, B, escape_rates=escape_rates, K=rK, dense=True)
             df[f'AB_{labels[i]}'] = [MFPTAB]
             df[f'BA_{labels[i]}'] = [MFPTBA]
         dfs.append(df)
@@ -236,6 +236,7 @@ def plot_mfpts_32state(df, insetdf=None, theta=False, mfpt_eig=False, log=True):
     order = [0, 1, 2, 3]
     df.replace([np.inf, -np.inf], np.nan)
     df2= df.sort_values('T')
+    rates = ['LEA', 'PTinvert_GT', 'KKRA', 'HS']
     symbols = ['-s', '--o', '-o', '--^']
     if theta:
         labels = ['LEA', r'$\theta^{-1}$', 'KKRA', 'HS']

@@ -337,7 +337,7 @@
     <span class="k">return</span> <span class="n">communities</span></div>
 
 <div class="viewcode-block" id="load_mat"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.load_mat">[docs]</a><span class="k">def</span> <span class="nf">load_mat</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="n">Nmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">Emax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">beta</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span><span class="n">screen</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">discon</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Load in min.data and ts.data files, calculate rates, and find connected</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Load in min.data and ts.data files, calculate rates, and find connected</span>
 <span class="sd">    components.</span>
 
 <span class="sd">    Parameters</span>
@@ -360,7 +360,7 @@
 <span class="sd">    B : csr matrix (N,N)</span>
 <span class="sd">        sparse matrix of branching probabilities</span>
 <span class="sd">    K : csr matrix (N,N)</span>
-<span class="sd">        sparse matrix where off-diagonal elements :math:`K_{ij}` contain :math:`i \leftarroq j` transition rates.</span>
+<span class="sd">        sparse matrix where off-diagonal elements :math:`K_{ij}` contain :math:`i \leftarrow j` transition rates.</span>
 <span class="sd">        Diagonal elements are 0.</span>
 <span class="sd">    D : csr matrix (N,N)</span>
 <span class="sd">        sparse diagonal matrix with elements :math:`D_{ii} = 1/\tau_i` corresponding to inverse waiting times.</span>

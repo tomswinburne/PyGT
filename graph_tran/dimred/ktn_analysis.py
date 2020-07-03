@@ -211,7 +211,7 @@ class Analyze_KTN(object):
         by solving a system of linear equations given by Eq.(8) of 
         Kannan et al. *J. Chem. Phys.* (2020)."""
 
-        K = ktn.K
+        K = self.K
         n = K.shape[0]
         mfpt = np.zeros((n,n))
         for i in range(n):
@@ -230,8 +230,8 @@ class Analyze_KTN(object):
         r"""Calculate the matrix of inter-microstate MFPTs between all pairs of nodes
         using Eq. (6) of Kannan et al. *J. Chem. Phys.* (2020). """
 
-        K = ktn.K
-        pi = ktn.pi
+        K = self.K
+        pi = self.pi
         nmin = K.shape[0]
         pioneK = spla.inv(pi.reshape((nmin,1))@np.ones((1,nmin)) + K)
         zvec = np.diag(pioneK)

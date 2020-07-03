@@ -177,7 +177,7 @@ def read_communities(commdat, index_sel, screen=False):
     return communities
 
 def load_mat(path,Nmax=None,Emax=None,beta=1.0,screen=False,discon=False):
-    """ Load in min.data and ts.data files, calculate rates, and find connected
+    r""" Load in min.data and ts.data files, calculate rates, and find connected
     components.
 
     Parameters
@@ -200,7 +200,7 @@ def load_mat(path,Nmax=None,Emax=None,beta=1.0,screen=False,discon=False):
     B : csr matrix (N,N)
         sparse matrix of branching probabilities
     K : csr matrix (N,N)
-        sparse matrix where off-diagonal elements :math:`K_{ij}` contain :math:`i \leftarroq j` transition rates.
+        sparse matrix where off-diagonal elements :math:`K_{ij}` contain :math:`i \leftarrow j` transition rates.
         Diagonal elements are 0.
     D : csr matrix (N,N)
         sparse diagonal matrix with elements :math:`D_{ii} = 1/\tau_i` corresponding to inverse waiting times.

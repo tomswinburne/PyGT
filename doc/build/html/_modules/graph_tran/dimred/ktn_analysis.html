@@ -371,7 +371,7 @@
 <span class="sd">        by solving a system of linear equations given by Eq.(8) of </span>
 <span class="sd">        Kannan et al. *J. Chem. Phys.* (2020).&quot;&quot;&quot;</span>
 
-        <span class="n">K</span> <span class="o">=</span> <span class="n">ktn</span><span class="o">.</span><span class="n">K</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">K</span>
         <span class="n">n</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">mfpt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span><span class="n">n</span><span class="p">))</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
@@ -390,8 +390,8 @@
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Calculate the matrix of inter-microstate MFPTs between all pairs of nodes</span>
 <span class="sd">        using Eq. (6) of Kannan et al. *J. Chem. Phys.* (2020). &quot;&quot;&quot;</span>
 
-        <span class="n">K</span> <span class="o">=</span> <span class="n">ktn</span><span class="o">.</span><span class="n">K</span>
-        <span class="n">pi</span> <span class="o">=</span> <span class="n">ktn</span><span class="o">.</span><span class="n">pi</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">K</span>
+        <span class="n">pi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pi</span>
         <span class="n">nmin</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">pioneK</span> <span class="o">=</span> <span class="n">spla</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">pi</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">nmin</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span><span class="nd">@np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="n">nmin</span><span class="p">))</span> <span class="o">+</span> <span class="n">K</span><span class="p">)</span>
         <span class="n">zvec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">pioneK</span><span class="p">)</span>

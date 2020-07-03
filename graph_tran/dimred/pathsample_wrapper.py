@@ -465,7 +465,7 @@ class ScanPathsample(object):
 
     def get_MFPTAB_PATHSAMPLE(self, A, B, communities, temp, n):
         """Run a single GT calculation using the READRATES keyword in PATHSAMPLE
-        to get the A<->B mean first passage time at specified temperatire.
+        to get the A<->B mean first passage time at specified temperature.
         
         Parameters
         ----------

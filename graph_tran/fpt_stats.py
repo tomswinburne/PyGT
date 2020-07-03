@@ -325,7 +325,7 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
         normalized initial occupation probabilities in :math:`\mathcal{A}` set.
         Defaults to Boltzmann distribution if BF is specified.
     initB : array-like (N,)
-        normalized initial occupation probabilities in :math:`\mathcal{A}` set.
+        normalized initial occupation probabilities in :math:`\mathcal{B}` set.
         Defaults to Boltzmann distribution if BF is specified.
     BF : array-like (N,)
         Free energies of nodes, used to compute Boltzmann :math:`\pi_i =\rm{exp}(-\beta F_i)/\sum_i \rm{exp}(-\beta F_i)`.
@@ -477,7 +477,7 @@ def rates_cycle(temps, data_path, suffix='', **kwargs):
         AS,BS = kio.load_AB(data_path,index_sel)    
         IS = np.zeros(N, bool)
         IS[~(AS+BS)] = True
-        df = compute_rates(AS, BS, BF, B, D, K, **kwargs)
+        df = compute_rates(AS, BS, B, escape_rates=D, K=K, BF=BF, **kwargs)
         df['T'] = [temp]
         dfs.append(df)
     bigdf = pd.concat(dfs)

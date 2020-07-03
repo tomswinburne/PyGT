@@ -485,7 +485,7 @@
 <span class="sd">        normalized initial occupation probabilities in :math:`\mathcal{A}` set.</span>
 <span class="sd">        Defaults to Boltzmann distribution if BF is specified.</span>
 <span class="sd">    initB : array-like (N,)</span>
-<span class="sd">        normalized initial occupation probabilities in :math:`\mathcal{A}` set.</span>
+<span class="sd">        normalized initial occupation probabilities in :math:`\mathcal{B}` set.</span>
 <span class="sd">        Defaults to Boltzmann distribution if BF is specified.</span>
 <span class="sd">    BF : array-like (N,)</span>
 <span class="sd">        Free energies of nodes, used to compute Boltzmann :math:`\pi_i =\rm{exp}(-\beta F_i)/\sum_i \rm{exp}(-\beta F_i)`.</span>
@@ -637,7 +637,7 @@
         <span class="n">AS</span><span class="p">,</span><span class="n">BS</span> <span class="o">=</span> <span class="n">kio</span><span class="o">.</span><span class="n">load_AB</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span><span class="n">index_sel</span><span class="p">)</span>    
         <span class="n">IS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
         <span class="n">IS</span><span class="p">[</span><span class="o">~</span><span class="p">(</span><span class="n">AS</span><span class="o">+</span><span class="n">BS</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="n">df</span> <span class="o">=</span> <span class="n">compute_rates</span><span class="p">(</span><span class="n">AS</span><span class="p">,</span> <span class="n">BS</span><span class="p">,</span> <span class="n">BF</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">compute_rates</span><span class="p">(</span><span class="n">AS</span><span class="p">,</span> <span class="n">BS</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">escape_rates</span><span class="o">=</span><span class="n">D</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="n">K</span><span class="p">,</span> <span class="n">BF</span><span class="o">=</span><span class="n">BF</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">df</span><span class="p">[</span><span class="s1">&#39;T&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">temp</span><span class="p">]</span>
         <span class="n">dfs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
     <span class="n">bigdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">dfs</span><span class="p">)</span>
