@@ -52,7 +52,9 @@ def K_from_Q(Q):
     can also be used to get Q from K, although that's a less useful conversion."""
     rate_mat = Q
     if sp.sparse.issparse(rate_mat):
-        rate_mat = rate_mat.todense()
+        #sparse format only stores nonzero values anyways, 
+        rate_mat = -1*rate_mat
+        return rate_mat.todense()
     ix, iy = np.nonzero(rate_mat)
     for j in range(len(ix)):
         rate_mat[ix[j],iy[j]] *= -1
@@ -83,7 +85,7 @@ def ts_weights_conns_from_K(K, data_path, suffix=''):
     """
 
     ts_conns = open(Path(data_path)/f'ts_conns{suffix}.dat', 'w')
-    #ts_weights = open(Path(data_path)/f'ts_weights{suffix}.dat', 'w')
+    ts_weights = open(Path(data_path)/f'ts_weights{suffix}.dat', 'w')
     #if K is sparse (i.e. Q), can just get from data structure
     if sp.sparse.issparse(K):
         #tsweights = []
@@ -93,6 +95,7 @@ def ts_weights_conns_from_K(K, data_path, suffix=''):
             for j in cols:
                 if i < j:
                     ts_conns.write(f'{i+1} {j+1}\n')
+
                 #append k i <- j, later we'll sort it so j <- i comes right after
                 #ts_weights.append(np.log(kijs[j]))
         #tsweights_sorted = np.array(tsweights)

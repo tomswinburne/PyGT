@@ -35,9 +35,13 @@ import pandas as pd
 
 
 def choose_nodes_to_remove(rm_type, percent_retained, region, 
-                           BF, escape_time, node_degree, pi=None, rm_reg=None):
+                           BF, escape_time, node_degree, B, trmb=None, pi=None, rm_reg=None):
     """Return an array rm_reg selecting out nodes to remove from
     the `region`.
+
+    TODO: make an elaborate switcher class that allows for
+    fine-tuned control over partial GT strategy without a clusterfuck
+    of if-else statements.
 
     Parameters
     ----------
@@ -66,18 +70,35 @@ def choose_nodes_to_remove(rm_type, percent_retained, region,
     N = len(region)
     if rm_reg is None:
         rm_reg = np.zeros(N, bool)
-    
+    Binds = np.nonzero(region)[0]
+    V = region.sum()
+    if trmb is not None:
+        #when the number of remaining nodes is small, change the iteration step size to 1 node at a time
+        if V>=1 and V<(4*trmb):
+            trmb=1
+        if V==0:
+            return rm_reg
+
     if rm_type == 'node_degree':
         rm_reg[node_degree < 2] = True
         #keep nodes that are not in the removal region
         rm_reg[~region] = False 
     elif rm_type == 'escape_time':
         #remove nodes with the smallest escape times
+        if trmb is not None:
+            to_remove = np.argsort(escape_time[region])[:trmb]
+            rm_reg[Binds[to_remove]] = True
         #retain nodes in the top percent_retained percentile of escape time
-        rm_reg[region] = escape_time[region] < np.percentile(escape_time[region], 100.0 - percent_retained)
+        else:
+            rm_reg[region] = escape_time[region] < np.percentile(escape_time[region], 100.0 - percent_retained)
     elif rm_type == 'free_energy':
+        #remove nodes with the highest free energies
+        if trmb is not None:
+            to_remove = np.argsort(BF[region])[-trmb:]
+            rm_reg[Binds[to_remove]] = True
         #retain nodes in the bottom percent_retained percentile of free energy
-        rm_reg[region] = BF[region] > np.percentile(BF[region], percent_retained)   
+        else:
+            rm_reg[region] = BF[region] > np.percentile(BF[region], percent_retained)   
     elif rm_type == 'hybrid':
         #remove nodes in the top percent_retained percentile of escape time
         time_sel = (escape_time[region] < np.percentile(escape_time[region], 100.0 - percent_retained))
@@ -99,7 +120,34 @@ def choose_nodes_to_remove(rm_type, percent_retained, region,
         if pi is not None:
             rho = pi[region]/pi[region].sum()
         combo_metric = escape_time[region] * rho
-        rm_reg[region] = combo_metric < np.percentile(combo_metric, 100.0 - percent_retained)
+        if trmb is not None:
+            to_remove = np.argsort(combo_metric)[:trmb]
+            rm_reg[Binds[to_remove]] = True
+        else:
+            rm_reg[region] = combo_metric < np.percentile(combo_metric, 100.0 - percent_retained)
+    elif rm_type == 'fund_matrix':
+        rho = np.exp(-BF)[region] #stationary probabilities
+        rho /= rho.sum()
+        if pi is not None:
+            rho = pi[region]/pi[region].sum()
+        V = region.sum()
+        try:
+            N = spla.inv(np.eye(V,V) - B[region,:][:,region])
+        except Exception as e:
+            print(f"Fundamental matrix inversion errored out : {e}")
+            print(f"V = {V}")
+            print(B[region,:][:,region])
+            raise 
+
+        #node_visitations = N@rho #weighted average
+        node_visitations = N.sum(axis=1) #unweighted average
+        #remove nodes with the least visitations on the path to the absorbing boundary
+        if trmb is not None:
+            to_remove = np.argsort(node_visitations)[:trmb]
+            rm_reg[Binds[to_remove]] = True
+        else:
+            rm_reg[region] = node_visitations < np.percentile(node_visitations, 100.0 - percent_retained)
+
     else:
         raise ValueError('Choose a valid GT removal strategy for `rm_type`.')
 
