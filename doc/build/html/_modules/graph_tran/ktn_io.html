@@ -1,0 +1,766 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>graph_tran.ktn_io &mdash; graph_tran 2020 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="graph_tran 2020 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> graph_tran
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../ktn_io.html">graph_tran.ktn_io</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../gt_tools.html">graph_tran.gt_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../fpt_stats.html">graph_tran.fpt_stats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.partialGT.html">dimred.partialGT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.ktn_analysis.html">dimred.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../conversion.html">graph_tran.conversion</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">graph_tran</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>graph_tran.ktn_io</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for graph_tran.ktn_io</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">Read in input files describing the Markov chain to analyze</span>
+<span class="sd">----------------------------------------------------------</span>
+
+<span class="sd">This module reads in the following input files:</span>
+
+<span class="sd">Files defining A and B sets</span>
+<span class="sd">...........................</span>
+
+<span class="sd">min.A: single-column[int], (N_A + 1, )</span>
+<span class="sd">    First line contains the number of nodes in community A.</span>
+<span class="sd">    Subsequent lines contain the node ID (1-indexed) of the nodes belonging to A.</span>
+<span class="sd">min.B: single-column[int], (N_B + 1, )</span>
+<span class="sd">    First line contains the number of nodes in community B.</span>
+<span class="sd">    Subsequent lines contain the node ID (1-indexed) of the nodes belonging to B.</span>
+<span class="sd">communities.dat : single-column (nnnodes,)</span>
+<span class="sd">    used by DISCOTRESS and ktn_analysis module; each line contains community ID (0-indexed)</span>
+<span class="sd">    of the node specified by the line number in the file</span>
+
+<span class="sd">Files describing stationary points of energy landscape</span>
+<span class="sd">......................................................</span>
+
+<span class="sd">The following files are designed to describe a Markov chain in which nodes</span>
+<span class="sd">correspond to potential or free energy minima, and edges correspond to the</span>
+<span class="sd">transition states that connect them. These files are also used as input to</span>
+<span class="sd">the PATHSAMPLE program implemented in the Fortran language:</span>
+
+<span class="sd">min.data: multi-column, (nnodes, 6)</span>
+<span class="sd">    Line numbers indicate node-IDs. Each line contains energy of local minimum [float],</span>
+<span class="sd">    log product of positive Hessian eigenvalues [float], point group [int], sorted</span>
+<span class="sd">    eigenvalues of inertia tensor itx [float], ity [float], itz [float]</span>
+<span class="sd">ts.data: multi-column, (nts, 8)</span>
+<span class="sd">    Each line contains energy of transition state [float], log product of positive</span>
+<span class="sd">    Hessian eigenvalues [float], point group [int], ID of first minimum it connects [int],</span>
+<span class="sd">    ID of second minimum it connects [int], sorted eigenvalues of inertia tensor itx [float],</span>
+<span class="sd">    ity [float], itz [float]</span>
+
+<span class="sd">The ktn.io package then calculates transition rates using unimolecular rate theory.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span><span class="nn">time</span><span class="o">,</span><span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">csgraph</span><span class="p">,</span> <span class="n">csr_matrix</span><span class="p">,</span> <span class="n">csc_matrix</span><span class="p">,</span> <span class="n">eye</span><span class="p">,</span> <span class="n">save_npz</span><span class="p">,</span> <span class="n">load_npz</span><span class="p">,</span> <span class="n">diags</span>
+<span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s1">&#39;mkdir -p cache&#39;</span><span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s1">&#39;mkdir -p output&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">.gt_tools</span> <span class="kn">import</span> <span class="n">gt_seq</span><span class="p">,</span> <span class="n">make_fastest_path</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">factorial</span>
+
+<div class="viewcode-block" id="timer"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.timer">[docs]</a><span class="k">class</span> <span class="nc">timer</span><span class="p">:</span>
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+	<span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">str</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+		<span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="s2">&quot;:&quot;</span><span class="p">,</span><span class="n">t</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">return</span> <span class="n">t</span></div>
+
+<div class="viewcode-block" id="printer"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.printer">[docs]</a><span class="k">class</span> <span class="nc">printer</span><span class="p">:</span>
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">screen</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">timestamp</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">screen</span> <span class="o">=</span> <span class="n">screen</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">file</span> <span class="o">=</span> <span class="n">file</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">timer</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="n">timestamp</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+	<span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="nb">str</span><span class="p">,</span><span class="n">dt</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="ow">and</span> <span class="n">dt</span><span class="p">:</span>
+			<span class="nb">str</span> <span class="o">+=</span> <span class="s2">&quot;, dt: </span><span class="si">%4.4g</span><span class="s2">s&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
+		<span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">screen</span><span class="p">:</span>
+			<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<div class="viewcode-block" id="printer.restart"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.printer.restart">[docs]</a>	<span class="k">def</span> <span class="nf">restart</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="output_str"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.output_str">[docs]</a><span class="k">class</span> <span class="nc">output_str</span><span class="p">:</span>
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">print_str</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+	<span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">sa</span><span class="p">):</span>
+		<span class="n">_print_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+		<span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sa</span><span class="p">:</span>
+			<span class="n">_print_str</span> <span class="o">+=</span> <span class="nb">str</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot; &quot;</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">_print_str</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">print_str</span> <span class="o">+=</span> <span class="n">_print_str</span>
+<div class="viewcode-block" id="output_str.summary"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.output_str.summary">[docs]</a>	<span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;SUMMARY:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">print_str</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="load_AB"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.load_AB">[docs]</a><span class="k">def</span> <span class="nf">load_AB</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span><span class="n">index_sel</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Read in A_states and B_states from min.A and min.B files, only keeping</span>
+<span class="sd">    the states that are part of the largest connected set, as specified by</span>
+<span class="sd">    index_sel.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_path: str</span>
+<span class="sd">        path to location of min.A, min.B files</span>
+<span class="sd">    index_sel: array-like[bool] (nnodes, )</span>
+<span class="sd">        selects out indices of the maximum connected set</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A_states : array-like[bool] (index_sel.size, )</span>
+<span class="sd">        boolean array that selects out the A states</span>
+<span class="sd">    B_states : array-like[bool] (index_sel.size, )</span>
+<span class="sd">        boolean array that selects out the B states</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">Aind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span><span class="s1">&#39;min.A&#39;</span><span class="p">)):</span>
+        <span class="n">Aind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Aind</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">StringIO</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">Aind</span> <span class="o">=</span> <span class="n">Aind</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+
+    <span class="n">Bind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span><span class="s1">&#39;min.B&#39;</span><span class="p">)):</span>
+        <span class="n">Bind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Bind</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">StringIO</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">Bind</span> <span class="o">=</span> <span class="n">Bind</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+
+    <span class="k">if</span> <span class="n">index_sel</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Aind</span><span class="p">,</span><span class="n">Bind</span>
+
+    <span class="n">keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">index_sel</span><span class="o">.</span><span class="n">size</span><span class="p">,</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="n">keep</span><span class="p">[</span><span class="n">Bind</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">B_states</span> <span class="o">=</span> <span class="n">keep</span><span class="p">[</span><span class="n">index_sel</span><span class="p">]</span>
+
+    <span class="n">keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">index_sel</span><span class="o">.</span><span class="n">size</span><span class="p">,</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="n">keep</span><span class="p">[</span><span class="n">Aind</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">A_states</span> <span class="o">=</span> <span class="n">keep</span><span class="p">[</span><span class="n">index_sel</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">A_states</span><span class="p">,</span><span class="n">B_states</span></div>
+
+<div class="viewcode-block" id="read_communities"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.read_communities">[docs]</a><span class="k">def</span> <span class="nf">read_communities</span><span class="p">(</span><span class="n">commdat</span><span class="p">,</span> <span class="n">index_sel</span><span class="p">,</span> <span class="n">screen</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Read in a single column file called communities.dat where each line</span>
+<span class="sd">    is the community ID (zero-indexed) of the minima given by the line</span>
+<span class="sd">    number. Produces boolean arrays, one per community, selecting out the</span>
+<span class="sd">    nodes that belong to each community.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    commdat : .dat file</span>
+<span class="sd">        single-column file containing community IDs of each minimum</span>
+<span class="sd">    index_sel : (N,) boolean array</span>
+<span class="sd">        selects out the largest connected component of the network</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    communities : dict</span>
+<span class="sd">        mapping from community ID (0-indexed) to a boolean array</span>
+<span class="sd">        of shape (len(index_sel), ) which selects out the states in that community.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">communities</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">commdat</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">minID</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">groupID</span> <span class="o">=</span>  <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="c1">#number from 0 to N-1</span>
+            <span class="k">if</span> <span class="n">groupID</span> <span class="ow">in</span> <span class="n">communities</span><span class="p">:</span>
+                <span class="n">communities</span><span class="p">[</span><span class="n">groupID</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">minID</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">communities</span><span class="p">[</span><span class="n">groupID</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">minID</span><span class="p">]</span>
+    
+    <span class="k">for</span> <span class="n">ci</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">communities</span><span class="p">)):</span>
+        <span class="c1">#create a new index_selector to select out the minima in community ci</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">index_sel</span><span class="o">.</span><span class="n">size</span><span class="p">,</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">keep</span><span class="p">[</span><span class="n">communities</span><span class="p">[</span><span class="n">ci</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1">#re-assign communities[ci] to be the index-selector for the maximally connected component of the graph</span>
+        <span class="n">communities</span><span class="p">[</span><span class="n">ci</span><span class="p">]</span> <span class="o">=</span> <span class="n">keep</span><span class="p">[</span><span class="n">index_sel</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">screen</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Community </span><span class="si">{</span><span class="n">ci</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">keep</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">communities</span></div>
+
+<div class="viewcode-block" id="load_mat"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.load_mat">[docs]</a><span class="k">def</span> <span class="nf">load_mat</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="n">Nmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">Emax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">beta</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span><span class="n">screen</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">discon</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Load in min.data and ts.data files, calculate rates, and find connected</span>
+<span class="sd">    components.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path : str</span>
+<span class="sd">        path to data files</span>
+<span class="sd">    Nmax : int</span>
+<span class="sd">        maximum number of minima to include in KTN, defaults to None</span>
+<span class="sd">    Emax : float</span>
+<span class="sd">        maximum potential energy of minima/TS to include in KTN, defaults to None</span>
+<span class="sd">    beta : float</span>
+<span class="sd">        value for 1./kBT, defaults to 1</span>
+<span class="sd">    screen : bool</span>
+<span class="sd">        whether to print progress</span>
+<span class="sd">    discon : bool</span>
+<span class="sd">        no clue</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    B : csr matrix (N,N)</span>
+<span class="sd">        sparse matrix of branching probabilities</span>
+<span class="sd">    K : csr matrix (N,N)</span>
+<span class="sd">        sparse matrix where off-diagonal elements :math:`K_{ij}` contain :math:`i \leftarrow j` transition rates.</span>
+<span class="sd">        Diagonal elements are 0.</span>
+<span class="sd">    D : csr matrix (N,N)</span>
+<span class="sd">        sparse diagonal matrix with elements :math:`D_{ii} = 1/\tau_i` corresponding to inverse waiting times.</span>
+<span class="sd">    N : int</span>
+<span class="sd">        number of nodes in the largest connected component of the Markov chain</span>
+<span class="sd">    u : np.ndarray[float64] (N,)</span>
+<span class="sd">        energies of the N nodes in the Markov chain</span>
+<span class="sd">    s : np.ndarray[float64] (N,)</span>
+<span class="sd">        entropies of the N nodes in the Markov chain</span>
+<span class="sd">    Emin : float</span>
+<span class="sd">        energy of global minimum (energies in `u` are rescaled so that Emin=0)</span>
+<span class="sd">    index_sel : np.ndarray[bool] (nnodes,)</span>
+<span class="sd">        Boolean array selecting out largest connected component (index_sel.sum() = N).</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">GSD</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s1">&#39;min.data&#39;</span><span class="p">),</span> \
+                        <span class="n">dtype</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;names&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="s1">&#39;S&#39;</span><span class="p">,</span><span class="s1">&#39;DD&#39;</span><span class="p">,</span><span class="s1">&#39;RX&#39;</span><span class="p">,</span><span class="s1">&#39;RY&#39;</span><span class="p">,</span><span class="s1">&#39;RZ&#39;</span><span class="p">),</span>\
+                            <span class="s1">&#39;formats&#39;</span><span class="p">:</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">float</span><span class="p">)})</span>
+    <span class="n">TSD</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s1">&#39;ts.data&#39;</span><span class="p">),</span>\
+        <span class="n">dtype</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;names&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="s1">&#39;S&#39;</span><span class="p">,</span><span class="s1">&#39;DD&#39;</span><span class="p">,</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="s1">&#39;I&#39;</span><span class="p">,</span><span class="s1">&#39;RX&#39;</span><span class="p">,</span><span class="s1">&#39;RY&#39;</span><span class="p">,</span><span class="s1">&#39;RZ&#39;</span><span class="p">),</span>\
+        <span class="s1">&#39;formats&#39;</span><span class="p">:</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">int</span><span class="p">,</span><span class="nb">int</span><span class="p">,</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">float</span><span class="p">)})</span>
+    <span class="c1">#TSD = TSD[TSD[&#39;I&#39;]!=TSD[&#39;F&#39;]] # remove self transitions??</span>
+    <span class="c1">#make minima indices 0-indexed</span>
+    <span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span>
+    <span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span>   
+    <span class="c1">#number of minima</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">Nmax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">Nmax</span><span class="p">,</span><span class="n">N</span><span class="p">)</span>
+    <span class="c1">#select out minima &lt; Emax and &lt; Nmax</span>
+    <span class="n">sels</span> <span class="o">=</span> <span class="p">(</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span><span class="o">&lt;</span><span class="n">N</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span><span class="o">&lt;</span><span class="n">N</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span><span class="o">!=</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">Emax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">sels</span> <span class="o">*=</span> <span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">][</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]]</span><span class="o">&lt;</span><span class="n">Emax</span>
+        <span class="n">sels</span> <span class="o">*=</span> <span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">][</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]]</span><span class="o">&lt;</span><span class="n">Emax</span>
+        <span class="n">sels</span> <span class="o">*=</span> <span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span><span class="o">&lt;</span><span class="n">Emax</span>
+    <span class="n">TSD</span> <span class="o">=</span> <span class="n">TSD</span><span class="p">[</span><span class="n">sels</span><span class="p">]</span>
+    <span class="n">GSD</span> <span class="o">=</span> <span class="n">GSD</span><span class="p">[:</span><span class="n">N</span><span class="p">]</span>
+    <span class="c1">#re-scale energies so Emin = 0, Smin=0</span>
+    <span class="c1">#print(&quot;N,N_TS:&quot;,GSD.size,TSD.size)</span>
+    <span class="n">Emin</span> <span class="o">=</span> <span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">Smin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+    <span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span> <span class="o">-=</span> <span class="n">Emin</span>
+    <span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span> <span class="o">-=</span> <span class="n">Emin</span>
+    <span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]</span> <span class="o">-=</span> <span class="n">Smin</span>
+    <span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]</span> <span class="o">-=</span> <span class="n">Smin</span>
+
+    <span class="sd">&quot;&quot;&quot; Calculate rates &quot;&quot;&quot;</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">],</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]))</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">],</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]))</span>
+    <span class="c1">#(emin - ets)</span>
+    <span class="n">du</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">GSD</span><span class="p">[</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]][</span><span class="s1">&#39;E&#39;</span><span class="p">],</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">GSD</span><span class="p">[</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]][</span><span class="s1">&#39;E&#39;</span><span class="p">]))</span>
+    <span class="c1">#(fvibmin - fvibts)/2</span>
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">GSD</span><span class="p">[</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]][</span><span class="s1">&#39;S&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">],</span><span class="n">GSD</span><span class="p">[</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]][</span><span class="s1">&#39;S&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]))</span><span class="o">/</span><span class="mf">2.0</span>
+    <span class="c1">#ordermin/(orderts*2pi)</span>
+    <span class="n">dc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">GSD</span><span class="p">[</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]][</span><span class="s1">&#39;DD&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;DD&#39;</span><span class="p">],</span><span class="n">GSD</span><span class="p">[</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]][</span><span class="s1">&#39;DD&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;DD&#39;</span><span class="p">]))</span><span class="o">/</span><span class="mf">2.0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+    <span class="n">ds</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">dc</span><span class="p">)</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">2.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;DD&#39;</span><span class="p">])</span>
+
+    <span class="sd">&quot;&quot;&quot;+ds Fill matricies: K_ij = rate(j-&gt;i), K_ii==0. iD_jj = 1/(sum_iK_ij) &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">du</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">discon</span><span class="p">:</span>
+        <span class="n">ddu</span> <span class="o">=</span> <span class="n">du</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="c1">#this is the rates, but data is horizontally stacked</span>
+    <span class="n">data</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">beta</span><span class="o">*</span><span class="n">du</span><span class="o">+</span><span class="n">ds</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="o">==</span><span class="n">f</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">2.0</span>
+    <span class="n">fNi</span> <span class="o">=</span> <span class="n">f</span><span class="o">*</span><span class="n">N</span><span class="o">+</span><span class="n">i</span>
+    <span class="n">fNi_u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">fNi</span><span class="p">)</span>
+    <span class="n">d_u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[[</span><span class="n">data</span><span class="p">[</span><span class="n">fNi</span><span class="o">==</span><span class="n">fi_ind</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="k">for</span> <span class="n">fi_ind</span> <span class="ow">in</span> <span class="n">fNi_u</span><span class="p">]]</span>
+    <span class="k">if</span> <span class="n">discon</span><span class="p">:</span>
+        <span class="n">d_du</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">r_</span><span class="p">[[</span><span class="n">ddu</span><span class="p">[</span><span class="n">fNi</span><span class="o">==</span><span class="n">fi_ind</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="k">for</span> <span class="n">fi_ind</span> <span class="ow">in</span> <span class="n">fNi_u</span><span class="p">]]</span>
+    <span class="n">f_u</span> <span class="o">=</span> <span class="n">fNi_u</span><span class="o">//</span><span class="n">N</span>
+    <span class="n">i_u</span> <span class="o">=</span> <span class="n">fNi_u</span><span class="o">%</span><span class="n">N</span>
+    <span class="n">K</span> <span class="o">=</span> <span class="n">csr_matrix</span><span class="p">((</span><span class="n">d_u</span><span class="p">,(</span><span class="n">f_u</span><span class="p">,</span><span class="n">i_u</span><span class="p">)),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">discon</span><span class="p">:</span>
+        <span class="n">DU</span> <span class="o">=</span> <span class="n">csr_matrix</span><span class="p">((</span><span class="n">d_du</span><span class="p">,(</span><span class="n">f_u</span><span class="p">,</span><span class="n">i_u</span><span class="p">)),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">))</span>
+
+    <span class="sd">&quot;&quot;&quot; connected components &quot;&quot;&quot;</span>
+    <span class="n">K</span><span class="o">.</span><span class="n">eliminate_zeros</span><span class="p">()</span>
+    <span class="c1">#nc is number of connected components, </span>
+    <span class="c1"># cc is list of labels of size K</span>
+    <span class="n">nc</span><span class="p">,</span><span class="n">cc</span> <span class="o">=</span> <span class="n">csgraph</span><span class="o">.</span><span class="n">connected_components</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
+    <span class="nb">sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nc</span><span class="p">,</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">mc</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nc</span><span class="p">):</span>
+        <span class="c1">#count number of minima in each connected component</span>
+        <span class="nb">sum</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">cc</span><span class="o">==</span><span class="n">j</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="c1">#select largest connected component (value of j for which sum[j] is</span>
+    <span class="c1"># greatest)</span>
+    <span class="n">sel</span> <span class="o">=</span> <span class="n">cc</span><span class="o">==</span><span class="nb">sum</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">screen</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Connected Clusters: </span><span class="si">%d</span><span class="s2">, 1st 400 states in largest cluster: </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nc</span><span class="p">,</span><span class="n">sel</span><span class="p">[:</span><span class="mi">400</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()))</span>
+    <span class="n">oN</span><span class="o">=</span><span class="n">N</span>
+
+    <span class="n">K</span><span class="p">,</span><span class="n">N</span> <span class="o">=</span> <span class="n">K</span><span class="p">[</span><span class="n">sel</span><span class="p">,:][:,</span><span class="n">sel</span><span class="p">],</span> <span class="n">sel</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">discon</span><span class="p">:</span>
+        <span class="n">DU</span> <span class="o">=</span> <span class="n">DU</span><span class="p">[</span><span class="n">sel</span><span class="p">,:][:,</span><span class="n">sel</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">screen</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;cc: N: </span><span class="si">%d</span><span class="s2">-&gt;</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">oN</span><span class="p">,</span><span class="n">N</span><span class="p">),</span><span class="n">GSD</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span><span class="n">sel</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="n">GSD</span> <span class="o">=</span> <span class="n">GSD</span><span class="p">[</span><span class="n">sel</span><span class="p">]</span>
+    <span class="c1">#entropy of minima</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="o">-</span><span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">2.0</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;DD&#39;</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">discon</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">N</span><span class="p">,</span><span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">],</span><span class="n">DU</span>
+
+    <span class="n">kt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    <span class="c1">#inverse of D</span>
+    <span class="n">iD</span> <span class="o">=</span> <span class="n">csr_matrix</span><span class="p">((</span><span class="mf">1.0</span><span class="o">/</span><span class="n">kt</span><span class="p">,(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">N</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">N</span><span class="p">))),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">))</span>
+    <span class="c1">#D_i = sum_i K_ij</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">csr_matrix</span><span class="p">((</span><span class="n">kt</span><span class="p">,(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">N</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">N</span><span class="p">))),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">))</span>
+    <span class="c1">#branching probability matrix B_ij = k_ij/(sum_i k_ij)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">iD</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">B</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">],</span> <span class="n">s</span><span class="p">,</span> <span class="n">Emin</span><span class="p">,</span> <span class="n">sel</span></div>
+
+<div class="viewcode-block" id="load_CTMC"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.load_CTMC">[docs]</a><span class="k">def</span> <span class="nf">load_CTMC</span><span class="p">(</span><span class="n">K</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Setup a GT calculation for a transition rate matrix representing</span>
+<span class="sd">    a continuous-time Markov chain.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    K : array-like (nnodes, nnodes)</span>
+<span class="sd">        Rate matrix with elements :math:`K_{ij}` corresponding to the :math:`i \leftarrow j` transition rate</span>
+<span class="sd">        and diagonal elements :math:`K_{ii} = \sum_\gamma K_{\gamma i}` such that the columns of :math:`\textbf{K}` sum to zero.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    B : np.ndarray[float64] (nnodes, nnodes)</span>
+<span class="sd">        Branching probability matrix in dense format, used as input to GT</span>
+<span class="sd">    escape_rates : np.ndarray[float64] (nnodes,)</span>
+<span class="sd">        Array of inverse waiting times of nodes, used as input to GT</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#check that columns of K sum to zero</span>
+    <span class="k">assert</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1.E-10</span><span class="p">))</span>
+    <span class="n">Q</span> <span class="o">=</span> <span class="n">K</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">K</span><span class="p">))</span>
+    <span class="n">escape_rates</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">Q</span><span class="nd">@np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">escape_rates</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">B</span><span class="p">,</span> <span class="n">escape_rates</span></div>
+
+<div class="viewcode-block" id="load_DTMC"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.load_DTMC">[docs]</a><span class="k">def</span> <span class="nf">load_DTMC</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">tau_lag</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Setup a GT calculation for a transition probability matrix representing</span>
+<span class="sd">    a discrete-time Markov chain.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T : array-like (nnodes, nnodes)</span>
+<span class="sd">        Discrete-time, column-stochastic transition probability matrix.</span>
+<span class="sd">    tau_lag : float</span>
+<span class="sd">        Lag time at which `T` was estimated.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    B : np.ndarray[float64] (nnodes, nnodes)</span>
+<span class="sd">        Branching probability matrix in dense format, used as input to GT</span>
+<span class="sd">    escape_rates : np.ndarray[float64] (nnodes,)</span>
+<span class="sd">        Array of inverse waiting times of nodes, used as input to GT</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">nnodes</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="c1">#check that T is column-stochastic</span>
+    <span class="k">assert</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nnodes</span><span class="p">)</span> <span class="o">-</span> <span class="n">T</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span><span class="o">&lt;</span><span class="mf">1.E-10</span><span class="p">))</span>
+    <span class="n">escape_rates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">tau_lag</span><span class="p">,</span> <span class="n">nnodes</span><span class="p">)</span>
+    <span class="n">B</span><span class="o">=</span><span class="n">T</span>
+    <span class="k">return</span> <span class="n">B</span><span class="p">,</span> <span class="n">escape_rates</span></div>
+
+<div class="viewcode-block" id="load_save_mat"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.load_save_mat">[docs]</a><span class="k">def</span> <span class="nf">load_save_mat</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;../../data/LJ38&quot;</span><span class="p">,</span><span class="n">beta</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span><span class="n">Nmax</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span><span class="n">Emax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">generate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">TE</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">screen</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+	<span class="n">name</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+		<span class="n">name</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">generate</span><span class="p">:</span>
+		<span class="k">try</span><span class="p">:</span>
+			<span class="n">B</span> <span class="o">=</span> <span class="n">load_npz</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%2.6g</span><span class="s1">_B.npz&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">beta</span><span class="p">))</span>
+			<span class="n">D</span> <span class="o">=</span> <span class="n">load_npz</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%2.6g</span><span class="s1">_D.npz&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">beta</span><span class="p">))</span>
+			<span class="n">K</span> <span class="o">=</span> <span class="n">load_npz</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%2.6g</span><span class="s1">_K.npz&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">beta</span><span class="p">))</span>
+			<span class="n">USEB</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%2.6g</span><span class="s1">_USEB.txt&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">beta</span><span class="p">))</span>
+			<span class="n">sel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%2.6g</span><span class="s1">_sel.txt&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">beta</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+		<span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+			<span class="n">generate</span> <span class="o">=</span> <span class="kc">True</span>
+			<span class="k">if</span> <span class="n">screen</span><span class="p">:</span>
+				<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;no files found, generating...&quot;</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="n">generate</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">screen</span><span class="p">:</span>
+			<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Generating....&quot;</span><span class="p">)</span>
+		<span class="n">B</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">Emin</span><span class="p">,</span> <span class="n">sel</span> <span class="o">=</span> <span class="n">load_mat</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="n">beta</span><span class="o">=</span><span class="n">beta</span><span class="p">,</span><span class="n">Nmax</span><span class="o">=</span><span class="n">Nmax</span><span class="p">,</span><span class="n">Emax</span><span class="o">=</span><span class="n">Emax</span><span class="p">,</span><span class="n">screen</span><span class="o">=</span><span class="n">screen</span><span class="p">)</span>
+		<span class="n">USEB</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">U</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+		<span class="n">USEB</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">beta</span>
+		<span class="n">USEB</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">Emin</span>
+		<span class="n">USEB</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">U</span>
+		<span class="n">USEB</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">S</span>
+		<span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%2.6g</span><span class="s1">_USEB.txt&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">beta</span><span class="p">),</span><span class="n">USEB</span><span class="p">)</span>
+		<span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%2.6g</span><span class="s1">_sel.txt&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">beta</span><span class="p">),</span><span class="n">sel</span><span class="p">)</span>
+		<span class="n">save_npz</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%2.6g</span><span class="s1">_B.npz&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">beta</span><span class="p">),</span><span class="n">B</span><span class="p">)</span>
+		<span class="n">save_npz</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%2.6g</span><span class="s1">_K.npz&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">beta</span><span class="p">),</span><span class="n">K</span><span class="p">)</span>
+		<span class="n">save_npz</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%2.6g</span><span class="s1">_D.npz&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">beta</span><span class="p">),</span><span class="n">D</span><span class="p">)</span>
+
+	<span class="n">beta</span> <span class="o">=</span> <span class="n">USEB</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+	<span class="n">N</span> <span class="o">=</span> <span class="n">USEB</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span>
+	<span class="n">Emin</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">USEB</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+	<span class="n">U</span> <span class="o">=</span> <span class="n">USEB</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+	<span class="n">S</span> <span class="o">=</span> <span class="n">USEB</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+	<span class="c1">#print(&quot;%d states, beta=%f, emin=%f&quot; % (N,beta,Emin))</span>
+
+	<span class="n">kt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+	<span class="n">K</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">K</span><span class="o">.</span><span class="n">data</span>
+	<span class="n">kcon</span> <span class="o">=</span> <span class="n">kt</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+	<span class="n">K</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">K</span><span class="o">.</span><span class="n">data</span>
+
+	<span class="k">return</span> <span class="n">beta</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">kt</span><span class="p">,</span> <span class="n">kcon</span><span class="p">,</span> <span class="n">Emin</span><span class="p">,</span> <span class="n">sel</span></div>
+
+
+<div class="viewcode-block" id="load_save_mat_gt"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.load_save_mat_gt">[docs]</a><span class="k">def</span> <span class="nf">load_save_mat_gt</span><span class="p">(</span><span class="n">keep_ind</span><span class="p">,</span><span class="n">beta</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;../../data/LJ38&quot;</span><span class="p">,</span><span class="n">Nmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">Emax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">generate</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+	<span class="n">name</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+		<span class="n">name</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">generate</span><span class="p">:</span>
+		<span class="k">try</span><span class="p">:</span>
+			<span class="n">B</span> <span class="o">=</span> <span class="n">load_npz</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_B.npz&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+			<span class="n">D</span> <span class="o">=</span> <span class="n">load_npz</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_D.npz&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+			<span class="n">F</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_F.txt&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+			<span class="nb">map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_M.txt&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+		<span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+			<span class="n">generate</span> <span class="o">=</span> <span class="kc">True</span>
+			<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;no files found, generating...&quot;</span><span class="p">)</span>
+
+
+	<span class="k">if</span> <span class="n">generate</span><span class="p">:</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Generating....&quot;</span><span class="p">)</span>
+		<span class="n">B</span><span class="p">,</span><span class="n">D</span><span class="p">,</span><span class="n">F</span><span class="p">,</span><span class="nb">map</span> <span class="o">=</span> <span class="n">load_mat_gt</span><span class="p">(</span><span class="n">keep_ind</span><span class="p">,</span><span class="n">path</span><span class="p">,</span><span class="n">beta</span><span class="o">=</span><span class="n">beta</span><span class="p">,</span><span class="n">Nmax</span><span class="o">=</span><span class="n">Nmax</span><span class="p">,</span><span class="n">Emax</span><span class="o">=</span><span class="n">Emax</span><span class="p">)</span>
+		<span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_F.txt&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span><span class="n">F</span><span class="p">)</span>
+		<span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_M.txt&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span><span class="nb">map</span><span class="p">,</span><span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+		<span class="n">save_npz</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_B.npz&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span><span class="n">B</span><span class="p">)</span>
+		<span class="n">save_npz</span><span class="p">(</span><span class="s1">&#39;cache/temp_</span><span class="si">%s</span><span class="s1">_D.npz&#39;</span> <span class="o">%</span> <span class="n">name</span><span class="p">,</span><span class="n">D</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">B</span><span class="p">,</span><span class="n">D</span><span class="p">,</span><span class="n">F</span><span class="p">,</span><span class="nb">map</span></div>
+
+
+<div class="viewcode-block" id="load_mat_gt"><a class="viewcode-back" href="../../ktn_io.html#graph_tran.ktn_io.load_mat_gt">[docs]</a><span class="k">def</span> <span class="nf">load_mat_gt</span><span class="p">(</span><span class="n">keep_ind</span><span class="p">,</span><span class="n">path</span><span class="o">=</span><span class="s1">&#39;../data/LJ38/raw/&#39;</span><span class="p">,</span><span class="n">beta</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span><span class="n">Nmax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">Emax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+	<span class="sd">&quot;&quot;&quot; load data &quot;&quot;&quot;</span>
+	<span class="n">GSD</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s1">&#39;min.data&#39;</span><span class="p">),</span>\
+		<span class="n">dtype</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;names&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="s1">&#39;S&#39;</span><span class="p">,</span><span class="s1">&#39;DD&#39;</span><span class="p">,</span><span class="s1">&#39;RX&#39;</span><span class="p">,</span><span class="s1">&#39;RY&#39;</span><span class="p">,</span><span class="s1">&#39;RZ&#39;</span><span class="p">),</span>\
+		<span class="s1">&#39;formats&#39;</span><span class="p">:</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">float</span><span class="p">)})</span>
+
+	<span class="n">TSD</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s1">&#39;ts.data&#39;</span><span class="p">),</span>\
+		<span class="n">dtype</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;names&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;E&#39;</span><span class="p">,</span><span class="s1">&#39;S&#39;</span><span class="p">,</span><span class="s1">&#39;DD&#39;</span><span class="p">,</span><span class="s1">&#39;F&#39;</span><span class="p">,</span><span class="s1">&#39;I&#39;</span><span class="p">,</span><span class="s1">&#39;RX&#39;</span><span class="p">,</span><span class="s1">&#39;RY&#39;</span><span class="p">,</span><span class="s1">&#39;RZ&#39;</span><span class="p">),</span>\
+		<span class="s1">&#39;formats&#39;</span><span class="p">:</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">int</span><span class="p">,</span><span class="nb">int</span><span class="p">,</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">float</span><span class="p">,</span><span class="nb">float</span><span class="p">)})</span>
+
+	<span class="n">TSD</span> <span class="o">=</span> <span class="n">TSD</span><span class="p">[</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span><span class="o">!=</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]]</span> <span class="c1"># remove self transitions??</span>
+	<span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span>
+	<span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span>
+
+	<span class="n">N</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+	<span class="n">Emin</span> <span class="o">=</span> <span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+	<span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span> <span class="o">-=</span> <span class="n">Emin</span>
+	<span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span> <span class="o">-=</span> <span class="n">Emin</span>
+	<span class="k">if</span> <span class="ow">not</span> <span class="n">Emax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="n">Emax</span> <span class="o">-=</span> <span class="n">Emin</span>
+
+	<span class="sd">&quot;&quot;&quot; Build rate matrix &quot;&quot;&quot;</span>
+	<span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">],</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]))</span>
+	<span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">],</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]))</span>
+	<span class="n">du</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">GSD</span><span class="p">[</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]][</span><span class="s1">&#39;E&#39;</span><span class="p">],</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">GSD</span><span class="p">[</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]][</span><span class="s1">&#39;E&#39;</span><span class="p">]))</span>
+	<span class="n">ds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">GSD</span><span class="p">[</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;I&#39;</span><span class="p">]][</span><span class="s1">&#39;S&#39;</span><span class="p">],</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">GSD</span><span class="p">[</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;F&#39;</span><span class="p">]][</span><span class="s1">&#39;S&#39;</span><span class="p">]))</span>
+
+	<span class="n">K</span> <span class="o">=</span> <span class="n">csr_matrix</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">beta</span><span class="o">*</span><span class="n">du</span><span class="o">+</span><span class="n">ds</span><span class="p">),(</span><span class="n">f</span><span class="p">,</span><span class="n">i</span><span class="p">)),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">))</span>
+	<span class="n">TE</span> <span class="o">=</span> <span class="n">csc_matrix</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">],</span><span class="n">TSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">])),(</span><span class="n">f</span><span class="p">,</span><span class="n">i</span><span class="p">)),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">N</span><span class="p">))</span>
+	<span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span> <span class="c1"># vector...</span>
+
+	<span class="c1"># oN -&gt; N map : could be unit</span>
+	<span class="n">oN</span> <span class="o">=</span> <span class="n">N</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+	<span class="n">basins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="nb">bool</span><span class="p">)</span>
+	<span class="n">basins</span><span class="p">[</span><span class="n">keep_ind</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+	<span class="nb">print</span><span class="p">(</span><span class="n">D</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+
+	<span class="n">nc</span><span class="p">,</span><span class="n">cc</span> <span class="o">=</span> <span class="n">csgraph</span><span class="o">.</span><span class="n">connected_components</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
+	<span class="n">mc</span> <span class="o">=</span> <span class="mi">0</span>
+	<span class="k">if</span> <span class="n">nc</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+		<span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nc</span><span class="p">):</span>
+			<span class="n">sc</span> <span class="o">=</span> <span class="p">(</span><span class="n">cc</span><span class="o">==</span><span class="n">j</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+			<span class="k">if</span> <span class="n">sc</span> <span class="o">&gt;</span> <span class="n">mc</span><span class="p">:</span>
+				<span class="n">mc</span> <span class="o">=</span> <span class="n">sc</span>
+				<span class="n">ccsel</span> <span class="o">=</span> <span class="n">cc</span><span class="o">==</span><span class="n">j</span>
+		<span class="n">K</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">tocsc</span><span class="p">()[</span><span class="n">ccsel</span><span class="p">,:]</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()[:,</span><span class="n">ccsel</span><span class="p">]</span>
+		<span class="n">N</span> <span class="o">=</span> <span class="n">ccsel</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+		<span class="n">TE</span> <span class="o">=</span> <span class="n">TE</span><span class="o">.</span><span class="n">tocsc</span><span class="p">()[</span><span class="n">ccsel</span><span class="p">,:]</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()[:,</span><span class="n">ccsel</span><span class="p">]</span>
+		<span class="n">D</span> <span class="o">=</span> <span class="n">D</span><span class="p">[</span><span class="n">ccsel</span><span class="p">]</span>
+		<span class="n">Nb</span> <span class="o">=</span> <span class="n">basins</span><span class="p">[</span><span class="n">ccsel</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+		<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;removing unconnected states: N=</span><span class="si">%d</span><span class="s2"> -&gt; </span><span class="si">%d</span><span class="s2">, Nbasin=</span><span class="si">%d</span><span class="s2"> -&gt; </span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">oN</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">oNb</span><span class="p">,</span><span class="n">Nb</span><span class="p">))</span>
+
+	<span class="nb">map</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">oN</span><span class="p">,</span><span class="nb">int</span><span class="p">)</span>
+	<span class="nb">map</span><span class="p">[</span><span class="n">ccsel</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+
+	<span class="sd">&quot;&quot;&quot; select states to remove - find everything that jumps less than x high from every state in sel??&quot;&quot;&quot;</span>
+	<span class="n">B</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">diags</span><span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="n">D</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s2">&quot;csr&quot;</span><span class="p">))</span>
+	<span class="n">F</span> <span class="o">=</span> <span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;E&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">GSD</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">beta</span>
+
+	<span class="n">rm_reg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="nb">bool</span><span class="p">)</span> <span class="c1"># remove all</span>
+
+	<span class="n">f_keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">int</span><span class="p">)</span>
+
+	<span class="n">n_keep</span> <span class="o">=</span> <span class="nb">map</span><span class="p">[</span><span class="n">obasins</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+	<span class="n">n_keep</span> <span class="o">=</span> <span class="n">n_keep</span><span class="p">[</span><span class="n">n_keep</span><span class="o">&gt;-</span><span class="mi">1</span><span class="p">]</span>
+
+	<span class="k">for</span> <span class="n">depth</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">):</span>
+		<span class="n">nn_keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">int</span><span class="p">)</span>
+		<span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">n_keep</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">n_keep</span> <span class="ow">in</span> <span class="n">f_keep</span><span class="p">:</span>
+				<span class="k">continue</span>
+			<span class="n">ss</span> <span class="o">=</span> <span class="n">TE</span><span class="o">.</span><span class="n">indices</span><span class="p">[</span><span class="n">TE</span><span class="o">.</span><span class="n">indptr</span><span class="p">[</span><span class="n">state</span><span class="p">]:</span><span class="n">TE</span><span class="o">.</span><span class="n">indptr</span><span class="p">[</span><span class="n">state</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+			<span class="n">ee</span> <span class="o">=</span> <span class="n">TE</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">TE</span><span class="o">.</span><span class="n">indptr</span><span class="p">[</span><span class="n">state</span><span class="p">]:</span><span class="n">TE</span><span class="o">.</span><span class="n">indptr</span><span class="p">[</span><span class="n">state</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+			<span class="n">nn_keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn_keep</span><span class="p">,</span><span class="n">ss</span><span class="p">[</span><span class="n">ee</span><span class="o">&lt;</span><span class="n">Emax</span><span class="p">])</span>
+		<span class="n">f_keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f_keep</span><span class="p">,</span><span class="n">n_keep</span><span class="p">))</span>
+		<span class="n">n_keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">nn_keep</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span> <span class="c1"># for the next round....</span>
+
+	<span class="n">f_keep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f_keep</span><span class="p">,</span><span class="n">n_keep</span><span class="p">))</span>
+
+	<span class="n">rm_reg</span><span class="p">[</span><span class="n">f_keep</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># i.e. ~rm_reg survives</span>
+
+	<span class="n">kept</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">oN</span><span class="p">,</span><span class="nb">bool</span><span class="p">)</span>
+	<span class="n">kept</span><span class="p">[</span><span class="n">ccsel</span><span class="p">]</span> <span class="o">=</span> <span class="o">~</span><span class="n">rm_reg</span> <span class="c1"># i.e. selects those which were kept</span>
+
+	<span class="nb">map</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">oN</span><span class="p">,</span><span class="nb">int</span><span class="p">)</span>
+	<span class="nb">map</span><span class="p">[</span><span class="n">kept</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">kept</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+
+	<span class="n">B</span><span class="p">,</span><span class="n">D</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">retry</span> <span class="o">=</span> <span class="n">gt_seq</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="p">,</span><span class="n">rm_reg</span><span class="o">=</span><span class="n">rm_reg</span><span class="p">,</span><span class="n">B</span><span class="o">=</span><span class="n">B</span><span class="p">,</span><span class="n">D</span><span class="o">=</span><span class="n">D</span><span class="p">,</span><span class="n">trmb</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+	<span class="k">if</span> <span class="n">dense</span><span class="p">:</span>
+		<span class="n">B</span> <span class="o">=</span> <span class="n">csr_matrix</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="n">B</span><span class="p">,</span><span class="n">diags</span><span class="p">(</span><span class="n">D</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csr&#39;</span><span class="p">),</span><span class="n">F</span><span class="p">[</span><span class="o">~</span><span class="n">rm_reg</span><span class="p">],</span><span class="nb">map</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Thomas D. Swinburne, Deepti Kannan.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'2020',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

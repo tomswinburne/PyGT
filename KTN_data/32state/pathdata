@@ -1,0 +1,15 @@
+EXEC           /home/jaj52/bin/CUDAOPTIM_icc_cuda6.5_r33578
+TEMPERATURE    10
+PLANCK         9.536D-14
+NATOMS         2
+COPYFILES      perm.allow min.in coords.prmtop coords.inpcrd
+COMMENT        COPYOPTIM 
+NGT            0 T
+NOFRQS         
+NOPOINTS       
+DIRECTION      AB
+CONNECTIONS    1
+ITOL           10.0D0
+GEOMDIFFTOL    0.3D0 
+EDIFFTOL       1.0D-4
+PERMDIST       

@@ -1,0 +1,711 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dimred.pathsample_wrapper &mdash; graph_tran 2020 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="graph_tran 2020 documentation" href="index.html"/>
+        <link rel="up" title="dimred: Dimensionality Reduction of Markov Chains" href="dimred.html"/>
+        <link rel="next" title="graph_tran.conversion" href="conversion.html"/>
+        <link rel="prev" title="dimred.ktn_analysis" href="dimred.ktn_analysis.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> graph_tran
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="ktn_io.html">graph_tran.ktn_io</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gt_tools.html">graph_tran.gt_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fpt_stats.html">graph_tran.fpt_stats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.partialGT.html">dimred.partialGT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.ktn_analysis.html">dimred.ktn_analysis</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">dimred.pathsample_wrapper</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#wrapper-to-pathsample-implementation-of-graph-transformation">Wrapper to PATHSAMPLE implementation of graph transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="conversion.html">graph_tran.conversion</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">graph_tran</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="dimred.html">dimred: Dimensionality Reduction of Markov Chains</a> &raquo;</li>
+        
+      <li>dimred.pathsample_wrapper</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/dimred.pathsample_wrapper.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-graph_tran.dimred.pathsample_wrapper">
+<span id="dimred-pathsample-wrapper"></span><h1>dimred.pathsample_wrapper<a class="headerlink" href="#module-graph_tran.dimred.pathsample_wrapper" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="wrapper-to-pathsample-implementation-of-graph-transformation">
+<h2>Wrapper to PATHSAMPLE implementation of graph transformation<a class="headerlink" href="#wrapper-to-pathsample-implementation-of-graph-transformation" title="Permalink to this headline">¶</a></h2>
+<p>This module provides a Python interface for the graph transformation
+implementation in the <a class="reference external" href="http://www-wales.ch.cam.ac.uk/PATHSAMPLE/">PATHSAMPLE program</a>
+available under the GNU General Public License. In addition to constructing
+a discrete-state network-representation of the energy landscape, the
+PATHSAMPLE program provides tools to compute rates and mean
+first passage times between product and reactant regions on the landscape.</p>
+<p>The program also includes a REGROUPFREE routine, which groups together
+potential energy or free energy minimuma separated by low-lying barriers
+within a free energy regrouping threshold. This routine can be used to
+pre-process a network by lumping together rapidly interconverting states.</p>
+<p>The implementation of graph transformation in Fortran is preferrable
+for large networks on the order of 100,000 nodes. For smaller networks, the python
+implementation available in <cite>graph_tran.gt_tools</cite> should suffice.</p>
+<ul class="simple">
+<li>Used the <code class="docutils literal notranslate"><span class="pre">ParsedPathsample</span></code> class to read in the initial <cite>pathdata</cite> file, which specifies the input keyworks
+for the PATHSAMPLE program. Modify the input parameters as desired using this class.</li>
+<li>Use the <code class="docutils literal notranslate"><span class="pre">ScanPathsample</span></code> class to run calculations with PATHSAMPLE and parse output files
+to obtain the desired quantities (i.e. rate constants, mean first passage times, groups identified by REGROUPFREE, etc.)</li>
+</ul>
+<dl class="class">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample">
+<em class="property">class </em><code class="descclassname">graph_tran.dimred.pathsample_wrapper.</code><code class="descname">ParsedPathsample</code><span class="sig-paren">(</span><em>pathdata</em>, <em>outfile=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ParsedPathsample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class to parse input keywords and output files
+utilized by the PATHSAMPLE program. To initialize a <code class="docutils literal notranslate"><span class="pre">ParsedPathsample</span></code> object,
+supply the constructor with the <cite>pathdata</cite> argument, which should include a full path
+to the pathdata file.</p>
+<dl class="attribute">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.path">
+<code class="descname">path</code><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.path" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Path object</em> – path to directory containing all relevant input files, including <cite>pathdata</cite> file, which specifies input keywords.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.input">
+<code class="descname">input</code><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.input" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> – dictionary containing PATHSAMPLE keywords and their values</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.output">
+<code class="descname">output</code><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.output" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> – dictionary mapping observables to their values parsed from PATHSAMPLE output files.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.numInA">
+<code class="descname">numInA</code><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.numInA" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Number of minima in A.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.numInB">
+<code class="descname">numInB</code><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.numInB" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Number of minima in B.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.minA">
+<code class="descname">minA</code><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.minA" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>list</em> – IDs of minima in A set (0-indexed)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.minB">
+<code class="descname">minB</code><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.minB" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>list</em> – IDs of minima in B set (0-indexed)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.append_input">
+<code class="descname">append_input</code><span class="sig-paren">(</span><em>name</em>, <em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ParsedPathsample.append_input"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.append_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a new keyword or update an existing keyword to the PATHSAMPLE input.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.comment_input">
+<code class="descname">comment_input</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ParsedPathsample.comment_input"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.comment_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a keyword from pathdata file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.define_A_and_B">
+<code class="descname">define_A_and_B</code><span class="sig-paren">(</span><em>numInA</em>, <em>numInB</em>, <em>sorted=True</em>, <em>mindata=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ParsedPathsample.define_A_and_B"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.define_A_and_B" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define an A and B set as a function of the number of minima in A
+and B based on their energies.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.draw_disconnectivity_graph_AB">
+<code class="descname">draw_disconnectivity_graph_AB</code><span class="sig-paren">(</span><em>value</em>, <em>temp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ParsedPathsample.draw_disconnectivity_graph_AB"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.draw_disconnectivity_graph_AB" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a Disconnectivity Graph colored by the minima in A and B after
+running REGROUPFREE at threshold <cite>value</cite> and temperature <cite>temp</cite>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_GT_intermediates">
+<code class="descname">parse_GT_intermediates</code><span class="sig-paren">(</span><em>outfile</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ParsedPathsample.parse_GT_intermediates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_GT_intermediates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a pandas DataFrame of GT quantities, including branching
+probabilities and MFPTs from individual source nodes, after disconnection of sources.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_dumpgroups">
+<code class="descname">parse_dumpgroups</code><span class="sig-paren">(</span><em>mingroupsfile</em>, <em>grouptomin=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ParsedPathsample.parse_dumpgroups"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_dumpgroups" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse the <cite>minima_groups.{temp}</cite> file outputted by the DUMPGROUPS
+keyword in PATHSAMPLE. Returns a dictionary mapping minID to groupID
+(if grouptomin is False), or a dirctionary mapping groupID to minID (if
+grouptomin is True).
+Both IDs are 1-indexed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_input">
+<code class="descname">parse_input</code><span class="sig-paren">(</span><em>pathdatafile</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ParsedPathsample.parse_input"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Store keywords in <cite>pathdata</cite> file as a dictionary
+mapping to values, which are read in as strings.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_minA_and_minB">
+<code class="descname">parse_minA_and_minB</code><span class="sig-paren">(</span><em>minA</em>, <em>minB</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ParsedPathsample.parse_minA_and_minB"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_minA_and_minB" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in the number of minima and the minima IDs in the A and B sets
+from the min.A and min.B files and set the self.minA, self.numInA,
+self.minB and self.numInB attributes. Note, minima IDs in these files
+correspond to line numbers in min.data which are (1-indexed).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>minA</strong> (<em>str</em><em> or </em><em>Path object</em>) – full path to min.A file</li>
+<li><strong>minB</strong> (<em>str</em><em> or </em><em>Path object</em>) – full path to min.B file</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_output">
+<code class="descname">parse_output</code><span class="sig-paren">(</span><em>outfile</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ParsedPathsample.parse_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.parse_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses PATHSAMPLE output for key quantities printed out by the
+NGT and WAITPDF subroutines, namely Temperature, kSS, kNSS, kF, and MFPTs
+for the A-&gt;B and B-&gt;A directions. Stores quantities in self.output.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.sort_A_and_B">
+<code class="descname">sort_A_and_B</code><span class="sig-paren">(</span><em>minA</em>, <em>minB</em>, <em>mindata</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ParsedPathsample.sort_A_and_B"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.sort_A_and_B" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort the minima in min.A and min.B according to their energies.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.write_input">
+<code class="descname">write_input</code><span class="sig-paren">(</span><em>pathdatafile</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ParsedPathsample.write_input"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.write_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes out a valid pathdata file based on keywords
+in self.input</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ParsedPathsample.write_minA_minB">
+<code class="descname">write_minA_minB</code><span class="sig-paren">(</span><em>minA</em>, <em>minB</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ParsedPathsample.write_minA_minB"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ParsedPathsample.write_minA_minB" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a min.A and min.B file based on minIDs
+specified in self.minA and self.minB.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample">
+<em class="property">class </em><code class="descclassname">graph_tran.dimred.pathsample_wrapper.</code><code class="descname">ScanPathsample</code><span class="sig-paren">(</span><em>pathdata</em>, <em>outbase=None</em>, <em>suffix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ScanPathsample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interface to run the REGROUPFREE, DUMPINFOMAP, NGT, and WAITPDF
+subroutines of the PATHSAMPLE program. Uses the <code class="docutils literal notranslate"><span class="pre">ParsedPathsample</span></code>
+class to control input parameters and and parse output.</p>
+<dl class="attribute">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.pathdatafile">
+<code class="descname">pathdatafile</code><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.pathdatafile" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str or Path object</em> – full path to <cite>pathdata</cite> file, which stores input keywords for the PATHSAMPLE program.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.parse">
+<code class="descname">parse</code><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.parse" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>ParsedPathsample object</em> – stores input and output of PATHSAMPLE runs.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.path">
+<code class="descname">path</code><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.path" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Path object</em> – full path to directory containing all input and output files.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.suffix">
+<code class="descname">suffix</code><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.suffix" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – suffix of <cite>rates_{suffix}.csv</cite> file. Defaults to ‘’</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.outbase">
+<code class="descname">outbase</code><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.outbase" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – prefix for PATHSAMPLE output files. Defaults to ‘out’</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.calc_inter_community_rates_GT">
+<code class="descname">calc_inter_community_rates_GT</code><span class="sig-paren">(</span><em>C1</em>, <em>C2</em>, <em>communities</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ScanPathsample.calc_inter_community_rates_GT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.calc_inter_community_rates_GT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate k_{C1&lt;-C2} using GT. Here, C1 and C2 are community IDs
+(i.e. groups identified in DUMPGROUPS file from REGROUPFREE). This
+function isolates the minima in C1 union C2 and the transition states
+that connect them and feeds this subnetwork into PATHSAMPLE, using the
+NGT keyword to calculate inter-community rates.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.dump_rates_from_local_equilibrium_approx">
+<code class="descname">dump_rates_from_local_equilibrium_approx</code><span class="sig-paren">(</span><em>temp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ScanPathsample.dump_rates_from_local_equilibrium_approx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.dump_rates_from_local_equilibrium_approx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump rate matrix and stationary probabilities of the coarse-grained
+network resulting from the REGROUPFREE routine run at temperature <cite>temp</cite>.
+Writes out <cite>ts_conns.dat</cite>, <cite>ts_weights.dat</cite>, and <cite>stat_prob.dat</cite> files
+representing the regrouped network.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.dump_rates_full_network">
+<code class="descname">dump_rates_full_network</code><span class="sig-paren">(</span><em>temp=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ScanPathsample.dump_rates_full_network"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.dump_rates_full_network" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump rate matrix and stationary probabilities calculated in the
+PATHSAMPLE setup using the DUMP_INFOMAP keyword. Writes out <cite>ts_conns.dat</cite>,
+<cite>ts_weights.dat</cite>, and <cite>stat_prob.dat</cite> files.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Make sure that any existing <cite>stat_prob.dat</cite>, <cite>ts_conns.dat</cite>, and <cite>ts_weights.dat</cite> files
+are deleted from the <cite>self.path</cite> directory.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.get_MFPTAB_PATHSAMPLE">
+<code class="descname">get_MFPTAB_PATHSAMPLE</code><span class="sig-paren">(</span><em>A</em>, <em>B</em>, <em>communities</em>, <em>temp</em>, <em>n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ScanPathsample.get_MFPTAB_PATHSAMPLE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.get_MFPTAB_PATHSAMPLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a single GT calculation using the READRATES keyword in PATHSAMPLE
+to get the A&lt;-&gt;B mean first passage time at specified temperature.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>A</strong> (<em>int</em>) – community ID (0-indexed) of A set.</li>
+<li><strong>B</strong> (<em>int</em>) – community ID (0-indexed) of B set.</li>
+<li><strong>communities</strong> (<em>dict</em>) – dictionary mapping community IDs (1-indexed) to node IDs (1-indexed).</li>
+<li><strong>temp</strong> (<em>float</em>) – temperature at which to run PATHSAMPLE calculations.</li>
+<li><strong>n</strong> (<em>int</em>) – number of nodes, needed for READRATES keyword.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>MFPTAB</strong> (<em>float</em>) – Mean first passage time A &lt;- B</li>
+<li><strong>MFPTBA</strong> (<em>float</em>) – Mean first passage time B &lt;- A</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.get_intercommunity_MFPTs_GT_PATHSAMPLE">
+<code class="descname">get_intercommunity_MFPTs_GT_PATHSAMPLE</code><span class="sig-paren">(</span><em>temp</em>, <em>communities</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ScanPathsample.get_intercommunity_MFPTs_GT_PATHSAMPLE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.get_intercommunity_MFPTs_GT_PATHSAMPLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use PATHSAMPLE to compute the matrix of true MFPTs between communities.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>temp</strong> (<em>float</em>) – Temperature at which to calculate inter-community MFPTs.</li>
+<li><strong>communities</strong> (<em>dict</em>) – dictionary mapping community IDs (1-indexed) to node IDs (1-indexed).</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>MFPT</strong> – matrix of inter-community MFPTs computed with PATHSAMPLE</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">np.ndarray[float64] (ncomms, ncomms)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.get_intermicrostate_mfpts_GT_PATHSAMPLE">
+<code class="descname">get_intermicrostate_mfpts_GT_PATHSAMPLE</code><span class="sig-paren">(</span><em>n=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ScanPathsample.get_intermicrostate_mfpts_GT_PATHSAMPLE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.get_intermicrostate_mfpts_GT_PATHSAMPLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use PATHSAMPLE to compute the matrix of inter-microstate MFPTs
+between all pairs of the <cite>n</cite> nodes at the specified temperature <cite>temp</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>temp</strong> (<em>float</em>) – Temperature at which to run GT calculations.</li>
+<li><strong>n</strong> (<em>int</em>) – Number of nodes.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>mfpt</strong> – Matrix of inter-minima MFPTs.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">np.ndarray[float64] (n,n)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.remove_output">
+<code class="descname">remove_output</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ScanPathsample.remove_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.remove_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete PATHSAMPLE log files.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.run_NGT_exact">
+<code class="descname">run_NGT_exact</code><span class="sig-paren">(</span><em>temp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ScanPathsample.run_NGT_exact"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.run_NGT_exact" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a single GT calculation using the PATHSAMPLE program
+at the specified temperature <cite>temp</cite> with inputs specified by the self.parse class.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.run_NGT_regrouped">
+<code class="descname">run_NGT_regrouped</code><span class="sig-paren">(</span><em>Gthresh</em>, <em>temp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ScanPathsample.run_NGT_regrouped"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.run_NGT_regrouped" title="Permalink to this definition">¶</a></dt>
+<dd><p>After running REGROUPFREE at threshold <cite>Gthresh</cite> and temperature <cite>temp</cite>,
+calculate rates using NGT on regrouped minima.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Gthresh</strong> (<em>float</em>) – Free energy regrouping threshold used by REGROUPFREE.</li>
+<li><strong>temp</strong> (<em>float</em>) – Temperature.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>rates</strong> – dictionary of NGT output quantities, including MFPT, kF, kSS, and kNSS
+for the A&lt;-B and B&lt;-A directions.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.run_regroup">
+<code class="descname">run_regroup</code><span class="sig-paren">(</span><em>temp</em>, <em>value</em>, <em>NGTpostregroup=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ScanPathsample.run_regroup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.run_regroup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run REGROUPFREE once at a threshold given by <cite>value</cite>
+and a temperature given by <cite>temp</cite></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>temp</strong> (<em>float</em>) – Temperature.</li>
+<li><strong>value</strong> (<em>float</em>) – Free energy regrouping threshold for REGROUPFREE.</li>
+<li><strong>NGTpostregroup</strong> (<em>bool</em>) – If True, a single GT calculation is run on the regrouped network.
+Defaults to False.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>df</strong> – single row with columns temp, Gthresh, and rates computed on regrouped network</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">pandas DataFrame</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.scan_regroup">
+<code class="descname">scan_regroup</code><span class="sig-paren">(</span><em>values</em>, <em>temp</em>, <em>NGTpostregroup=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ScanPathsample.scan_regroup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.scan_regroup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the REGROUPFREE routine for a range of regrouping thresholds.
+Calculate A&lt;-&gt;B rates on regrouped networks and original network and
+save to a csv file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>values</strong> (<em>array-like</em>) – Free energy regrouping thresholds.</li>
+<li><strong>temp</strong> (<em>float</em>) – Temperature.</li>
+<li><strong>NGTpostregroup</strong> (<em>bool</em>) – If True, a single GT calculation is run on each regrouped network.
+Defaults to False.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="graph_tran.dimred.pathsample_wrapper.ScanPathsample.scan_temp">
+<code class="descname">scan_temp</code><span class="sig-paren">(</span><em>values</em>, <em>name='TEMPERATURE'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#ScanPathsample.scan_temp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.ScanPathsample.scan_temp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run PATHSAMPLE over a range of temperatures specified by <cite>values</cite> and
+extract rates from the NGT keyword output which are written to a csv file.
+This function can also be used to scan any other single keyword by specifying
+the <cite>name</cite> and a range of values.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.dimred.pathsample_wrapper.dump_ktn_info_scan">
+<code class="descclassname">graph_tran.dimred.pathsample_wrapper.</code><code class="descname">dump_ktn_info_scan</code><span class="sig-paren">(</span><em>path</em>, <em>temps</em>, <em>nrgthreshs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#dump_ktn_info_scan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.dump_ktn_info_scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump <cite>stat_prob.dat</cite>, <cite>ts_conns.dat</cite>, and <cite>ts_weights.dat</cite> files for each
+temperature in <cite>temps</cite>, and one <cite>communites.dat</cite> file for each (temperature, Gthresh) pair.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>temps</strong> (<em>array-like</em>) – Temperatures at which to dump rate matrix and stationary probabilities with DUMPINFO keyword.</li>
+<li><strong>nrgthreshs</strong> (<em>array-like</em>) – Free energy regrouping thresholds used for previous runs of REGROUPFREE. Defaults to None.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.dimred.pathsample_wrapper.scan_Gthresh_and_temp">
+<code class="descclassname">graph_tran.dimred.pathsample_wrapper.</code><code class="descname">scan_Gthresh_and_temp</code><span class="sig-paren">(</span><em>temps</em>, <em>nrgthreshs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#scan_Gthresh_and_temp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.scan_Gthresh_and_temp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate rates at different free energy regrouping thresholds and
+at different temperatures.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.dimred.pathsample_wrapper.scan_product_states">
+<code class="descclassname">graph_tran.dimred.pathsample_wrapper.</code><code class="descname">scan_product_states</code><span class="sig-paren">(</span><em>numinAs</em>, <em>numinBs</em>, <em>temps</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#scan_product_states"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.scan_product_states" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate rates using NGT for various definitions of A and
+B sets.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="graph_tran.dimred.pathsample_wrapper.write_communities">
+<code class="descclassname">graph_tran.dimred.pathsample_wrapper.</code><code class="descname">write_communities</code><span class="sig-paren">(</span><em>self</em>, <em>communities</em>, <em>commdat</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/graph_tran/dimred/pathsample_wrapper.html#write_communities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#graph_tran.dimred.pathsample_wrapper.write_communities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a single-column file <cite>commdat</cite> where each line is the
+community ID (zero-indexed) of the minima given by the line
+number.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>communities</strong> (<em>dict</em>) – mapping from minima ID (1-indexed) to community ID (1-indexed)</li>
+<li><strong>commdat</strong> (<em>dat file name</em>) – full path to file to which to write communitiy assignments (0-indexed)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="conversion.html" class="btn btn-neutral float-right" title="graph_tran.conversion" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="dimred.ktn_analysis.html" class="btn btn-neutral" title="dimred.ktn_analysis" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Thomas D. Swinburne, Deepti Kannan.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2020',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

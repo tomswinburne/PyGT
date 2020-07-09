@@ -1,0 +1,318 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>graph_tran: Analyzing Metastable Markov Chains &mdash; graph_tran 2020 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="graph_tran 2020 documentation" href="#"/>
+        <link rel="next" title="graph_tran.ktn_io" href="ktn_io.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="#" class="icon icon-home"> graph_tran
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ktn_io.html">graph_tran.ktn_io</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gt_tools.html">graph_tran.gt_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fpt_stats.html">graph_tran.fpt_stats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.partialGT.html">dimred.partialGT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.ktn_analysis.html">dimred.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="conversion.html">graph_tran.conversion</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">graph_tran</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#">Docs</a> &raquo;</li>
+        
+      <li>graph_tran: Analyzing Metastable Markov Chains</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-graph_tran">
+<span id="graph-tran-analyzing-metastable-markov-chains"></span><h1>graph_tran: Analyzing Metastable Markov Chains<a class="headerlink" href="#module-graph_tran" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="a-python-implementation-of-the-graph-transformation-algorithm">
+<h2>A Python Implementation of the Graph Transformation Algorithm<a class="headerlink" href="#a-python-implementation-of-the-graph-transformation-algorithm" title="Permalink to this headline">¶</a></h2>
+<p>Graph transformation is a deterministic dimensionality reduction algorithm that
+iteratively removes nodes from a Markov Chain while preserving the mean first
+passage time (MFPT) from a set of initial nodes, <span class="math notranslate nohighlight">\(\mathcal{B}\)</span>, to a set
+of asorbing nodes, <span class="math notranslate nohighlight">\(\mathcal{A}\)</span>. The original Markov chain does not need
+to satisfy detailed balance, nor is there any constraint on the initial
+probability distribution in <span class="math notranslate nohighlight">\(\mathcal{B}\)</span>. This package provides an
+implementation of the graph transformation algorithm for abitrary discrete-time
+or continuous-time Markov chains. Code is also provided for the calculation of
+phenomenological rate constants between endpoint macrostates using expressions
+from discrete path sampling.</p>
+<p>We also include code for two different approaches to the dimensionality reduction
+of Markov chains using the graph transformation algorithm. In the first
+approach, we consider the problem of estimating a reduced Markov chain given a partitioning of
+the original Markov chain into communities of microstates (nodes). <a class="footnote-reference" href="#id3" id="id1">[1]</a> Various
+implementations of the inter-community rates are provided, including the
+simplest expression given by the local equilibrium approximation, as well as
+the optimal rates originally derived by Hummer and Szabo. In the second
+approach, which we call partial graph transformation, <a class="footnote-reference" href="#id4" id="id2">[2]</a> select nodes that
+contribute the least to global dynamics are renormalized away with graph
+transformation. The result is a smaller-dimensional Markov chain that is
+better-conditioned for further numerical analysis.</p>
+<p>All methods are discussed in detail in the following manuscripts, which should
+also be cited when using this software:</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><ol class="first last upperalpha simple" start="4">
+<li>Kannan, D. J. Sharpe, T. D. Swinburne, D. J. Wales, “Dimensionality reduction of Markov chains from mean first passage times using graph transformation.” <em>J. Chem. Phys.</em> (2020)</li>
+</ol>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><ol class="first last upperalpha simple" start="4">
+<li>Kannan, D. J. Sharpe, T. D. Swinburne, D. J. Wales, “Dimensionality reduction of complex networks with graph transformation” <em>Phys. Rev. E.</em> (2020)</li>
+</ol>
+</td></tr>
+</tbody>
+</table>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ktn_io.html">graph_tran.ktn_io</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ktn_io.html#read-in-input-files-describing-the-markov-chain-to-analyze">Read in input files describing the Markov chain to analyze</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gt_tools.html">graph_tran.gt_tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gt_tools.html#iteratively-remove-nodes-from-a-markov-chain-with-graph-transformation">Iteratively remove nodes from a Markov chain with graph transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fpt_stats.html">graph_tran.fpt_stats</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fpt_stats.html#calculate-first-passage-time-statistics-with-graph-transformation">Calculate first passage time statistics with graph transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.partialGT.html">dimred.partialGT</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dimred.partialGT.html#partial-graph-transformation-a-dimensionality-reduction-strategy">Partial graph transformation: A dimensionality reduction strategy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.ktn_analysis.html">dimred.ktn_analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dimred.ktn_analysis.html#optimal-markovian-coarse-graining-given-a-community-structure">Optimal Markovian coarse-graining given a community structure</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dimred.pathsample_wrapper.html#wrapper-to-pathsample-implementation-of-graph-transformation">Wrapper to PATHSAMPLE implementation of graph transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="conversion.html">graph_tran.conversion</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="conversion.html#file-conversions">File Conversions</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="ktn_io.html" class="btn btn-neutral float-right" title="graph_tran.ktn_io" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Thomas D. Swinburne, Deepti Kannan.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2020',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,481 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>graph_tran.lib.conversion &mdash; graph_tran 2020 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="graph_tran 2020 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> graph_tran
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../ktn_io.html">graph_tran.ktn_io</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gt_tools.html">graph_tran.gt_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../fpt_stats.html">graph_tran.fpt_stats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dimred.html">dimred: Dimensionality Reduction of Markov Chains</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dimred.partialGT.html">dimred.partialGT</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dimred.ktn_analysis.html">dimred.ktn_analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dimred.pathsample_wrapper.html">dimred.pathsample_wrapper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../conversion.html">graph_tran.conversion</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">graph_tran</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>graph_tran.lib.conversion</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for graph_tran.lib.conversion</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;File Conversions</span>
+
+<span class="sd">The KTN_python module includes python GT tools, KTN analysis tools, and</span>
+<span class="sd">ways to talk to the external programs PATHSAMPLE and DISCOTRESS. </span>
+<span class="sd">To unify these four software packages, this script converts between </span>
+<span class="sd">different file formats for representing KTNs.</span>
+
+<span class="sd">Community Files</span>
+<span class="sd">---------------</span>
+<span class="sd">communities.dat : single-column (nnnodes,)</span>
+<span class="sd">    used by DISCOTRESS and ktn_tools; each line contains community ID (0-indexed)</span>
+<span class="sd">    of the node specified by the line number in the file</span>
+<span class="sd">minima.groups : output of DUMPGROUPS keyword from REGROUPFREE routine in PATHSAMPLE</span>
+<span class="sd">    used by ParsePathsample class in ktn package to write a communities.dat file. </span>
+<span class="sd">    So conversion is absent from this file.</span>
+
+<span class="sd">Community data structures:</span>
+<span class="sd">--------------------------</span>
+<span class="sd">ktn.communities : dictionary mapping community IDs (1-indexed) to minima IDs (1-indexed)</span>
+<span class="sd">    file format used in ktn_analysis</span>
+<span class="sd">pgt.communities : dictionary mapping community IDs (0-indexed) to boolean list (nnodes,)</span>
+<span class="sd">    Boolean list selects out the nodes in that community; used in gt_tools</span>
+
+<span class="sd">Rate matrix files</span>
+<span class="sd">-----------------</span>
+<span class="sd">rate_matrix.dat : (nnodes, nnodes) rate matrix entries printed in dense format</span>
+<span class="sd">min.data, ts.data : input to PATHSAMPLE (unnecessary if rate_matrix.dat is present)</span>
+<span class="sd">ts_weights.dat : single column, ln(kij), (2*nts, )</span>
+<span class="sd">    used in DISCOTRESS, output of DUMPINFO, kij first line, kji second line, etc.</span>
+<span class="sd">ts_conns.dat   : double columns, i &lt;-&gt; j, (nts, )</span>
+<span class="sd">    used in DISCOTRESS, output of DUMPINFO</span>
+
+<span class="sd">Rate matrix variables</span>
+<span class="sd">---------------------</span>
+<span class="sd">Q : in GT code, Q is actually -K and is typically in sparse format</span>
+<span class="sd">ktn.K : in ktn code, K is the same as -Q and is in dense format</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="k">as</span> <span class="nn">sp</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span> 
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+
+<span class="sd">&quot;&quot;&quot; Rate matrix file conversion &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="K_from_Q"><a class="viewcode-back" href="../../../conversion.html#graph_tran.lib.conversion.K_from_Q">[docs]</a><span class="k">def</span> <span class="nf">K_from_Q</span><span class="p">(</span><span class="n">Q</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Convert the sparse, gt_tools `Q` matrix to the dense, `K` matrix used </span>
+<span class="sd">    in ktn_analysis by multiplying nonzero entries by -1. This same function</span>
+<span class="sd">    can also be used to get Q from K, although that&#39;s a less useful conversion.&quot;&quot;&quot;</span>
+    <span class="n">rate_mat</span> <span class="o">=</span> <span class="n">Q</span>
+    <span class="k">if</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">rate_mat</span><span class="p">):</span>
+        <span class="n">rate_mat</span> <span class="o">=</span> <span class="n">rate_mat</span><span class="o">.</span><span class="n">todense</span><span class="p">()</span>
+    <span class="n">ix</span><span class="p">,</span> <span class="n">iy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">rate_mat</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ix</span><span class="p">)):</span>
+        <span class="n">rate_mat</span><span class="p">[</span><span class="n">ix</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="n">iy</span><span class="p">[</span><span class="n">j</span><span class="p">]]</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">return</span> <span class="n">rate_mat</span></div>
+
+<div class="viewcode-block" id="dump_rate_mat"><a class="viewcode-back" href="../../../conversion.html#graph_tran.lib.conversion.dump_rate_mat">[docs]</a><span class="k">def</span> <span class="nf">dump_rate_mat</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%.20G</span><span class="s1">&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Dumps a rate_matrix.dat file for input to PATHSAMPLE. </span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    K : (nnodes, nnodes)</span>
+<span class="sd">        rate matrix in dense format</span>
+<span class="sd">    data_path : str or Path</span>
+<span class="sd">        path to folder with pathdata file where rate_matrix.dat will be dumped</span>
+<span class="sd">    fmt : format string</span>
+<span class="sd">        Defaults to &#39;%.20G&#39;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">/</span><span class="s1">&#39;rate_matrix.dat&#39;</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">fmt</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ts_weights_conns_from_K"><a class="viewcode-back" href="../../../conversion.html#graph_tran.lib.conversion.ts_weights_conns_from_K">[docs]</a><span class="k">def</span> <span class="nf">ts_weights_conns_from_K</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Write a ts_weights.dat and ts_conns.dat file from a rate matrix.</span>
+<span class="sd">    K can actually be K or Q since we only care about off-diagonal entries. Ensures</span>
+<span class="sd">    the rates are positive before writing to file.</span>
+
+<span class="sd">    TODO: test</span>
+<span class="sd">    TODO: figure out how to get ts_weights.dat from sparse matrix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ts_conns</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">/</span><span class="sa">f</span><span class="s1">&#39;ts_conns</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">.dat&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+    <span class="c1">#ts_weights = open(Path(data_path)/f&#39;ts_weights{suffix}.dat&#39;, &#39;w&#39;)</span>
+    <span class="c1">#if K is sparse (i.e. Q), can just get from data structure</span>
+    <span class="k">if</span> <span class="n">sp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">K</span><span class="p">):</span>
+        <span class="c1">#tsweights = []</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">cols</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">indices</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">indptr</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">K</span><span class="o">.</span><span class="n">indptr</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">kijs</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">indptr</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">K</span><span class="o">.</span><span class="n">indptr</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">j</span><span class="p">:</span>
+                    <span class="n">ts_conns</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="c1">#append k i &lt;- j, later we&#39;ll sort it so j &lt;- i comes right after</span>
+                <span class="c1">#ts_weights.append(np.log(kijs[j]))</span>
+        <span class="c1">#tsweights_sorted = np.array(tsweights)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ix</span><span class="p">,</span> <span class="n">iy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ix</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">ix</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">iy</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                <span class="c1">#i --&gt; j, where i &lt; j</span>
+                <span class="n">ts_conns</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ix</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">iy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="c1"># Kji (i -&gt; j)</span>
+                <span class="n">ts_weights</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">K</span><span class="p">[</span><span class="n">iy</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">ix</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="c1"># Kij (j -&gt; i)</span>
+                <span class="n">ts_weights</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">K</span><span class="p">[</span><span class="n">ix</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">iy</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="dump_stat_probs"><a class="viewcode-back" href="../../../conversion.html#graph_tran.lib.conversion.dump_stat_probs">[docs]</a><span class="k">def</span> <span class="nf">dump_stat_probs</span><span class="p">(</span><span class="n">pi</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%.20G</span><span class="s1">&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Dump a stat_prob.dat file.&quot;&quot;&quot;</span>
+    <span class="n">pi</span> <span class="o">=</span> <span class="n">pi</span><span class="o">/</span><span class="n">pi</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">/</span><span class="s1">&#39;stat_prob</span><span class="si">{suffix}</span><span class="s1">.dat&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">pi</span><span class="p">),</span> <span class="n">fmt</span><span class="o">=</span><span class="n">fmt</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="read_ktn_info"><a class="viewcode-back" href="../../../conversion.html#graph_tran.lib.conversion.read_ktn_info">[docs]</a><span class="k">def</span> <span class="nf">read_ktn_info</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Read in Daniel&#39;s files stat_prob.dat, ts_weights.dat, and ts_conns.dat</span>
+<span class="sd">    and return a rate matrix and vector of stationary probabilities.&quot;&quot;&quot;</span>
+
+    <span class="n">logpi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">data_path</span><span class="o">/</span><span class="sa">f</span><span class="s1">&#39;stat_prob</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">.dat&#39;</span><span class="p">)</span>
+    <span class="n">pi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logpi</span><span class="p">)</span>
+    <span class="n">nnodes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pi</span><span class="p">)</span>
+    <span class="k">assert</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">pi</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">1.E-10</span><span class="p">)</span>
+    <span class="n">logk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">/</span><span class="sa">f</span><span class="s1">&#39;ts_weights</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">.dat&#39;</span><span class="p">,</span> <span class="s1">&#39;float&#39;</span><span class="p">)</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logk</span><span class="p">)</span>
+    <span class="n">tsconns</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">/</span><span class="sa">f</span><span class="s1">&#39;ts_conns</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">.dat&#39;</span><span class="p">,</span> <span class="s1">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">Kmat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nnodes</span><span class="p">,</span> <span class="n">nnodes</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">tsconns</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">Kmat</span><span class="p">[</span><span class="n">tsconns</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">tsconns</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">k</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">Kmat</span><span class="p">[</span><span class="n">tsconns</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">tsconns</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">k</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c1">#set diagonals</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nnodes</span><span class="p">):</span>
+        <span class="n">Kmat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">Kmat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Kmat</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
+    <span class="c1">#identify isolated minima (where row of Kmat = 0)</span>
+    <span class="c1">#TODO: identify unconnected minima</span>
+    <span class="n">Kmat_nonzero_rows</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">Kmat</span><span class="o">==</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">Kmat_connected</span> <span class="o">=</span> <span class="n">Kmat</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ix_</span><span class="p">(</span><span class="n">Kmat_nonzero_rows</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                    <span class="n">Kmat_nonzero_rows</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+    <span class="n">pi</span> <span class="o">=</span> <span class="n">pi</span><span class="p">[</span><span class="n">Kmat_nonzero_rows</span><span class="p">]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">pi</span><span class="p">[</span><span class="n">Kmat_nonzero_rows</span><span class="p">])</span>
+    <span class="n">logpi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">pi</span><span class="p">)</span>
+    <span class="k">assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pi</span><span class="p">)</span> <span class="o">==</span> <span class="n">Kmat_connected</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">assert</span><span class="p">(</span><span class="n">Kmat_connected</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">Kmat_connected</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">assert</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">Kmat_connected</span><span class="nd">@pi</span><span class="p">)</span><span class="o">&lt;</span><span class="mf">1.E-10</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">log</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">logpi</span><span class="p">,</span> <span class="n">Kmat_connected</span> 
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pi</span><span class="p">,</span> <span class="n">Kmat_connected</span></div>
+
+<span class="sd">&quot;&quot;&quot; Converting between community data structures. &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ktn_comms_from_gt_comms"><a class="viewcode-back" href="../../../conversion.html#graph_tran.lib.conversion.ktn_comms_from_gt_comms">[docs]</a><span class="k">def</span> <span class="nf">ktn_comms_from_gt_comms</span><span class="p">(</span><span class="n">gt_comms</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Convert the GT-style dictionary of communities to a format</span>
+<span class="sd">    compatible with the ktn_analysis class.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    communities: dict</span>
+<span class="sd">        community IDs (0-indexed) to boolean array selectors (nnodes,)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    communities: dict</span>
+<span class="sd">        community IDs (1-indexed) to minimia IDs (1-indexed) (nmin, )</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ktn_comms</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">ci</span> <span class="ow">in</span> <span class="n">gt_comms</span><span class="p">:</span>
+        <span class="n">ktn_comms</span><span class="p">[</span><span class="n">ci</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">gt_comms</span><span class="p">[</span><span class="n">ci</span><span class="p">]</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">ktn_comms</span></div>
+
+<div class="viewcode-block" id="write_AB_communities_from_gt"><a class="viewcode-back" href="../../../conversion.html#graph_tran.lib.conversion.write_AB_communities_from_gt">[docs]</a><span class="k">def</span> <span class="nf">write_AB_communities_from_gt</span><span class="p">(</span><span class="n">gt_comms</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Write a communities.dat file containing just 2 communities;</span>
+<span class="sd">    all nodes in B U I are assigned to community 0, and all nodes in</span>
+<span class="sd">    absorbing A assigned to community 1. Useful for simulating A&lt;-B</span>
+<span class="sd">    transition paths with DISCOTRESS.</span>
+<span class="sd">    Note: A and B are 0-indexed IDs of communities A and B respectively.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">AS</span> <span class="o">=</span> <span class="n">gt_comms</span><span class="p">[</span><span class="n">A</span><span class="p">]</span>
+    <span class="n">BS</span> <span class="o">=</span> <span class="n">gt_comms</span><span class="p">[</span><span class="n">B</span><span class="p">]</span>
+    <span class="n">IS</span> <span class="o">=</span> <span class="o">~</span><span class="p">(</span><span class="n">AS</span><span class="o">+</span><span class="n">BS</span><span class="p">)</span>
+    <span class="n">AB_comms</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">AB_comms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">BS</span><span class="o">+</span><span class="n">IS</span>
+    <span class="n">AB_comms</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">AS</span>
+    <span class="n">write_gt_comms</span><span class="p">(</span><span class="n">AB_comms</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="n">suffix</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="write_gt_comms"><a class="viewcode-back" href="../../../conversion.html#graph_tran.lib.conversion.write_gt_comms">[docs]</a><span class="k">def</span> <span class="nf">write_gt_comms</span><span class="p">(</span><span class="n">gt_comms</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Write a communities.dat file from GT-style communities dictionary.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gt_comms</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;gt_comms is empty.&#39;</span><span class="p">)</span>
+    <span class="c1">#all community selector arrays have same length</span>
+    <span class="n">nnodes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">gt_comms</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="c1">#file to write: each line has commID of that node</span>
+    <span class="n">commIDs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nnodes</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">ci</span> <span class="ow">in</span> <span class="n">gt_comms</span><span class="p">:</span>
+        <span class="n">min_in_ci</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">gt_comms</span><span class="p">[</span><span class="n">ci</span><span class="p">]</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">commIDs</span><span class="p">[</span><span class="n">min_in_ci</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">/</span><span class="sa">f</span><span class="s1">&#39;communities</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">.dat&#39;</span><span class="p">,</span> <span class="n">commIDs</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="write_ktn_comms"><a class="viewcode-back" href="../../../conversion.html#graph_tran.lib.conversion.write_ktn_comms">[docs]</a><span class="k">def</span> <span class="nf">write_ktn_comms</span><span class="p">(</span><span class="n">ktn_comms</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Write a single-column file `commdat` where each line is the</span>
+<span class="sd">    community ID (zero-indexed) of the minima given by the line</span>
+<span class="sd">    number.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    communities : dict</span>
+<span class="sd">        mapping from community ID (1-indexed) to minima ID (1-indexed)</span>
+<span class="sd">    commdat : .dat file name</span>
+<span class="sd">        file to which to write communitiy assignments (0-indexed)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">commdat</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span><span class="o">/</span><span class="sa">f</span><span class="s1">&#39;communities</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">.dat&#39;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ktn_comms</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ktn_comms is empty.&#39;</span><span class="p">)</span>
+    <span class="c1">#count number of nodes total</span>
+    <span class="n">nnodes</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">ci</span> <span class="ow">in</span> <span class="n">ktn_comms</span><span class="p">:</span>
+        <span class="n">nnodes</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ktn_comms</span><span class="p">[</span><span class="n">ci</span><span class="p">])</span>
+    <span class="c1">#file to write: each line has commID of that node</span>
+    <span class="n">commIDs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nnodes</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">ci</span> <span class="ow">in</span> <span class="n">ktn_comms</span><span class="p">:</span>
+        <span class="n">min_in_ci</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ktn_comms</span><span class="p">[</span><span class="n">ci</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">commIDs</span><span class="p">[</span><span class="n">min_in_ci</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">commdat</span><span class="p">,</span> <span class="n">commIDs</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="write_minA_minB"><a class="viewcode-back" href="../../../conversion.html#graph_tran.lib.conversion.write_minA_minB">[docs]</a><span class="k">def</span> <span class="nf">write_minA_minB</span><span class="p">(</span><span class="n">ktn_comms</span><span class="p">,</span> <span class="n">Aind</span><span class="p">,</span> <span class="n">Bind</span><span class="p">,</span> <span class="n">data_path</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Write a min.A and min.B file based on minIDs</span>
+<span class="sd">    in the communities with IDs Aind and Bind. community IDs are 1-indexed</span>
+<span class="sd">    as are minIDs.&quot;&quot;&quot;</span>
+    <span class="n">minima_in_A</span> <span class="o">=</span> <span class="n">ktn_comms</span><span class="p">[</span><span class="n">Aind</span><span class="p">]</span>
+    <span class="n">minima_in_B</span> <span class="o">=</span> <span class="n">ktn_comms</span><span class="p">[</span><span class="n">Bind</span><span class="p">]</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">data_path</span><span class="o">/</span><span class="sa">f</span><span class="s1">&#39;min.A</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">minima_in_A</span><span class="p">))</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="c1">#first line is number of minima</span>
+        <span class="k">for</span> <span class="nb">min</span> <span class="ow">in</span> <span class="n">minima_in_A</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">min</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">data_path</span><span class="o">/</span><span class="sa">f</span><span class="s1">&#39;min.B</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">minima_in_B</span><span class="p">))</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="c1">#first line is number of minima</span>
+        <span class="k">for</span> <span class="nb">min</span> <span class="ow">in</span> <span class="n">minima_in_B</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">min</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="dump_gephi_format"><a class="viewcode-back" href="../../../conversion.html#graph_tran.lib.conversion.dump_gephi_format">[docs]</a><span class="k">def</span> <span class="nf">dump_gephi_format</span><span class="p">(</span><span class="n">mindatafile</span><span class="p">,</span> <span class="n">tsdatafile</span><span class="p">,</span> <span class="n">suffix</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create gephi-style csv format files from a min.data and ts.data file.&quot;&quot;&quot;</span>
+    <span class="n">mindata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">mindatafile</span><span class="p">)</span>
+    <span class="n">nnodes</span> <span class="o">=</span> <span class="n">mindata</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">node_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Id&#39;</span><span class="p">,</span> <span class="s1">&#39;Energy&#39;</span><span class="p">])</span>
+    <span class="n">node_df</span><span class="p">[</span><span class="s1">&#39;Id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nnodes</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">node_df</span><span class="p">[</span><span class="s1">&#39;Energy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mindata</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
+    <span class="n">node_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;csvs/node_list_</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">.csv&#39;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">tsdata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">tsdatafile</span><span class="p">)</span>
+    <span class="n">edge_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">,</span> <span class="s1">&#39;target&#39;</span><span class="p">,</span> <span class="s1">&#39;tsenergy&#39;</span><span class="p">])</span>
+    <span class="n">edge_df</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tsdata</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">edge_df</span><span class="p">[</span><span class="s1">&#39;target&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tsdata</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+    <span class="n">edge_df</span><span class="p">[</span><span class="s1">&#39;tsenergy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tsdata</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
+    <span class="n">edge_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;csvs/edge_list_</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s1">.csv&#39;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Thomas D. Swinburne, Deepti Kannan.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> and ❤️  using a custom <a href="https://github.com/LinxiFan/Sphinx-theme">theme</a> based on <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2020',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
