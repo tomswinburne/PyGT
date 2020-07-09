@@ -3,7 +3,7 @@ r"""
 Iteratively remove nodes from a Markov chain with graph transformation
 ----------------------------------------------------------------------
 Implements the core GT algorithm for eliminating nodes from a Markov chain
-in blocks, or one at a time. For use with the `graph_tran.ktn_io` module,
+in blocks, or one at a time. For use with the `PyGT.ktn_io` module,
 which reads the input files describing the original Markov chain.
 
 The graph transformation algorithm requires a branching probability matrix
@@ -229,13 +229,13 @@ def GT(rm_vec,B,tau=None,block=1,dense=False,order=None,
 		Whether to return the GT-reduced rate matrix in addition to B and D.
 
 	"""
-	rmb=trmb
-	retry=0
+
+    retry=0
 	N = rm_vec.size
 	#total number of states to remove
 	NI = rm_vec.sum()
 	D = 1.0 / tau
-    
+
 
 	if screen:
 		print("GT regularization removing %d states:" % NI)
@@ -295,7 +295,7 @@ def GT(rm_vec,B,tau=None,block=1,dense=False,order=None,
 				order = order[~rm]
 			if pass_over.sum()>0:
 				pass_over = pass_over[~rm]
-			rmb = 1 + (trmb-1)*int(pass_over.sum()==0)
+			rmb = 1 + (block-1)*int(pass_over.sum()==0)
 		else:
 			pass_over = rm
 			rmb = 1

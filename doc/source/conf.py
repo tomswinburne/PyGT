@@ -19,13 +19,13 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'graph_tran'
+project = 'PyGT'
 copyright = '2020, Thomas D. Swinburne, Deepti Kannan'
 author = 'Thomas D. Swinburne, Deepti Kannan'
 
 # The short X.Y version
-import graph_tran
-version = graph_tran.__version__
+import PyGT
+version = PyGT.__version__
 # The full version, including alpha/beta/rc tags
 release = '2020'
 
@@ -154,7 +154,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'graph_tran.tex', 'graph\\_tran Documentation',
+    (master_doc, 'PyGT.tex', 'graph\\_tran Documentation',
      'Thomas D. Swinburne, Deepti Kannan', 'manual'),
 ]
 
@@ -164,7 +164,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'graph_tran', 'graph_tran Documentation',
+    (master_doc, 'PyGT', 'PyGT Documentation',
      [author], 1)
 ]
 
@@ -175,8 +175,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'graph_tran', 'graph_tran Documentation',
-     author, 'graph_tran', 'One line description of project.',
+    (master_doc, 'PyGT', 'PyGT Documentation',
+     author, 'PyGT', 'One line description of project.',
      'Miscellaneous'),
 ]
 

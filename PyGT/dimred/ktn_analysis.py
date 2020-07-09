@@ -165,7 +165,7 @@ class Analyze_KTN(object):
         mfpt : (nnodes, nnodes)
             Matrix of inter-microstate MFPTs between all pairs of nodes. Defaults to None.
         GT : bool
-            If True, matrix of inter-microstate MFPTs is computed with GT using the `graph_tran.fpt_stats` module.
+            If True, matrix of inter-microstate MFPTs is computed with GT using the `PyGT.fpt_stats` module.
             Kwargs can then be specified for GT (such as the pool_size for parallelization). Defaults to False.
 
         """

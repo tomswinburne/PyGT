@@ -1,7 +1,7 @@
 """
 File Conversions 
 ----------------
-The `graph_tran` package includes python GT tools, dimensionality reduction tools, and
+The `PyGT` package includes python GT tools, dimensionality reduction tools, and
 ways to talk to the external programs PATHSAMPLE and DISCOTRESS. 
 To unify these three software packages, this script converts between 
 different file formats for representing Markov chains.

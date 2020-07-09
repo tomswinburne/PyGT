@@ -2,7 +2,7 @@
 r"""
 Calculate first passage time statistics with graph transformation
 -----------------------------------------------------------------
-Contains wrappers to `graph_tran.gt_tools` to calculate the mean first passage times
+Contains wrappers to `PyGT.gt_tools` to calculate the mean first passage times
 and phenomenological rate constants between endpoint macrostates
 :math:`\mathcal{A}` and :math:`\mathcal{B}`.
 

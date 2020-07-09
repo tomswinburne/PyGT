@@ -15,7 +15,7 @@ pre-process a network by lumping together rapidly interconverting states.
 
 The implementation of graph transformation in Fortran is preferrable
 for large networks on the order of 100,000 nodes. For smaller networks, the python
-implementation available in `graph_tran.gt_tools` should suffice.
+implementation available in `PyGT.gt_tools` should suffice.
 
 * Used the ``ParsedPathsample`` class to read in the initial `pathdata` file, which specifies the input keyworks
   for the PATHSAMPLE program. Modify the input parameters as desired using this class.

@@ -4,12 +4,12 @@
 Deepti Kannan, 2020"""
 
 #library code
-import graph_tran
-from graph_tran import ktn_io as kio
-from graph_tran import gt_tools as gt
-from graph_tran import fpt_stats as fpt
-from graph_tran import conversion as convert
-from graph_tran.dimred.ktn_analysis import *
+import PyGT
+from PyGT import ktn_io as kio
+from PyGT import gt_tools as gt
+from PyGT import fpt_stats as fpt
+from PyGT import conversion as convert
+from PyGT.dimred.ktn_analysis import *
 #other modules
 import numpy as np
 import scipy as sp

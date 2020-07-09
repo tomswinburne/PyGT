@@ -3,7 +3,7 @@ import numpy as np
 import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 
-from graph_tran.gt_tools import *
+from PyGT.gt_tools import *
 """ test for tqdm progress bars """
 try:
 	from tqdm import tqdm
