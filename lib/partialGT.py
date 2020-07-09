@@ -1,6 +1,7 @@
-""" Script to perform partial GT analysis on networks.
-
-Deepti Kannan, 2020"""
+"""
+Script to perform partial GT analysis on networks.
+TD Swinburne, D Kannan, 2020
+"""
 
 import numpy as np
 from io import StringIO
@@ -44,7 +45,7 @@ def read_communities(commdat, index_sel, screen=False):
                 communities[groupID].append(minID)
             else:
                 communities[groupID] = [minID]
-    
+
     for ci in range(len(communities)):
         #create a new index_selector to select out the minima in community ci
         keep = np.zeros(index_sel.size,bool)
@@ -53,12 +54,12 @@ def read_communities(commdat, index_sel, screen=False):
         communities[ci] = keep[index_sel]
         if screen:
             print(f'Community {ci}: {keep.sum()}')
-        
+
     return communities
 
 
 def compute_passage_stats(AS, BS, BF, Q, dopdf=True):
-    """Compute the A->B and B->A first passage time distribution, 
+    """Compute the A->B and B->A first passage time distribution,
     first moment, and second moment.
 
     Parameters
@@ -87,7 +88,7 @@ def compute_passage_stats(AS, BS, BF, Q, dopdf=True):
     if dopdf:
         # time*tau_range, p(t) (first 2: A->B, second 2: B->A)
         pt = np.zeros((4,400))
-        
+
     #A -> B
     #P(0) is initialized to local boltzman of source community A
     rho = np.exp(-BF) * AS
@@ -97,9 +98,9 @@ def compute_passage_stats(AS, BS, BF, Q, dopdf=True):
     x = spsolve(M,rho[~BS])
     y = spsolve(M,x)
     # first moment tau(A->B) = 1.Q^{-1}.rho(A) = 1.x
-    tau[0] = x.sum() 
+    tau[0] = x.sum()
     # second moment = 2 x 1.Q^{-2}.rho = 2.0* 1.Q^{-1}.x
-    tau[1] = 2.0*y.sum() 
+    tau[1] = 2.0*y.sum()
     if dopdf:
         #time in multiples of the mean first passage time
         pt[0] = np.logspace(-6,3,pt.shape[1])*tau[0]
@@ -114,7 +115,7 @@ def compute_passage_stats(AS, BS, BF, Q, dopdf=True):
         nu = nu.real
         #(v*w/nu).sum() is the same as <tau>, the first bit is the pdf p(t)
         pt[1] = (v*w*nu)@np.exp(-np.outer(nu,pt[0]))*(v*w/nu).sum()
-    
+
     #B -> A
     rho = np.exp(-BF) * BS
     rho /= rho.sum()
@@ -159,7 +160,7 @@ def compute_escape_stats(BS, BF, Q, tau_escape=None, dopdf=True):
     tau : (2,) array-like
         <tau>_B, <tau^2>_B
     pt : (2, 400) array-like
-        time in multiples of <tau_escape> and p(t)*<tau_escape> 
+        time in multiples of <tau_escape> and p(t)*<tau_escape>
 
     """
     #<tau>, <tau^2>
@@ -218,18 +219,18 @@ def choose_nodes_to_remove(rm_type, percent_retained, region, rm_reg=None):
     """
     if rm_reg is None:
         rm_reg = np.zeros(N, bool)
-    
+
     if rm_type == 'node_degree':
         rm_reg[node_degree < 2] = True
         #keep nodes that are not in the removal region
-        rm_reg[~region] = False 
+        rm_reg[~region] = False
     elif rm_type == 'escape_time':
         #remove nodes with the smallest escape times
         #retain nodes in the top percent_retained percentile of escape time
         rm_reg[region] = escape_time[region] < np.percentile(escape_time[region], 100.0 - percent_retained)
     elif rm_type == 'free_energy':
         #retain nodes in the bottom percent_retained percentile of free energy
-        rm_reg[region] = BF[region] > np.percentile(BF[region], percent_retained)   
+        rm_reg[region] = BF[region] > np.percentile(BF[region], percent_retained)
     elif rm_type == 'hybrid':
         #remove nodes in the top percent_retained percentile of escape time
         time_sel = (escape_time[region] < np.percentile(escape_time[region], 100.0 - percent_retained))
@@ -239,7 +240,7 @@ def choose_nodes_to_remove(rm_type, percent_retained, region, rm_reg=None):
         rm_reg[region] = sel
     elif rm_type == 'combined':
         #multiple escape_time by occupation probability e^-BF
-        #high free energy nodes have a small occupation probability 
+        #high free energy nodes have a small occupation probability
         #we want to remove nodes with low occupation probability AND small escape time
         #if we multiply together, should make sense to remove the smallest values
         rho = np.exp(-BF)[region] #stationary probabilities
@@ -249,12 +250,12 @@ def choose_nodes_to_remove(rm_type, percent_retained, region, rm_reg=None):
     else:
         raise ValueError('Choose a valid GT removal strategy for `rm_type`.')
 
-    return rm_reg  
+    return rm_reg
 
-def prune_intermediate_nodes(beta, data_path, rm_type='hybrid', 
+def prune_intermediate_nodes(beta, data_path, rm_type='hybrid',
                              percent_retained=10, dopdf=True, screen=True):
-    """ Prune nodes only in the intermediate region using the heuristic 
-    specified in `rm_type`. 
+    """ Prune nodes only in the intermediate region using the heuristic
+    specified in `rm_type`.
 
     Parameters
     ----------
@@ -281,7 +282,7 @@ def prune_intermediate_nodes(beta, data_path, rm_type='hybrid',
     gttau : (4,) array-like
         same quantities as tau but in reduced network
     gtpt : (4, 400) array-like
-        same quantities as pt but in reduced network 
+        same quantities as pt but in reduced network
 
     """
     B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
@@ -291,17 +292,17 @@ def prune_intermediate_nodes(beta, data_path, rm_type='hybrid',
     escape_time = 1./D
     BF = beta*u-s
     BF -= BF.min()
-    AS,BS = kio.load_AB(data_path,index_sel)    
+    AS,BS = kio.load_AB(data_path,index_sel)
     IS = np.zeros(N, bool)
     IS[~(AS+BS)] = True
     if screen:
         print(f'A: {AS.sum()}, B: {BS.sum()}, I: {IS.sum()}')
-    
-    #First calculate p(t), <tau>, <tau^2> without any GT      
+
+    #First calculate p(t), <tau>, <tau^2> without any GT
     tau, pt = compute_passage_stats(AS, BS, BF, Q)
-        
+
     """Now calculate <tau>, <tau^2>, p(t) after graph transformation"""
-    rm_reg = choose_nodes_to_remove(rm_type, percent_retained, IS)   
+    rm_reg = choose_nodes_to_remove(rm_type, percent_retained, IS)
     #free energies of retained states
     r_BF = BF[~rm_reg]
     if screen:
@@ -311,7 +312,7 @@ def prune_intermediate_nodes(beta, data_path, rm_type='hybrid',
     GT_B, GT_D, GT_Q, r_N, retry  = gt.gt_seq(N=N,rm_reg=rm_reg,B=B,D=D,trmb=10,retK=True,Ndense=50,screen=False)
     #compute stats on reduced network
     gttau, gtpt = compute_passage_stats(AS[~rm_reg], BS[~rm_reg], r_BF, GT_Q)
-    
+
     if dopdf:
         return beta, tau, gttau, pt, gtpt
     else:
@@ -348,7 +349,7 @@ def prune_source(beta, data_path, rm_type='hybrid', percent_retained_in_B=90.,
     gttau : (2,) array-like
         same quantities as tau but in reduced network
     gtpt : (2, 400) array-like
-        same quantities as pt but in reduced network 
+        same quantities as pt but in reduced network
 
     """
     Nmax = None
@@ -367,7 +368,7 @@ def prune_source(beta, data_path, rm_type='hybrid', percent_retained_in_B=90.,
 
     """ First calculate p(t), <tau>, <tau^2> without any GT"""
     tau, pt = compute_escape_stats(BS, BF, Q)
-        
+
     """Now calculate <tau>, <tau^2>, p(t) after graph transforming away the top 10% of B nodes"""
     rm_reg = choose_nodes_to_remove(rm_type, percent_retained_in_B, BS)
     #free energies of retained states
@@ -428,7 +429,7 @@ def prune_all_basins(beta, data_path, rm_type='hybrid', percent_retained=50., sc
     communities = read_communities(data_path/'communities.dat', index_sel)
     #nodes to remove (top 100-percent_retained percent of nodes in each basin)
     rm_reg = np.zeros(N,bool)
-    
+
     #loop through the basins and update rm_reg[BS] with nodes to remove from each
     for source_commID in communities:
         #BS is the selector for all nodes in the source community
@@ -437,7 +438,7 @@ def prune_all_basins(beta, data_path, rm_type='hybrid', percent_retained=50., sc
             print(f'Source comm: {source_commID}, Source nodes: {BS.sum()}')
         rm_reg = choose_nodes_to_remove(rm_type, percent_retained, BS, rm_reg=rm_reg)
         if screen:
-            print(f'Percent eliminated from basin: {100*rm_reg[BS].sum()/BS.sum()}')        
+            print(f'Percent eliminated from basin: {100*rm_reg[BS].sum()/BS.sum()}')
     #now do the GT all in one go
     r_B, r_D, r_Q, r_N, retry = gt.gt_seq(N=N,rm_reg=rm_reg,B=B,D=D,trmb=10,retK=True,Ndense=50,screen=False)
     #free energies and escape times of retained states
@@ -447,14 +448,14 @@ def prune_all_basins(beta, data_path, rm_type='hybrid', percent_retained=50., sc
     r_communities = {}
     for com in communities:
         r_communities[com] = communities[com][~rm_reg]
-            
+
     return r_B, r_D, r_Q, r_N, r_BF, r_communities
 
 def compute_rates(AS, BS, BF, B, D, K, fullGT=False, **kwargs):
     """ Calculate kSS, kNSS, kF, k*, kQSD, MFPT, and committors for the transition path
     ensemble AS --> BS from rate matrix K. K can be the matrix of an original network,
-    or a partially graph-transformed matrix. 
-    
+    or a partially graph-transformed matrix.
+
     Differs from compute_passage_stats in that this function removes all intervening states
     using GT before computing fpt stats and rates on the fully reduced network
     with state space (A U B). This implementation also does not rely on a full
@@ -494,7 +495,7 @@ def compute_rates(AS, BS, BF, B, D, K, fullGT=False, **kwargs):
         #aka quasi=stationary distribution
         qsd = v[:,qsdo[0]]
         qsd /= qsd.sum()
-    
+
         #committor C^B_A: probability of reaching B before A: 1_B.B_BA^I (eqn 6 of SwinburneW20)
         C = np.ravel(rB[~r_s,:][:,r_s].sum(axis=0))
         #MFPT
@@ -538,13 +539,13 @@ def compute_rates(AS, BS, BF, B, D, K, fullGT=False, **kwargs):
         df[f'k*{dirs[i]}'] = [1./tau]
         #and kF is <1/T_Ab>
         df[f'kF{dirs[i]}'] = [(rho/T_Ba).sum()]
-    return df     
-    
-    
+    return df
+
+
 def rates_cycle(temps, data_path='KTN_data/LJ38/4k/'):
     """Simulate behavior of RATESCYCLE keyword in PATHSAMPLE. Compute rates and
     mean first passage times between A and B sets for a range of temperatures.
-    
+
     Parameters
     ----------
     temps : (ntemps, ) array-like
@@ -567,6 +568,7 @@ def rates_cycle(temps, data_path='KTN_data/LJ38/4k/'):
         BF = beta*u-s
         BF -= BF.min()
         AS,BS = kio.load_AB(data_path,index_sel)    
+
         IS = np.zeros(N, bool)
         IS[~(AS+BS)] = True
         df = compute_rates(AS, BS, BF, B, D, K)
