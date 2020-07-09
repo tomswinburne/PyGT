@@ -104,7 +104,7 @@ def ts_weights_conns_from_K(K, data_path, suffix=''):
         for i in range(len(ix)):
             if ix[i] < iy[i]:
                 #i --> j, where i < j
-                ts_conns.write(f'{ix[i]} {iy[i]}\n')
+                ts_conns.write(f'{ix[i]+1} {iy[i]+1}\n')
                 # Kji (i -> j)
                 ts_weights.write(f'{np.log(K[iy[i], ix[i]])}\n')
                 # Kij (j -> i)
