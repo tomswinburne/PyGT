@@ -231,10 +231,10 @@ def GT(rm_vec,B,tau=None,block=1,dense=False,order=None,
 	"""
 	rmb=trmb
 	retry=0
-    N = rm_vec.size
+	N = rm_vec.size
 	#total number of states to remove
-    NI = rm_vec.sum()
-    D = 1.0 / tau
+	NI = rm_vec.sum()
+	D = 1.0 / tau
     
 
 	if screen:
@@ -323,9 +323,9 @@ def GT(rm_vec,B,tau=None,block=1,dense=False,order=None,
 	nBd[Bd<0.99] = 1.0-Bd[Bd<0.99]
 	omB = diags(nBd) - Bn # 1-B
 
-    D = 1.0/tau
-    D = np.ravel(D).flatten()
-    if retK:
-        K = omB.dot(diags(D)) # (1-B).D = K ( :) )
-        return B,D,K,N,retry
-    return B,D,N,retry
+	D = 1.0/tau
+	D = np.ravel(D).flatten()
+	if retK:
+		K = omB.dot(diags(D)) # (1-B).D = K ( :) )
+		return B,D,K,N,retry
+	return B,D,N,retry

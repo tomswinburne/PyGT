@@ -537,7 +537,7 @@ def load_mat_gt(keep_ind,path='../data/LJ38/raw/',beta=10.0,Nmax=None,Emax=None)
 	map[kept] = np.arange(kept.sum())
 
 	B,tau,N,retry = GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=1,order=None)
-    D = 1.0/tau
+	D = 1.0/tau
 	if dense:
 		B = csr_matrix(B)
 
