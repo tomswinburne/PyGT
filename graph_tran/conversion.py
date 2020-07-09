@@ -113,7 +113,7 @@ def ts_weights_conns_from_K(K, data_path, suffix=''):
 def dump_stat_probs(pi, data_path, suffix='', fmt='%.20G'):
     """ Dump a stat_prob.dat file containing the stationary probabilities of nodes."""
     pi = pi/pi.sum()
-    np.savetxt(Path(data_path)/'stat_prob{suffix}.dat', np.log(pi), fmt=fmt)
+    np.savetxt(Path(data_path)/f'stat_prob{suffix}.dat', np.log(pi), fmt=fmt)
 
 def read_ktn_info(data_path, suffix='', log=False):
     """ Read input files stat_prob.dat, ts_weights.dat, and ts_conns.dat
