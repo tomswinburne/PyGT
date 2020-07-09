@@ -3,7 +3,7 @@ import numpy as np
 import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 from .ktn_io import load_save_mat,load_save_mat_gt
-from .gt_tools import gt_seq
+from .gt_tools import GT
 
 
 class aib_system:
@@ -13,9 +13,10 @@ class aib_system:
 			load_save_mat(path=path,beta=beta,Nmax=Nmax,Emax=Emax,generate=generate)
 		self.f = self.u-self.s/self.beta
 
-	def gt(self,rm_reg,trmb=50):
+	def gt(self,rm_reg,block=50):
 
-		self.B, self.kt, self.N, retry = gt_seq(N=self.N,rm_reg=rm_reg,B=self.B.copy(),D=self.kt,trmb=trmb,retK=False)
+		self.B, self.tau, self.N, retry = GT(rm_vec=rm_reg,B=self.B.copy(),tau=1.0/self.kt.copy(),retK=False,block=block)
+		self.kt = 1.0/self.tau
 		self.K = self.B@sp.diags(self.kt)
 		self.u = self.u[~rm_reg]
 		self.s = self.s[~rm_reg]

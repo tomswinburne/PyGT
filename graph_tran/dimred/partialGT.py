@@ -3,7 +3,7 @@ Partial graph transformation: A dimensionality reduction strategy
 -----------------------------------------------------------------
 
 This module exploits the graph transformation algorithm to eliminate
-nodes that are the least consequential for global dynamics from the 
+nodes that are the least consequential for global dynamics from the
 Markov chain. The resulting network is less sparse, of lower dimensionality,
 and is generally better-conditioned. Various strategies are implemented for
 choosing nodes to eliminate, namely, ranking nodes based on their mean
@@ -34,9 +34,9 @@ import scipy.linalg as spla
 import pandas as pd
 
 
-def choose_nodes_to_remove(rm_type, percent_retained, region, 
-                           BF, escape_time, node_degree, B, trmb=None, pi=None, rm_reg=None):
-    """Return an array rm_reg selecting out nodes to remove from
+def choose_nodes_to_remove(rm_type, percent_retained, region,
+                           BF, escape_time, node_degree, B, block=None, pi=None, rm_vec=None):
+    """Return an array rm_vec selecting out nodes to remove from
     the `region`.
 
     TODO: make an elaborate switcher class that allows for
@@ -54,51 +54,51 @@ def choose_nodes_to_remove(rm_type, percent_retained, region,
         boolean array that specifies region in which to remove nodes.
         Ex: region should be IS for computing A->B stats,
         region should be BS for basin escape from B, etc.
-    rm_reg : (N,) array
+    rm_vec : (N,) array
         boolean array selecting nodes to remove. Defaults to None.
-        if not None, overwrites rm_reg[region] using rm_type
+        if not None, overwrites rm_vec[region] using rm_type
         and percent_retained.
 
     Returns
     -------
-    rm_reg : (N,) array
+    rm_vec : (N,) array
         boolean array that specifies nodes to remove within region.
-        Note that rm_reg[~region] = False (doesn't remove nodes outside
+        Note that rm_vec[~region] = False (doesn't remove nodes outside
         of specified region)
 
     """
     N = len(region)
-    if rm_reg is None:
-        rm_reg = np.zeros(N, bool)
+    if rm_vec is None:
+        rm_vec = np.zeros(N, bool)
     Binds = np.nonzero(region)[0]
     V = region.sum()
-    if trmb is not None:
+    if block is not None:
         #when the number of remaining nodes is small, change the iteration step size to 1 node at a time
-        if V>=1 and V<(4*trmb):
-            trmb=1
+        if V>=1 and V<(4*block):
+            block=1
         if V==0:
-            return rm_reg
+            return rm_vec
 
     if rm_type == 'node_degree':
-        rm_reg[node_degree < 2] = True
+        rm_vec[node_degree < 2] = True
         #keep nodes that are not in the removal region
-        rm_reg[~region] = False 
+        rm_vec[~region] = False
     elif rm_type == 'escape_time':
         #remove nodes with the smallest escape times
-        if trmb is not None:
-            to_remove = np.argsort(escape_time[region])[:trmb]
-            rm_reg[Binds[to_remove]] = True
+        if block is not None:
+            to_remove = np.argsort(escape_time[region])[:block]
+            rm_vec[Binds[to_remove]] = True
         #retain nodes in the top percent_retained percentile of escape time
         else:
-            rm_reg[region] = escape_time[region] < np.percentile(escape_time[region], 100.0 - percent_retained)
+            rm_vec[region] = escape_time[region] < np.percentile(escape_time[region], 100.0 - percent_retained)
     elif rm_type == 'free_energy':
         #remove nodes with the highest free energies
-        if trmb is not None:
-            to_remove = np.argsort(BF[region])[-trmb:]
-            rm_reg[Binds[to_remove]] = True
+        if block is not None:
+            to_remove = np.argsort(BF[region])[-block:]
+            rm_vec[Binds[to_remove]] = True
         #retain nodes in the bottom percent_retained percentile of free energy
         else:
-            rm_reg[region] = BF[region] > np.percentile(BF[region], percent_retained)   
+            rm_vec[region] = BF[region] > np.percentile(BF[region], percent_retained)
     elif rm_type == 'hybrid':
         #remove nodes in the top percent_retained percentile of escape time
         time_sel = (escape_time[region] < np.percentile(escape_time[region], 100.0 - percent_retained))
@@ -109,22 +109,22 @@ def choose_nodes_to_remove(rm_type, percent_retained, region,
             bf_sel = (rho < np.percentile(rho, 100.0 - percent_retained))
         sel = np.bitwise_and(time_sel, bf_sel)
         #that are also in the lowest percent_retained percentile of free energy
-        rm_reg[region] = sel
+        rm_vec[region] = sel
     elif rm_type == 'combined':
         #multiple escape_time by occupation probability e^-BF
-        #high free energy nodes have a small occupation probability 
+        #high free energy nodes have a small occupation probability
         #we want to remove nodes with low occupation probability AND small escape time
-        #if we multiply together, should make sense to remove the smallest values 
+        #if we multiply together, should make sense to remove the smallest values
         rho = np.exp(-BF)[region] #stationary probabilities
         rho /= rho.sum()
         if pi is not None:
             rho = pi[region]/pi[region].sum()
         combo_metric = escape_time[region] * rho
-        if trmb is not None:
-            to_remove = np.argsort(combo_metric)[:trmb]
-            rm_reg[Binds[to_remove]] = True
+        if block is not None:
+            to_remove = np.argsort(combo_metric)[:block]
+            rm_vec[Binds[to_remove]] = True
         else:
-            rm_reg[region] = combo_metric < np.percentile(combo_metric, 100.0 - percent_retained)
+            rm_vec[region] = combo_metric < np.percentile(combo_metric, 100.0 - percent_retained)
     elif rm_type == 'fund_matrix':
         rho = np.exp(-BF)[region] #stationary probabilities
         rho /= rho.sum()
@@ -137,26 +137,26 @@ def choose_nodes_to_remove(rm_type, percent_retained, region,
             print(f"Fundamental matrix inversion errored out : {e}")
             print(f"V = {V}")
             print(B[region,:][:,region])
-            raise 
+            raise
 
         #node_visitations = N@rho #weighted average
         node_visitations = N.sum(axis=1) #unweighted average
         #remove nodes with the least visitations on the path to the absorbing boundary
-        if trmb is not None:
-            to_remove = np.argsort(node_visitations)[:trmb]
-            rm_reg[Binds[to_remove]] = True
+        if block is not None:
+            to_remove = np.argsort(node_visitations)[:block]
+            rm_vec[Binds[to_remove]] = True
         else:
-            rm_reg[region] = node_visitations < np.percentile(node_visitations, 100.0 - percent_retained)
+            rm_vec[region] = node_visitations < np.percentile(node_visitations, 100.0 - percent_retained)
 
     else:
         raise ValueError('Choose a valid GT removal strategy for `rm_type`.')
 
-    return rm_reg  
+    return rm_vec
 
-def prune_intermediate_nodes(beta, data_path, rm_type='hybrid', 
+def prune_intermediate_nodes(beta, data_path, rm_type='hybrid',
                              percent_retained=10, dopdf=True, screen=True):
     r""" Prune nodes only in the intermediate region between two endpoint
-    macrostates of interest using the heuristic specified in `rm_type`. 
+    macrostates of interest using the heuristic specified in `rm_type`.
 
     Parameters
     ----------
@@ -183,7 +183,7 @@ def prune_intermediate_nodes(beta, data_path, rm_type='hybrid',
     gttau : (4,) array-like
         same quantities as `tau` but in reduced network
     gtpt : (4, 400) array-like
-        same quantities as `pt` but in reduced network 
+        same quantities as `pt` but in reduced network
 
     """
     B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
@@ -193,27 +193,30 @@ def prune_intermediate_nodes(beta, data_path, rm_type='hybrid',
     escape_time = 1./D
     BF = beta*u-s
     BF -= BF.min()
-    AS,BS = kio.load_AB(data_path,index_sel)    
+    AS,BS = kio.load_AB(data_path,index_sel)
     IS = np.zeros(N, bool)
     IS[~(AS+BS)] = True
     if screen:
         print(f'A: {AS.sum()}, B: {BS.sum()}, I: {IS.sum()}')
-    
-    #First calculate p(t), <tau>, <tau^2> without any GT      
+
+    #First calculate p(t), <tau>, <tau^2> without any GT
     tau, pt = fpt.compute_passage_stats(AS, BS, BF, Q)
-        
+
     """Now calculate <tau>, <tau^2>, p(t) after graph transformation"""
-    rm_reg = choose_nodes_to_remove(rm_type, percent_retained, IS, BF, escape_time, node_degree)   
+    rm_vec = choose_nodes_to_remove(rm_type, percent_retained, IS, BF, escape_time, node_degree)
     #free energies of retained states
-    r_BF = BF[~rm_reg]
+    r_BF = BF[~rm_vec]
     if screen:
-        print(f'Nodes to eliminate: {rm_reg.sum()}/{N}, percent retained: {100*(IS.sum()-rm_reg.sum())/IS.sum()}')
-        print(f'in A: {rm_reg[AS].sum()}, in B: {rm_reg[BS].sum()}, in I: {rm_reg[IS].sum()}')
+        print(f'Nodes to eliminate: {rm_vec.sum()}/{N}, percent retained: {100*(IS.sum()-rm_vec.sum())/IS.sum()}')
+        print(f'in A: {rm_vec[AS].sum()}, in B: {rm_vec[BS].sum()}, in I: {rm_vec[IS].sum()}')
     #perform the graph transformation
-    GT_B, GT_D, GT_Q, r_N, retry  = gt.gt_seq(N=N,rm_reg=rm_reg,B=B,escape_rates=D,trmb=10,retK=True,Ndense=50,screen=False)
+
+    GT_B, GT_tau, GT_Q, r_N, retry  = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,retK=True,Ndense=50,screen=False,**kwargs)
+    GT_D = 1.0 / GT_tau
+
     #compute stats on reduced network
-    gttau, gtpt = fpt.compute_passage_stats(AS[~rm_reg], BS[~rm_reg], r_BF, GT_Q)
-    
+    gttau, gtpt = fpt.compute_passage_stats(AS[~rm_vec], BS[~rm_vec], r_BF, GT_Q)
+
     if dopdf:
         return beta, tau, gttau, pt, gtpt
     else:
@@ -251,7 +254,7 @@ def prune_source(beta, data_path, rm_type='hybrid', percent_retained_in_B=90.,
     gttau : (2,) array-like
         same quantities as `tau` but in reduced network
     gtpt : (2, 400) array-like
-        same quantities as `pt` but in reduced network 
+        same quantities as `pt` but in reduced network
 
     """
     Nmax = None
@@ -271,15 +274,17 @@ def prune_source(beta, data_path, rm_type='hybrid', percent_retained_in_B=90.,
 
     """ First calculate p(t), <tau>, <tau^2> without any GT"""
     tau, pt = fpt.compute_escape_stats(BS, BF, Q)
-        
+
     """Now calculate <tau>, <tau^2>, p(t) after graph transforming away the top 10% of B nodes"""
-    rm_reg = choose_nodes_to_remove(rm_type, percent_retained_in_B, BS, BF, escape_time, node_degree)
+    rm_vec = choose_nodes_to_remove(rm_type, percent_retained_in_B, BS, BF, escape_time, node_degree)
     #free energies of retained states
-    r_BF = BF[~rm_reg]
+    r_BF = BF[~rm_vec]
     if screen:
-        print(f'Nodes to eliminate: {rm_reg.sum()/BS.sum()}, percent retained: {100*(BS.sum()-rm_reg.sum())/BS.sum()}')
-    GT_B, GT_D, GT_Q, r_N, retry = gt.gt_seq(N=N,rm_reg=rm_reg,B=B,escape_rates=D,trmb=10,retK=True,Ndense=50,screen=False)
-    gttau, gtpt = fpt.compute_escape_stats(BS[~rm_reg], r_BF, GT_Q,
+        print(f'Nodes to eliminate: {rm_vec.sum()/BS.sum()}, percent retained: {100*(BS.sum()-rm_vec.sum())/BS.sum()}')
+    GT_B, GT_tau, GT_Q, r_N, retry  = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,retK=True,Ndense=50,screen=False,**kwargs)
+    GT_D = 1.0 / GT_tau
+
+    gttau, gtpt = fpt.compute_escape_stats(BS[~rm_vec], r_BF, GT_Q,
                                        tau_escape=tau[0], dopdf=True)
 
     if dopdf:
@@ -332,29 +337,32 @@ def prune_all_basins(beta, data_path, rm_type='hybrid', percent_retained=50., sc
     BF -= BF.min()
     communities = read_communities(data_path/'communities.dat', index_sel)
     #nodes to remove (top 100-percent_retained percent of nodes in each basin)
-    rm_reg = np.zeros(N,bool)
-    
-    #loop through the basins and update rm_reg[BS] with nodes to remove from each
+    rm_vec = np.zeros(N,bool)
+
+    #loop through the basins and update rm_vec[BS] with nodes to remove from each
     for source_commID in communities:
         #BS is the selector for all nodes in the source community
         BS = communities[source_commID]
         if screen:
             print(f'Source comm: {source_commID}, Source nodes: {BS.sum()}')
-        rm_reg = choose_nodes_to_remove(rm_type, percent_retained, BS, 
-            BF, escape_time, node_degree, rm_reg=rm_reg)
+        rm_vec = choose_nodes_to_remove(rm_type, percent_retained, BS,
+            BF, escape_time, node_degree, rm_vec=rm_vec)
         if screen:
-            print(f'Percent eliminated from basin: {100*rm_reg[BS].sum()/BS.sum()}')        
+            print(f'Percent eliminated from basin: {100*rm_vec[BS].sum()/BS.sum()}')
     #now do the GT all in one go
-    r_B, r_D, r_Q, r_N, retry = gt.gt_seq(N=N,rm_reg=rm_reg,B=B,escape_rates=D,trmb=10,retK=True,Ndense=50,screen=False)
+
+    r_B, r_tau, r_Q, r_N, retry = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,retK=True,Ndense=50,screen=False)
+    r_D = 1.0 / r_tau
+
     #free energies and escape times of retained states
-    r_BF = BF[~rm_reg]
-    print(f'Removed {rm_reg.sum()} of {N} nodes, retained {100*r_N/N} percent')
+    r_BF = BF[~rm_vec]
+    print(f'Removed {rm_vec.sum()} of {N} nodes, retained {100*r_N/N} percent')
     #community selectors in reduced network -- update shapes
     r_communities = {}
     for com in communities:
-        r_communities[com] = communities[com][~rm_reg]
-            
-    return r_B, r_D, r_Q, r_N, r_BF, r_communities, rm_reg
+        r_communities[com] = communities[com][~rm_vec]
+
+    return r_B, r_D, r_Q, r_N, r_BF, r_communities, rm_vec
 
 def prune_basins_sequentially(beta, data_path, rm_type='hybrid', percent_retained=50., screen=True):
     """ Prune each basin one at a time and feed the reduced network into the
@@ -401,21 +409,23 @@ def prune_basins_sequentially(beta, data_path, rm_type='hybrid', percent_retaine
     #pi = np.exp(-BF)
     communities = read_communities(data_path/'communities.dat', index_sel)
     N_original = N
-    
+
     #loop through the basins and graph transform one at a time
     for source_commID in communities:
         #BS is the selector for all nodes in the source community
         BS = communities[source_commID]
         if screen:
             print(f'Source comm: {source_commID}, Source nodes: {BS.sum()}')
-        rm_reg = choose_nodes_to_remove(rm_type, percent_retained, BS, 
+        rm_vec = choose_nodes_to_remove(rm_type, percent_retained, BS,
             BF, escape_time, node_degree)
         if screen:
-            print(f'Percent eliminated from basin: {100*rm_reg[BS].sum()/BS.sum()}')
+            print(f'Percent eliminated from basin: {100*rm_vec[BS].sum()/BS.sum()}')
         #perform the GT for this basin alone
-        B, D, Q, N, retry = gt.gt_seq(N=N,rm_reg=rm_reg,B=B,escape_rates=D,trmb=10,retK=True,Ndense=50,screen=False)
+
+        B, tau, Q, N, retry = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,retK=True,Ndense=50,screen=False)
+        D = 1.0/tau
         #update free energies, escape times, and equilibrium occupation probabilities
-        BF = BF[~rm_reg]
+        BF = BF[~rm_vec]
         BF -= BF.min()
         #peq in reduced system
         #rK = convert.K_from_Q(Q)
@@ -426,8 +436,7 @@ def prune_basins_sequentially(beta, data_path, rm_type='hybrid', percent_retaine
         node_degree = B.indptr[1:] - B.indptr[:-1]
         #community selectors in reduced network -- update shapes
         for com in communities:
-            communities[com] = communities[com][~rm_reg]        
-    #return final network 
-    print(f'Removed {N_original-N} of {N_original} nodes,retained: {100 * N/N_original}') 
+            communities[com] = communities[com][~rm_vec]
+    #return final network
+    print(f'Removed {N_original-N} of {N_original} nodes,retained: {100 * N/N_original}')
     return B, D, Q, N, BF, communities
-    

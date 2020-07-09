@@ -25,10 +25,10 @@ from copy import deepcopy
 
 sns.set()
 textwidth = 6.47699
-pres_params = {'axes.edgecolor': 'black', 
-                  'axes.facecolor':'white', 
-                  'axes.grid': False, 
-                  'axes.linewidth': 0.5, 
+pres_params = {'axes.edgecolor': 'black',
+                  'axes.facecolor':'white',
+                  'axes.grid': False,
+                  'axes.linewidth': 0.5,
                   'backend': 'ps',
                   'savefig.format': 'pdf',
                   'axes.titlesize': 24,
@@ -38,29 +38,29 @@ pres_params = {'axes.edgecolor': 'black',
                   'ytick.labelsize': 18,
                   'text.usetex': True,
                   'figure.figsize': [7, 5],
-                  'font.family': 'sans-serif', 
-                  #'mathtext.fontset': 'cm', 
+                  'font.family': 'sans-serif',
+                  #'mathtext.fontset': 'cm',
                   'xtick.bottom':True,
                   'xtick.top': False,
                   'xtick.direction': 'out',
-                  'xtick.major.pad': 3, 
+                  'xtick.major.pad': 3,
                   'xtick.major.size': 3,
                   'xtick.minor.bottom': False,
                   'xtick.major.width': 0.2,
 
-                  'ytick.left':True, 
-                  'ytick.right':False, 
+                  'ytick.left':True,
+                  'ytick.right':False,
                   'ytick.direction':'out',
                   'ytick.major.pad': 3,
-                  'ytick.major.size': 3, 
+                  'ytick.major.size': 3,
                   'ytick.major.width': 0.2,
-                  'ytick.minor.right':False, 
+                  'ytick.minor.right':False,
                   'lines.linewidth':2}
 
-params = {'axes.edgecolor': 'black', 
-                  'axes.facecolor':'white', 
-                  'axes.grid': False, 
-                  'axes.linewidth': 0.5, 
+params = {'axes.edgecolor': 'black',
+                  'axes.facecolor':'white',
+                  'axes.grid': False,
+                  'axes.linewidth': 0.5,
                   'backend': 'ps',
                   'savefig.format': 'ps',
                   'axes.titlesize': 11,
@@ -70,23 +70,23 @@ params = {'axes.edgecolor': 'black',
                   'ytick.labelsize': 8,
                   'text.usetex': True,
                   'figure.figsize': [7, 5],
-                  'font.family': 'sans-serif', 
-                  #'mathtext.fontset': 'cm', 
+                  'font.family': 'sans-serif',
+                  #'mathtext.fontset': 'cm',
                   'xtick.bottom':True,
                   'xtick.top': False,
                   'xtick.direction': 'out',
-                  'xtick.major.pad': 3, 
+                  'xtick.major.pad': 3,
                   'xtick.major.size': 3,
                   'xtick.minor.bottom': False,
                   'xtick.major.width': 0.2,
 
-                  'ytick.left':True, 
-                  'ytick.right':False, 
+                  'ytick.left':True,
+                  'ytick.right':False,
                   'ytick.direction':'out',
                   'ytick.major.pad': 3,
-                  'ytick.major.size': 3, 
+                  'ytick.major.size': 3,
                   'ytick.major.width': 0.2,
-                  'ytick.minor.right':False, 
+                  'ytick.minor.right':False,
                   'lines.linewidth':2}
 plt.rcParams.update(pres_params)
 
@@ -179,29 +179,30 @@ def plot_pgt_network(min_pos, **kwargs):
     """ Plot a partially graph-transformed network."""
     data_path = Path('KTN_data/9state')
     #GT-reduced network
-    r_B, r_D, r_Q, r_N, r_BF, r_communities, rm_reg = pgt.prune_all_basins(beta=1.0, 
+    r_B, r_D, r_Q, r_N, r_BF, r_communities, rm_vec = pgt.prune_all_basins(beta=1.0,
         data_path=data_path, **kwargs)
     convert.ts_weights_conns_from_K(r_Q.todense(), data_path, suffix='_GT')
     ts_conns = np.loadtxt(data_path/'ts_conns_GT.dat', dtype=int)
-    r_min_pos = min_pos[~rm_reg, :]
+    r_min_pos = min_pos[~rm_vec, :]
     communities = np.loadtxt(data_path/'communities_bace9.dat', dtype=int)
-    r_comms = communities[~rm_reg]
+    r_comms = communities[~rm_vec]
     plot_network_communities(r_min_pos, ts_conns, communities=r_comms, plot_edges=True)
 
 def illustrate_gt_gephi(temp, data_path = Path('KTN_data/32state'), suffix='gt', **kwargs):
     """ Show a network where (A U B)^c has been removed. """
-    
-    #GT-reduced 
+
+    #GT-reduced
     beta = 1./temp
     B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
     D = np.ravel(K.sum(axis=0))
     BF = beta*u-s
     BF -= BF.min()
-    AS,BS = kio.load_AB(data_path,index_sel)    
+    AS,BS = kio.load_AB(data_path,index_sel)
     #remove all of intervening region
-    rm_reg = ~AS
-    rm_reg[24] = False #don't remove attractor node of B
-    r_B, r_D, r_Q, r_N, retry = gt.gt_seq(N=N,rm_reg=rm_reg,B=B,D=D,retK=True,trmb=1,**kwargs)
+    rm_vec = ~AS
+    rm_vec[24] = False #don't remove attractor node of B
+    r_B, r_tau, r_Q, r_N, retry = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,retK=True,block=1,**kwargs)
+    r_D = 1.0 /r_tau
     convert.ts_weights_conns_from_K(r_Q, data_path, suffix='_GT')
     ts_conns = np.loadtxt(data_path/'ts_conns_GT.dat', dtype=int)
 
@@ -209,7 +210,7 @@ def illustrate_gt_gephi(temp, data_path = Path('KTN_data/32state'), suffix='gt',
     mindata = np.loadtxt(data_path/'min.data')
     nnodes = mindata.shape[0]
     node_ids = np.arange(1, nnodes+1, 1) #all node IDs
-    pgt_node_ids = node_ids[~rm_reg] #node IDs remaining in network
+    pgt_node_ids = node_ids[~rm_vec] #node IDs remaining in network
     pgt_fake_ids = np.arange(1, r_N+1, 1) #what the new ts_conns file thinks the IDs are
     pgt_id_dict = {}
     for i, id in enumerate(pgt_fake_ids):
@@ -218,7 +219,7 @@ def illustrate_gt_gephi(temp, data_path = Path('KTN_data/32state'), suffix='gt',
     #record whether node remains or not
     df = pd.DataFrame(columns=['Id', 'remains'])
     df['Id'] = node_ids
-    df['remains'] = ~rm_reg #true if remains
+    df['remains'] = ~rm_vec #true if remains
     df.to_csv('csvs/nodes_to_remove_32state_Ab.csv', index=False)
 
     #load edges from original network
@@ -237,23 +238,23 @@ def dump_pgt_network_gephi(min_data, suffix='pgt', **kwargs):
     """ Plot a partially graph-transformed network."""
     data_path = Path('KTN_data/9state')
     #GT-reduced network
-    r_B, r_D, r_Q, r_N, r_BF, r_communities, rm_reg = pgt.prune_all_basins(beta=1.0, 
+    r_B, r_D, r_Q, r_N, r_BF, r_communities, rm_vec = pgt.prune_all_basins(beta=1.0,
         data_path=data_path, **kwargs)
     convert.ts_weights_conns_from_K(r_Q, data_path, suffix='_GT')
     ts_conns = np.loadtxt(data_path/'ts_conns_GT.dat', dtype=int)
     communities = np.loadtxt(data_path/'communities_bace9.dat', dtype=int)
-    r_comms = communities[~rm_reg]
+    r_comms = communities[~rm_vec]
 
     #get nodes in remaining network + their attributes
     mindata = np.loadtxt(min_data)
     nnodes = mindata.shape[0]
     node_ids = np.arange(1, nnodes+1, 1) #all node IDs
-    pgt_node_ids = node_ids[~rm_reg] #node IDs remaining in network
+    pgt_node_ids = node_ids[~rm_vec] #node IDs remaining in network
     pgt_fake_ids = np.arange(1, r_N+1, 1) #what the new ts_conns file thinks the IDs are
     pgt_id_dict = {}
     for i, id in enumerate(pgt_fake_ids):
         pgt_id_dict[id] = pgt_node_ids[i]
-    mindata = mindata[~rm_reg, :]
+    mindata = mindata[~rm_vec, :]
     node_df = pd.DataFrame(columns=['Id', 'Energy', 'community'])
     node_df['Id'] = pgt_node_ids
     node_df['Energy'] = mindata[:, 0].astype('float')
@@ -263,7 +264,7 @@ def dump_pgt_network_gephi(min_data, suffix='pgt', **kwargs):
     #record whether node remains or not
     df = pd.DataFrame(columns=['Id', 'remains'])
     df['Id'] = node_ids
-    df['remains'] = ~rm_reg #true if remains
+    df['remains'] = ~rm_vec #true if remains
     df.to_csv('csvs/nodes_to_remove_9state.csv', index=False)
 
     #load edges from original network
@@ -278,7 +279,7 @@ def dump_pgt_network_gephi(min_data, suffix='pgt', **kwargs):
     edge_df.to_csv(f'csvs/edge_list_{suffix}.csv', index=False)
 
 def plot_networks():
-    endpt1 = 585 
+    endpt1 = 585
     endpt2 = 827
     data_path = Path('KTN_data/9state')
     min_ens = read_data(data_path/'min.data',1)
@@ -311,7 +312,7 @@ def get_first_second_moment_ratios_reduced_full(beta, r_BF, r_Q, r_comms, data_p
                 #update matrices
                 tau_full = pgt.compute_passage_stats(communities[c1], communities[c2], BF, Q, dopdf=False)
                 #now compute c1<->c2 passage time distributions on reduced network
-                tau = pgt.compute_passage_stats(r_comms[c1], r_comms[c2], r_BF, 
+                tau = pgt.compute_passage_stats(r_comms[c1], r_comms[c2], r_BF,
                                                 r_Q, dopdf=False)
                 #c2 <- c1
                 mfpt_mat[c2][c1] = tau[0]/tau_full[0]
@@ -325,7 +326,7 @@ def mfpt_reduced_full_GT(betas=np.linspace(0.1, 10.0, 20), c1=7, c2=3,
                                            data_path=Path('KTN_data/9state')):
     """ For each temperature, compute MFPT c1<->c2 in reduced and full networks.
     Plot T_AB vs. 1/T. """
-    
+
     tauAB_gt = np.zeros((2,len(betas)))
     tauAB_full = np.zeros(len(betas))
     tauBA_gt = np.zeros((2, len(betas)))
@@ -368,9 +369,9 @@ def mfpt_reduced_full_GT(betas=np.linspace(0.1, 10.0, 20), c1=7, c2=3,
     colors = sns.color_palette("bright", 10)
     ax[0].plot(betas, tauAB_full, '-', color=colors[0],
                label=r'$\mathcal{T}_{\mathcal{A}\mathcal{B}}$')
-    ax[0].plot(betas, tauAB_gt[0,:], '--', color=colors[1], 
+    ax[0].plot(betas, tauAB_gt[0,:], '--', color=colors[1],
                label=r'$\mathcal{T}_{\mathcal{A}\mathcal{B}}$ (retaining 75\%)')
-    ax[0].plot(betas, tauAB_gt[1,:], '--', color=colors[2], 
+    ax[0].plot(betas, tauAB_gt[1,:], '--', color=colors[2],
                label=r'$\mathcal{T}_{\mathcal{A}\mathcal{B}}$ (retaining 25\%)')
     ax[0].set_xlabel(r'$1/T$')
     ax[0].set_ylabel('Time')
@@ -378,9 +379,9 @@ def mfpt_reduced_full_GT(betas=np.linspace(0.1, 10.0, 20), c1=7, c2=3,
     ax[0].legend()
     ax[1].plot(betas, tauBA_full, '-', color=colors[0],
                label=r'$\mathcal{T}_{\mathcal{B}\mathcal{A}}$')
-    ax[1].plot(betas, tauBA_gt[0,:], '--', color=colors[1], 
+    ax[1].plot(betas, tauBA_gt[0,:], '--', color=colors[1],
                label=r'$\mathcal{T}_{\mathcal{B}\mathcal{A}}$ (retaining 75\%)')
-    ax[1].plot(betas, tauBA_gt[1,:], '--', color=colors[2], 
+    ax[1].plot(betas, tauBA_gt[1,:], '--', color=colors[2],
                label=r'$\mathcal{T}_{\mathcal{B}\mathcal{A}}$ (retaining 25\%)')
     ax[1].set_xlabel(r'$1/T$')
     ax[1].set_ylabel('Time')
@@ -434,7 +435,7 @@ def compare_pgt_networks(beta=1.0, data_path=Path('KTN_data/9state')):
     lognorm = LogNorm(minnorm, maxnorm)
     sns.heatmap(mfpt_mat, center=1.0, linewidths=0.25, linecolor='k', cmap='coolwarm', robust=True,
                 square=True, annot=True, annot_kws={'fontsize':6, 'family':'sans-serif'}, ax=ax1[0])
-                
+
     sns.heatmap(std_mat, center=1.0, linewidths=0.25, linecolor='k', cmap='coolwarm', robust=True,
                 square=True, annot=True, annot_kws={'fontsize':6, 'family':'sans-serif'}, ax=ax1[1])
     ax1[0].set_title(r'$\mathcal{T}_{IJ}^{\mathcal{Z}} / \mathcal{T}_{IJ}$, retaining 10\%')
@@ -443,7 +444,7 @@ def compare_pgt_networks(beta=1.0, data_path=Path('KTN_data/9state')):
     plt.savefig('plots/heatmaps_T1.0_hybrid_50_10_sequential.pdf')
 
 def rank_nodes_to_eliminate(beta=1.0/0.25, escape_time_upper_bound=1000):
-    """ Scatter nodes by node degree, free energy, and escape time, 
+    """ Scatter nodes by node degree, free energy, and escape time,
     coloring by A, B, and I.
     """
     Nmax = None
@@ -459,7 +460,7 @@ def rank_nodes_to_eliminate(beta=1.0/0.25, escape_time_upper_bound=1000):
     IS = np.zeros(N, bool)
     IS[~(AS+BS)] = True
     print(f'A: {AS.sum()}, B: {BS.sum()}, I: {IS.sum()}')
-    
+
     fig, (ax, ax1, ax2) = plt.subplots(1, 3, figsize=(15,4))
     colors = sns.color_palette("Paired")
     #node degree vs escape time
@@ -495,7 +496,7 @@ def scatter_visitation_prob(beta = 1.0, rm_type='hybrid', percent_retained=75):
     temp = 1.
     beta = 1./temp
     B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=True)
-    D = np.ravel(K.sum(axis=0)) 
+    D = np.ravel(K.sum(axis=0))
     #escape time
     escape_times = 1./D
     #free energy of minima
@@ -509,43 +510,43 @@ def scatter_visitation_prob(beta = 1.0, rm_type='hybrid', percent_retained=75):
     IS = np.zeros(N, bool)
     IS[~(AS+BS)] = True
     tp_densities = np.loadtxt(Path(data_path)/'tp_stats.dat')[:,3]
-    rm_reg = np.zeros(N,bool)
+    rm_vec = np.zeros(N,bool)
     #color nodes that we would propose to remove
     if rm_type == 'node_degree':
-        rm_reg[node_degree < 2] = True
-        rm_reg[(AS+BS)] = False #only remove the intermediate nodes this time
+        rm_vec[node_degree < 2] = True
+        rm_vec[(AS+BS)] = False #only remove the intermediate nodes this time
 
     if rm_type == 'escape_time':
         #remove nodes with the smallest escape times
         #retain nodes in the top percent_retained percentile of escape time
-        rm_reg[IS] = escape_times[IS] < np.percentile(escape_times[IS], 100.0 - percent_retained)
+        rm_vec[IS] = escape_times[IS] < np.percentile(escape_times[IS], 100.0 - percent_retained)
 
     if rm_type == 'free_energy':
-        rm_reg[IS] = BF[IS] > np.percentile(BF[IS], percent_retained)
+        rm_vec[IS] = BF[IS] > np.percentile(BF[IS], percent_retained)
 
     if rm_type == 'combined':
         rho = np.exp(-BF)
         rho /= rho.sum()
         combo_metric = escape_times * rho
-        rm_reg[IS] = combo_metric[IS] < np.percentile(combo_metric[IS], 100.0 - percent_retained)
-        
+        rm_vec[IS] = combo_metric[IS] < np.percentile(combo_metric[IS], 100.0 - percent_retained)
+
     if rm_type == 'hybrid':
         #remove nodes in the top percent_retained percentile of escape time
         time_sel = (escape_times[IS] < np.percentile(escape_times[IS], 100.0 - percent_retained))
         bf_sel = (BF[IS]>np.percentile(BF[IS],percent_retained))
         sel = np.bitwise_and(time_sel, bf_sel)
         #that are also in the lowest percent_retained percentile of free energy
-        rm_reg[IS] = sel
+        rm_vec[IS] = sel
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7, 3.71))
     colors = sns.color_palette("Paired")
     #tp_density vs escape time
-    ax1.scatter(tp_densities[~rm_reg], escape_times[~rm_reg], color=colors[8],
+    ax1.scatter(tp_densities[~rm_vec], escape_times[~rm_vec], color=colors[8],
         s=15, alpha=0.5, label='intervening nodes')
-    #ax1.scatter(tp_densities[AS], escape_times[AS], color=colors[5], 
+    #ax1.scatter(tp_densities[AS], escape_times[AS], color=colors[5],
     #    s=3, alpha=0.8, label='A')
-    #ax1.scatter(tp_densities[BS], escape_times[BS], color=colors[1], 
+    #ax1.scatter(tp_densities[BS], escape_times[BS], color=colors[1],
     #    s=3, alpha=0.8, label='B')
-    ax1.scatter(tp_densities[rm_reg], escape_times[rm_reg], color=colors[9], 
+    ax1.scatter(tp_densities[rm_vec], escape_times[rm_vec], color=colors[9],
         s=15, alpha=0.8, label='nodes to remove')
     ax1.set_xlabel(r'$\mathcal{A}\leftarrow \mathcal{B}$ visitation prob.')
     ax1.set_ylabel('Escape Time')
@@ -553,10 +554,10 @@ def scatter_visitation_prob(beta = 1.0, rm_type='hybrid', percent_retained=75):
     handles, labels = ax1.get_legend_handles_labels()
     #ax1.legend(ncol=2, loc=(0, 1.05))
     #tp_density vs free energy
-    ax2.scatter(BF[~rm_reg], tp_densities[~rm_reg], color=colors[8], alpha=0.5, s=15, label='intervening nodes')
+    ax2.scatter(BF[~rm_vec], tp_densities[~rm_vec], color=colors[8], alpha=0.5, s=15, label='intervening nodes')
     #ax2.scatter(BF[AS], tp_densities[AS], color=colors[5], alpha=0.8, s=3, label='A')
     #ax2.scatter(BF[BS], tp_densities[BS], color=colors[1], alpha=0.8, s=3, label='B')
-    ax2.scatter(BF[rm_reg], tp_densities[rm_reg], color=colors[9], alpha=0.8, s=15, label='nodes to remove')
+    ax2.scatter(BF[rm_vec], tp_densities[rm_vec], color=colors[9], alpha=0.8, s=15, label='nodes to remove')
     ax2.set_xlabel('Free Energy')
     ax2.set_ylabel(r'$\mathcal{A}\leftarrow \mathcal{B}$ visitation prob.')
     fig.tight_layout()
@@ -568,11 +569,11 @@ def plot_AB_waiting_time(beta, data_path='KTN_data/LJ38/4k/', size=[5, 128], per
     and B->A first passage time in full and reduced networks. Reduce networks
     with three different heuristics (escape_time, free_energy, hybrid).
     """
-    beta, tau, gttau_time, pt, gtpt_time = pgt.prune_intermediate_nodes(beta, data_path=data_path, dopdf=True, 
+    beta, tau, gttau_time, pt, gtpt_time = pgt.prune_intermediate_nodes(beta, data_path=data_path, dopdf=True,
                                             percent_retained=percent_retained, rm_type='escape_time', **kwargs)
     beta, tau, gttau_bf, pt, gtpt_bf = pgt.prune_intermediate_nodes(beta, data_path=data_path, dopdf=True, percent_retained=percent_retained,
                                                         rm_type='free_energy', **kwargs)
-    beta, tau, gttau_hybrid, pt, gtpt_hybrid = pgt.prune_intermediate_nodes(beta, data_path=data_path, dopdf=True, 
+    beta, tau, gttau_hybrid, pt, gtpt_hybrid = pgt.prune_intermediate_nodes(beta, data_path=data_path, dopdf=True,
                                                         rm_type='combined', percent_retained=percent_retained, **kwargs)
     fig, ax = plt.subplots(1, 2, figsize=(textwidth, textwidth/2.25))
     colors = sns.color_palette("bright", 10)
@@ -610,18 +611,18 @@ def plot_escapeB(betas=[4.0, 7.0], data_path='KTN_data/LJ38/4k/', percent_retain
     Bottom two panels depict the mean and variance of the escape time
     distribution as a function of temperature."""
 
-    
+
     fig, (ax, ax1) = plt.subplots(2, 2, figsize=(textwidth, textwidth*(2/3)))
     colors = sns.color_palette("bright", 10)
     names = ["A", "B"]
     for j in range(2):
         beta, tau, gttau_bf, pt, gtpt_bf = pgt.prune_source(betas[j], data_path=data_path, dopdf=True,
-                                                        percent_retained_in_B=percent_retained, 
+                                                        percent_retained_in_B=percent_retained,
                                                         rm_type='free_energy', **kwargs)
         beta, tau, gttau_time, pt, gtpt_time = pgt.prune_source(betas[j], data_path=data_path, dopdf=True,
-                                                        percent_retained_in_B=percent_retained, 
+                                                        percent_retained_in_B=percent_retained,
                                                         rm_type='escape_time', **kwargs)
-        beta, tau, gttau_hybrid, pt, gtpt_hybrid = pgt.prune_source(betas[j], data_path=data_path, dopdf=True, 
+        beta, tau, gttau_hybrid, pt, gtpt_hybrid = pgt.prune_source(betas[j], data_path=data_path, dopdf=True,
                                                             rm_type='combined',
                                                             percent_retained_in_B=percent_retained, **kwargs)
         ax[j].set_title(r"Escape from $\mathcal{B}$, T=%2.2g" % (1.0/betas[j]))
@@ -660,7 +661,7 @@ def plot_escapeB(betas=[4.0, 7.0], data_path='KTN_data/LJ38/4k/', percent_retain
         data[1][i][0], data[1][i][1:3], data[1][i][3:5] = pgt.prune_source(beta, data_path=data_path, dopdf=False,
                                 percent_retained_in_B=percent_retained,
                                 rm_type='combined', **kwargs)
-    names=[r"$\beta F$", "combined"]    
+    names=[r"$\beta F$", "combined"]
     for j in range(2):
         #full mean escape time and second moment
         ax1[j].plot(data[j,:,0], data[j,:,1], '-', lw=2, color=colors[0],
@@ -682,6 +683,3 @@ def plot_escapeB(betas=[4.0, 7.0], data_path='KTN_data/LJ38/4k/', percent_retain
         ax1[j].set_yscale("log")
     fig.tight_layout()
     plt.savefig('plots/LJ38_partialGT_escapeB_combined.pdf')
-
-
-

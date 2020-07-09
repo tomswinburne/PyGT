@@ -3,7 +3,7 @@ import numpy as np
 import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 
-from lib.gt_tools import *
+from graph_tran.gt_tools import *
 """ test for tqdm progress bars """
 try:
 	from tqdm import tqdm
@@ -394,7 +394,8 @@ class sampler:
 		print("DIRECT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
 		res = (BAIB+BAB)*1.0
 		if gt_check:
-			rB, rD, rN, retry = gt_seq(N=self.sys.N,rm_reg=self.sys.selI,B=self.sys.B,D=self.sys.kt,trmb=1)
+			rB, rtau, rN, retry = GT(rm_vec=self.sys.selI,B=self.sys.B,tau=1.0/self.sys.kt,block=1)
+			rD = 1.0 / rtau
 			#print(rB)
 			r_initial_states = self.sys.selB[~self.sys.selI]
 			r_final_states = self.sys.selA[~self.sys.selI]

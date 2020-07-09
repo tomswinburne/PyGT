@@ -7,7 +7,7 @@ and phenomenological rate constants between endpoint macrostates
 :math:`\mathcal{A}` and :math:`\mathcal{B}`.
 
 .. note::
-    
+
     Install the `pathos` package to parallelize MFPT computations.
 
 """
@@ -29,7 +29,7 @@ import pandas as pd
 from pathos.multiprocessing import ProcessingPool as Pool
 
 def compute_passage_stats(AS, BS, BF, Q, dopdf=True):
-    r"""Compute the A->B and B->A first passage time distribution, 
+    r"""Compute the A->B and B->A first passage time distribution,
     first moment, and second moment using eigendecomposition.
 
     Parameters
@@ -59,7 +59,7 @@ def compute_passage_stats(AS, BS, BF, Q, dopdf=True):
     if dopdf:
         # time*tau_range, p(t) (first 2: A->B, second 2: B->A)
         pt = np.zeros((4,400))
-        
+
     #A -> B
     #P(0) is initialized to local boltzman of source community A
     rho = np.exp(-BF) * AS
@@ -69,9 +69,9 @@ def compute_passage_stats(AS, BS, BF, Q, dopdf=True):
     x = spsolve(M,rho[~BS])
     y = spsolve(M,x)
     # first moment tau(A->B) = 1.Q^{-1}.rho(A) = 1.x
-    tau[0] = x.sum() 
+    tau[0] = x.sum()
     # second moment = 2 x 1.Q^{-2}.rho = 2.0* 1.Q^{-1}.x
-    tau[1] = 2.0*y.sum() 
+    tau[1] = 2.0*y.sum()
     if dopdf:
         #time in multiples of the mean first passage time
         pt[0] = np.logspace(-6,3,pt.shape[1])*tau[0]
@@ -86,7 +86,7 @@ def compute_passage_stats(AS, BS, BF, Q, dopdf=True):
         nu = nu.real
         #(v*w/nu).sum() is the same as <tau>, the first bit is the pdf p(t)
         pt[1] = (v*w*nu)@np.exp(-np.outer(nu,pt[0]))*(v*w/nu).sum()
-    
+
     #B -> A
     rho = np.exp(-BF) * BS
     rho /= rho.sum()
@@ -131,7 +131,7 @@ def compute_escape_stats(BS, BF, Q, tau_escape=None, dopdf=True):
     tau : (2,) array-like
         First and second moments of escape time distribution, [:math:`\left<t\right>_{\mathcal{B}}`, :math:`\left<t^2 \right>_{\mathcal{B}}`]
     pt : (2, 400) array-like
-        time in multiples of :math:`\left<t\right>` and escape time distribution :math:`p(t)\left<t\right>` 
+        time in multiples of :math:`\left<t\right>` and escape time distribution :math:`p(t)\left<t\right>`
 
     """
     #<tau>, <tau^2>
@@ -162,7 +162,7 @@ def compute_escape_stats(BS, BF, Q, tau_escape=None, dopdf=True):
 
 def get_intermicrostate_mfpts_GT(temp, data_path, pool_size=None, **kwargs):
     r"""Compute matrix of inter-microstate MFPTs with GT.
-    
+
     Parameters
     ----------
     temp : float
@@ -171,14 +171,14 @@ def get_intermicrostate_mfpts_GT(temp, data_path, pool_size=None, **kwargs):
         Path to data containing min.data, ts.data files.
     pool_size : int
         Number of cores over which to parallelize computation.
-    
+
     Returns
     -------
     mfpt : np.ndarray[float64] (N,N)
         matrix of inter-microstate MFPTs between all pairs of nodes
     rho : np.ndarray[float64] (N,)
         stationary distribution of Markov chain
-    
+
     """
 
     beta = 1./temp
@@ -190,18 +190,18 @@ def get_intermicrostate_mfpts_GT(temp, data_path, pool_size=None, **kwargs):
     rho = np.exp(-BF)
     rho /= rho.sum()
     mfpt = np.zeros((N,N))
-    
+
     matrix_elements = []
     for i in range(N):
         for j in range(N):
             if i < j:
                 matrix_elements.append((i,j))
-    
+
     def given_ij(ij):
         i, j = ij
         MFPTAB, MFPTBA = compute_MFPTAB(i, j, B, D, **kwargs)
         return MFPTAB, MFPTBA
-    
+
     if pool_size is None:
         for ij in matrix_elements:
             i, j = ij
@@ -216,12 +216,12 @@ def get_intermicrostate_mfpts_GT(temp, data_path, pool_size=None, **kwargs):
     return mfpt, rho
 
 def compute_MFPTAB(i, j, B, escape_rates=None, K=None, **kwargs):
-    r"""Compute the inter-microstate :math:`i\leftrightarrow j` MFPT using GT. 
+    r"""Compute the inter-microstate :math:`i\leftrightarrow j` MFPT using GT.
 
     Unlike ``compute_rates()`` function, which assumes there is at least 2 microstates
     in the absorbing macrostate, this function does not require knowledge of equilibrium
     occupation probabilities since :math:`\mathcal{T}_{ij}=\tau_j^\prime/B_{ij}^\prime`.
-    
+
     Parameters
     ----------
     i : int
@@ -236,19 +236,19 @@ def compute_MFPTAB(i, j, B, escape_rates=None, K=None, **kwargs):
         rate matrix with off-diagonal elements :math:`K_{ij}` and diagonal
         elements :math:`K_{ii} = 0`. If specified, `escape_rates` keyword
         overridden with sum of columns of `K`. Defaults to None.
-    
+
     Returns
     -------
     MFPTij : float
         mean first passage time :math:`i \leftarrow j`
     MFPTji : float
         mean first passage time :math:`j \leftarrow i`
-    
+
     """
 
     if K is None and escape_rates is None:
         raise ValueError('Either escape_rates or K must be specified.')
-    
+
     if escape_rates is not None:
         D = escape_rates
     if K is not None:
@@ -262,10 +262,10 @@ def compute_MFPTAB(i, j, B, escape_rates=None, K=None, **kwargs):
     #GT away all I states
     inter_region = ~(AS+BS)
     #left with a 2-state network
-    rB, rD, rQ, rN, retry = gt.gt_seq(N=N,rm_reg=inter_region,B=B,escape_rates=D,retK=True,trmb=1,**kwargs)
+    rB, tau_Fs, rQ, rN, retry = gt.GT(rm_vec=inter_region,B=B,tau=1.0/D,retK=True,block=1,**kwargs)
     rB = rB.todense()
     #escape time tau_F
-    tau_Fs = 1./rD
+    rD = 1.0/tau_Fs
     #remaining network only has 1 in A and 1 in B = 2 states
     r_AS = AS[~inter_region]
     r_BS = BS[~inter_region]
@@ -276,17 +276,17 @@ def compute_MFPTAB(i, j, B, escape_rates=None, K=None, **kwargs):
     MFPTAB = tau_Fs[r_BS]/P_AB
     return MFPTAB[0,0], MFPTBA[0,0]
 
-def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, BF=None, 
+def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, BF=None,
     MFPTonly=True, fullGT=False, pool_size=None, **kwargs):
     r""" Calculate kSS, kNSS, kF, k*, kQSD, and MFPT for the transition path
     ensemble AS --> BS from rate matrix K. K can be the matrix of an original
-    Markov chain, or a partially graph-transformed Markov chain. 
-    
+    Markov chain, or a partially graph-transformed Markov chain.
+
     Differs from ``compute_passage_stats()`` in that this function removes all intervening states
     using GT before computing fpt stats and rates on the fully reduced network
     with state space :math:`(\mathcal{A} \cup \mathcal{B})`. This implementation also does not rely on a full
     eigendecomposition of the non-absorbing matrix; it instead performs a matrix inversion,
-    or if `fullGT` is specified, all nodes in the set :math:`(\mathcal{A} \cup b)^\mathsf{c}` are removed 
+    or if `fullGT` is specified, all nodes in the set :math:`(\mathcal{A} \cup b)^\mathsf{c}` are removed
     for each :math:`b \in \mathcal{B}` so that the
     MFPT is given by an average:
 
@@ -302,7 +302,7 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
     specified since the inversion of the non-absorbing matrix is numerically
     stable. However, for extremely metastable systems, `fullGT` should be
     specified to ensure numerical stability of the operation.
-   
+
     TODO: include equations for kSS, kNSS, etc.
     TODO: debug case where A and B each only contain one state.
 
@@ -354,7 +354,7 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
 
     if K is None and escape_rates is None:
         raise ValueError('Either escape_rates or K must be specified.')
-    
+
     if escape_rates is not None:
         D = escape_rates
     if K is not None:
@@ -364,7 +364,7 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
     r_AS = AS[~inter_region]
     r_BS = BS[~inter_region]
     rDSS = D[~inter_region]
-    
+
     if BF is not None:
         r_BF = BF[~inter_region]
         rhoA = np.exp(-r_BF[r_AS])
@@ -373,7 +373,9 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
         initB = rhoB/rhoB.sum()
 
     #use GT to renormalize away all I states
-    rB, rD, rQ, rN, retry = gt.gt_seq(N=N,rm_reg=inter_region,B=B,escape_rates=D,retK=True,trmb=1,**kwargs)
+
+    rB, rtau, rQ, rN, retry = gt.GT(rm_vec=inter_region,B=B,tau=1.0/D,retK=True,block=1,**kwargs)
+    rD = 1.0/rtau
 
     #first do A->B direction, then B->A
     #r_s is the non-absorbing region (A first, then B)
@@ -400,10 +402,11 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
                 aind = r_s.nonzero()[0][s]
                 #print(f'Disconnecting source node {aind}')
                 rm_reg[r_s.nonzero()[0][s]] = False
-                rfB, rfD, rfQ, rfN, retry = gt.gt_seq(N=rN,rm_reg=rm_reg,B=rB,escape_rates=rD,trmb=1,retK=True,Ndense=1)
+
+                rfB, tau_Fs, rfQ, rfN, retry = gt.GT(rm_vec=rm_reg,B=rB,tau=1.0/rD,retK=True,block=1,Ndense=1)
                 rfB = rfB.todense()
                 #escape time tau_F
-                tau_Fs = 1./rfD
+                rfD = 1./tau_Fs
                 #remaining network only as 1 in A and 1 in B = 2 states
                 rf_s = r_s[~rm_reg]
                 #tau_a^F / P_Ba^F
@@ -445,12 +448,12 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
             df[f'k*{dirs[i]}'] = [1./tau]
             #and kF is <1/T_Ab>
             df[f'kF{dirs[i]}'] = [(rho/T_Ba).sum()]
-    return df     
-    
-    
+    return df
+
+
 def rates_cycle(temps, data_path, suffix='', **kwargs):
     """Compute rates and mean first passage times between A and B sets for a range of temperatures.
-    
+
     Parameters
     ----------
     temps : (ntemps, ) array-like
@@ -474,7 +477,7 @@ def rates_cycle(temps, data_path, suffix='', **kwargs):
         D = np.ravel(K.sum(axis=0))
         BF = beta*u-s
         BF -= BF.min()
-        AS,BS = kio.load_AB(data_path,index_sel)    
+        AS,BS = kio.load_AB(data_path,index_sel)
         IS = np.zeros(N, bool)
         IS[~(AS+BS)] = True
         df = compute_rates(AS, BS, B, escape_rates=D, K=K, BF=BF, **kwargs)
@@ -483,4 +486,3 @@ def rates_cycle(temps, data_path, suffix='', **kwargs):
     bigdf = pd.concat(dfs)
     bigdf.to_csv(f'csvs/ratescycle{suffix}.csv')
     return bigdf
-    

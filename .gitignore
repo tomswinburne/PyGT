@@ -1,6 +1,7 @@
 *.npz
 *.txt
 *.pdf
+*.pyc
 arx/*
 cache/*
 output/*

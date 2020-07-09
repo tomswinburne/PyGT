@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-r""" 
+r"""
 Read in input files describing the Markov chain to analyze
 ----------------------------------------------------------
 
@@ -47,7 +47,7 @@ from scipy.sparse import csgraph, csr_matrix, csc_matrix, eye, save_npz, load_np
 os.system('mkdir -p cache')
 os.system('mkdir -p output')
 import warnings
-from .gt_tools import gt_seq, make_fastest_path
+from .gt_tools import GT, make_fastest_path
 from scipy.special import factorial
 
 class timer:
@@ -96,7 +96,7 @@ def load_AB(data_path,index_sel=None):
     """ Read in A_states and B_states from min.A and min.B files, only keeping
     the states that are part of the largest connected set, as specified by
     index_sel.
-    
+
     Parameters
     ----------
     data_path: str
@@ -164,7 +164,7 @@ def read_communities(commdat, index_sel, screen=False):
                 communities[groupID].append(minID)
             else:
                 communities[groupID] = [minID]
-    
+
     for ci in range(len(communities)):
         #create a new index_selector to select out the minima in community ci
         keep = np.zeros(index_sel.size,bool)
@@ -173,7 +173,7 @@ def read_communities(commdat, index_sel, screen=False):
         communities[ci] = keep[index_sel]
         if screen:
             print(f'Community {ci}: {keep.sum()}')
-        
+
     return communities
 
 def load_mat(path,Nmax=None,Emax=None,beta=1.0,screen=False,discon=False):
@@ -226,7 +226,7 @@ def load_mat(path,Nmax=None,Emax=None,beta=1.0,screen=False,discon=False):
     #TSD = TSD[TSD['I']!=TSD['F']] # remove self transitions??
     #make minima indices 0-indexed
     TSD['I'] = TSD['I']-1
-    TSD['F'] = TSD['F']-1   
+    TSD['F'] = TSD['F']-1
     #number of minima
     N = max(TSD['I'].max()+1,TSD['F'].max()+1)
 
@@ -282,7 +282,7 @@ def load_mat(path,Nmax=None,Emax=None,beta=1.0,screen=False,discon=False):
 
     """ connected components """
     K.eliminate_zeros()
-    #nc is number of connected components, 
+    #nc is number of connected components,
     # cc is list of labels of size K
     nc,cc = csgraph.connected_components(K)
     sum = np.zeros(nc,int)
@@ -325,7 +325,7 @@ def load_mat(path,Nmax=None,Emax=None,beta=1.0,screen=False,discon=False):
 def load_CTMC(K):
     r""" Setup a GT calculation for a transition rate matrix representing
     a continuous-time Markov chain.
-    
+
     Parameters
     ----------
     K : array-like (nnodes, nnodes)
@@ -508,7 +508,7 @@ def load_mat_gt(keep_ind,path='../data/LJ38/raw/',beta=10.0,Nmax=None,Emax=None)
 	B = K.dot(diags(1.0/D,format="csr"))
 	F = GSD['E']-GSD['S']/beta
 
-	rm_reg = np.ones(N,bool) # remove all
+	rm_vec = np.ones(N,bool) # remove all
 
 	f_keep = np.empty(0,int)
 
@@ -528,16 +528,17 @@ def load_mat_gt(keep_ind,path='../data/LJ38/raw/',beta=10.0,Nmax=None,Emax=None)
 
 	f_keep = np.unique(np.append(f_keep,n_keep))
 
-	rm_reg[f_keep] = False # i.e. ~rm_reg survives
+	rm_vec[f_keep] = False # i.e. ~rm_vec survives
 
 	kept = np.zeros(oN,bool)
-	kept[ccsel] = ~rm_reg # i.e. selects those which were kept
+	kept[ccsel] = ~rm_vec # i.e. selects those which were kept
 
 	map = -np.ones(oN,int)
 	map[kept] = np.arange(kept.sum())
 
-	B,D,N,retry = gt_seq(N=N,rm_reg=rm_reg,B=B,D=D,trmb=1,order=None)
+	B,tau,N,retry = GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=1,order=None)
+    D = 1.0/tau
 	if dense:
 		B = csr_matrix(B)
 
-	return B,diags(D,format='csr'),F[~rm_reg],map
+	return B,diags(D,format='csr'),F[~rm_vec],map
