@@ -567,7 +567,8 @@ def rates_cycle(temps, data_path='KTN_data/LJ38/4k/'):
         D = np.ravel(K.sum(axis=0))
         BF = beta*u-s
         BF -= BF.min()
-        AS,BS = kio.load_AB(data_path,index_sel)
+        AS,BS = kio.load_AB(data_path,index_sel)    
+
         IS = np.zeros(N, bool)
         IS[~(AS+BS)] = True
         df = compute_rates(AS, BS, BF, B, D, K)
