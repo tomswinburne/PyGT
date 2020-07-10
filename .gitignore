@@ -2,10 +2,13 @@
 *.txt
 *.pdf
 *.pyc
+*.egg-info
 arx/*
 cache/*
 output/*
-graph_tran/__pycache__/*
+build/*
+dist/*
+*/__pycache__/*
 KTN_data/*
 KTN_data/*tar.gz
 .ipynb_check*
