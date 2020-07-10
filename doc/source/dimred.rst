@@ -1,4 +1,4 @@
-.. automodule:: graph_tran.dimred
+.. automodule:: PyGT.dimred
     :members:
 
 .. toctree::

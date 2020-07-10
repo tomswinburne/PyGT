@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
-SPHINXPROJ    = graph_transformation
+SPHINXPROJ    = PyGT
 SOURCEDIR     = source
 BUILDDIR      = build
 

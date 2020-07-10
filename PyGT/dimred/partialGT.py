@@ -22,9 +22,9 @@ from io import StringIO
 import time,os, importlib
 #from tqdm import tqdm
 np.set_printoptions(linewidth=160)
-from .. import ktn_io as kio
+from .. import io as kio
 from .. import fpt_stats as fpt
-from .. import gt_tools as gt
+from .. import gt as gt
 from .. import conversion as convert
 from scipy.sparse import save_npz,load_npz, diags, eye, csr_matrix,bmat
 from scipy.sparse.linalg import eigs,inv,spsolve
@@ -186,14 +186,13 @@ def prune_intermediate_nodes(beta, data_path, rm_type='hybrid',
         same quantities as `pt` but in reduced network
 
     """
-    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+    B, K, escape_time, N, u, s, Emin, index_sel = kio.load_ktn(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
     node_degree = B.indptr[1:] - B.indptr[:-1]
     D = np.ravel(K.sum(axis=0))
     Q = diags(D)-K
-    escape_time = 1./D
     BF = beta*u-s
     BF -= BF.min()
-    AS,BS = kio.load_AB(data_path,index_sel)
+    AS,BS = kio.load_ktn_AB(data_path,index_sel)
     IS = np.zeros(N, bool)
     IS[~(AS+BS)] = True
     if screen:
@@ -211,8 +210,9 @@ def prune_intermediate_nodes(beta, data_path, rm_type='hybrid',
         print(f'in A: {rm_vec[AS].sum()}, in B: {rm_vec[BS].sum()}, in I: {rm_vec[IS].sum()}')
     #perform the graph transformation
 
-    GT_B, GT_tau, GT_Q, r_N, retry  = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,retK=True,Ndense=50,screen=False,**kwargs)
+    GT_B, GT_tau, GT_Q = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,rates=True,Ndense=50,screen=False,**kwargs)
     GT_D = 1.0 / GT_tau
+    r_N = GT_tau.size
 
     #compute stats on reduced network
     gttau, gtpt = fpt.compute_passage_stats(AS[~rm_vec], BS[~rm_vec], r_BF, GT_Q)
@@ -258,15 +258,14 @@ def prune_source(beta, data_path, rm_type='hybrid', percent_retained_in_B=90.,
 
     """
     Nmax = None
-    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=Nmax,screen=False)
+    B, K, escape_time, N, u, s, Emin, index_sel = kio.load_ktn(path=data_path,beta=beta,Emax=None,Nmax=Nmax,screen=False)
     node_degree = B.indptr[1:] - B.indptr[:-1]
     D = np.ravel(K.sum(axis=0))
-    escape_time = 1./D
     Q = diags(D)-K
     BF = beta*u-s
     BF -= BF.min()
     if BS is None:
-        AS, BS = kio.load_AB(data_path,index_sel)
+        AS, BS = kio.load_ktn_AB(data_path,index_sel)
         IS = np.zeros(N, bool)
         IS[~(AS+BS)] = True
         if screen:
@@ -281,8 +280,9 @@ def prune_source(beta, data_path, rm_type='hybrid', percent_retained_in_B=90.,
     r_BF = BF[~rm_vec]
     if screen:
         print(f'Nodes to eliminate: {rm_vec.sum()/BS.sum()}, percent retained: {100*(BS.sum()-rm_vec.sum())/BS.sum()}')
-    GT_B, GT_tau, GT_Q, r_N, retry  = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,retK=True,Ndense=50,screen=False,**kwargs)
+    GT_B, GT_tau, GT_Q = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,rates=True,Ndense=50,screen=False,**kwargs)
     GT_D = 1.0 / GT_tau
+    r_N = GT_tau.size
 
     gttau, gtpt = fpt.compute_escape_stats(BS[~rm_vec], r_BF, GT_Q,
                                        tau_escape=tau[0], dopdf=True)
@@ -328,11 +328,10 @@ def prune_all_basins(beta, data_path, rm_type='hybrid', percent_retained=50., sc
         mapping from community IDs (0-indexed) to index selectors in reduced network
     """
 
-    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+    B, K, escape_time, N, u, s, Emin, index_sel = kio.load_ktn(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
     node_degree = B.indptr[1:] - B.indptr[:-1]
     D = np.ravel(K.sum(axis=0))
     Q = diags(D)-K
-    escape_time = 1./D
     BF = beta*u-s
     BF -= BF.min()
     communities = read_communities(data_path/'communities.dat', index_sel)
@@ -351,8 +350,9 @@ def prune_all_basins(beta, data_path, rm_type='hybrid', percent_retained=50., sc
             print(f'Percent eliminated from basin: {100*rm_vec[BS].sum()/BS.sum()}')
     #now do the GT all in one go
 
-    r_B, r_tau, r_Q, r_N, retry = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,retK=True,Ndense=50,screen=False)
+    r_B, r_tau, r_Q = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,rates=True,Ndense=50,screen=False)
     r_D = 1.0 / r_tau
+    r_N = r_tau.size
 
     #free energies and escape times of retained states
     r_BF = BF[~rm_vec]
@@ -399,11 +399,10 @@ def prune_basins_sequentially(beta, data_path, rm_type='hybrid', percent_retaine
         mapping from community IDs (0-indexed) to index selectors in reduced network
     """
 
-    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+    B, K, escape_time, N, u, s, Emin, index_sel = kio.load_ktn(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
     node_degree = B.indptr[1:] - B.indptr[:-1]
     D = np.ravel(K.sum(axis=0))
     Q = diags(D)-K
-    escape_time = 1./D
     BF = beta*u-s
     BF -= BF.min()
     #pi = np.exp(-BF)
@@ -422,8 +421,10 @@ def prune_basins_sequentially(beta, data_path, rm_type='hybrid', percent_retaine
             print(f'Percent eliminated from basin: {100*rm_vec[BS].sum()/BS.sum()}')
         #perform the GT for this basin alone
 
-        B, tau, Q, N, retry = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,retK=True,Ndense=50,screen=False)
+        B, tau, Q = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,rates=True,Ndense=50,screen=False)
         D = 1.0/tau
+        N = tau.size
+
         #update free energies, escape times, and equilibrium occupation probabilities
         BF = BF[~rm_vec]
         BF -= BF.min()

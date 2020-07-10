@@ -1,8 +1,6 @@
-graph\_tran.conversion
+PyGT.conversion
 ======================
 
-.. automodule:: graph_tran.conversion
+.. automodule:: PyGT.conversion
     :members:
     :undoc-members:
-
-

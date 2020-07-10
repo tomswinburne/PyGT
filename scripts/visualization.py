@@ -142,7 +142,7 @@ def plot_network_landscape(min_ens,min_pos,ts_conns,plot_nodes=True):
 
 def plot_network_communities(min_pos, ts_conns, communities=None, plot_edges=True):
     data_path = Path('KTN_data/9state')
-    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=0.1,Emax=None,Nmax=None,screen=False)
+    B, K, tau, N, u, s, Emin, index_sel = kio.load_ktn(path=data_path,beta=0.1,Emax=None,Nmax=None,screen=False)
     xi, yi = np.linspace(-1.5,1.5,100), np.linspace(-1.5,1.5,100)
     xi, yi = np.meshgrid(xi,yi)
     if communities is None:
@@ -193,16 +193,17 @@ def illustrate_gt_gephi(temp, data_path = Path('KTN_data/32state'), suffix='gt',
 
     #GT-reduced
     beta = 1./temp
-    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+    B, K, tau, N, u, s, Emin, index_sel = kio.load_ktn(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
     D = np.ravel(K.sum(axis=0))
     BF = beta*u-s
     BF -= BF.min()
-    AS,BS = kio.load_AB(data_path,index_sel)
+    AS,BS = kio.load_ktn_AB(data_path,index_sel)
     #remove all of intervening region
     rm_vec = ~AS
     rm_vec[24] = False #don't remove attractor node of B
-    r_B, r_tau, r_Q, r_N, retry = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,retK=True,block=1,**kwargs)
+    r_B, r_tau, r_Q = gt.GT(rm_vec=rm_vec,B=B,tau=tau,rates=True,block=1,**kwargs)
     r_D = 1.0 /r_tau
+    r_N = r_tau.size
     convert.ts_weights_conns_from_K(r_Q, data_path, suffix='_GT')
     ts_conns = np.loadtxt(data_path/'ts_conns_GT.dat', dtype=int)
 
@@ -296,7 +297,7 @@ def plot_networks():
 def get_first_second_moment_ratios_reduced_full(beta, r_BF, r_Q, r_comms, data_path=Path('KTN_data/9state')):
 
     #first compute c1<->c2 passage time distributions on full network
-    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+    B, K, tau, N, u, s, Emin, index_sel = kio.load_ktn(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
     D = np.ravel(K.sum(axis=0))
     Q = diags(D)-K
     BF = beta*u-s
@@ -333,7 +334,7 @@ def mfpt_reduced_full_GT(betas=np.linspace(0.1, 10.0, 20), c1=7, c2=3,
     tauBA_full = np.zeros(len(betas))
     for i, beta in enumerate(betas):
         #first compute c1<->c2 passage time distributions on full network
-        B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+        B, K, tau, N, u, s, Emin, index_sel = kio.load_ktn(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
         D = np.ravel(K.sum(axis=0))
         Q = diags(D) - K
         BF = beta*u-s
@@ -449,14 +450,13 @@ def rank_nodes_to_eliminate(beta=1.0/0.25, escape_time_upper_bound=1000):
     """
     Nmax = None
     data_path = "KTN_data/LJ38/4k"
-    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=Nmax,screen=False)
+    B, K, escape_times, N, u, s, Emin, index_sel = kio.load_ktn(path=data_path,beta=beta,Emax=None,Nmax=Nmax,screen=False)
     D = np.ravel(K.sum(axis=0)) #array of size (N,) containing escape rates for each min
     BF = beta*u-s
     BF -= BF.min()
-    escape_times = 1.0/D
     node_degree = B.indptr[1:] - B.indptr[:-1]
     print(f'Number of nodes with >1 connection: {len(node_degree[node_degree > 1])}')
-    AS,BS = kio.load_AB(data_path,index_sel)
+    AS,BS = kio.load_ktn_AB(data_path,index_sel)
     IS = np.zeros(N, bool)
     IS[~(AS+BS)] = True
     print(f'A: {AS.sum()}, B: {BS.sum()}, I: {IS.sum()}')
@@ -495,10 +495,8 @@ def scatter_visitation_prob(beta = 1.0, rm_type='hybrid', percent_retained=75):
     data_path = Path("KTN_data/9state")
     temp = 1.
     beta = 1./temp
-    B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=True)
+    B, K, escape_times, N, u, s, Emin, index_sel = kio.load_ktn(path=data_path,beta=beta,Emax=None,Nmax=None,screen=True)
     D = np.ravel(K.sum(axis=0))
-    #escape time
-    escape_times = 1./D
     #free energy of minima
     BF = beta*u-s
     #rescaled
@@ -506,7 +504,7 @@ def scatter_visitation_prob(beta = 1.0, rm_type='hybrid', percent_retained=75):
     #node degree
     node_degree = B.indptr[1:] - B.indptr[:-1]
     # AB regions
-    AS,BS = kio.load_AB(data_path,index_sel)
+    AS,BS = kio.load_ktn_AB(data_path,index_sel)
     IS = np.zeros(N, bool)
     IS[~(AS+BS)] = True
     tp_densities = np.loadtxt(Path(data_path)/'tp_stats.dat')[:,3]

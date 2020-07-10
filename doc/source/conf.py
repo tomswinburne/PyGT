@@ -50,7 +50,7 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
     'matplotlib.sphinxext.plot_directive'
-]
+    ]
 
 #napoleon settings
 napoleon_google_docstring = False
@@ -68,8 +68,8 @@ templates_path = ['_templates']
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-# source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
+#source_suffix = '.rst'
 
 # The master toctree document.
 master_doc = 'index'
@@ -102,6 +102,10 @@ pygments_style = 'sphinx'
 import sphinx_theme
 html_theme = "stanford_theme"
 html_theme_path = [sphinx_theme.get_html_theme_path('stanford-theme')]
+
+#import sphinx_rtd_theme
+#html_theme = "sphinx_rtd_theme"
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -127,7 +131,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'graph_trandoc'
+htmlhelp_basename = 'PyGTdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -176,8 +180,8 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'PyGT', 'PyGT Documentation',
-     author, 'PyGT', 'One line description of project.',
-     'Miscellaneous'),
+     author, 'PyGT', 'Python analysis of metastable Markov models using graph transformation',
+     'Computational Analysis'),
 ]
 
 

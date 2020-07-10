@@ -1,4 +1,4 @@
-r""" 
+r"""
 Optimal Markovian coarse-graining given a community structure
 -------------------------------------------------------------
 
@@ -6,18 +6,17 @@ This module provides functions to analyze and estimate coarse-grained continuous
 Markov chains given a partiioning :math:`\mathcal{C} = \{I, J, ...\}` of the :math:`V` nodes into :math:`N<V` communities.
 Various formulations for the inter-community rates are implemented, including the local
 equilibrium approximation, Hummer-Szabo relation, and other routes to obtain the optimal
-coarse-grained Markov chain for a given community structure. [1]_
-
-.. [1] D. Kannan, D. J. Sharpe, T. D. Swinburne, D. J. Wales, "Dimensionality reduction of Markov chains from mean first passage times using graph transformation." *J. Chem. Phys.* (2020)
-
+coarse-grained Markov chain for a given community structure. [Kannan20a]_
 
 """
 from .. import fpt_stats as fpt
 
+from .. import analysis as ktna
+
 import numpy as np
 from numpy.linalg import inv
-import scipy 
-import scipy.linalg as spla 
+import scipy
+import scipy.linalg as spla
 from scipy.sparse.linalg import eigs
 from scipy.sparse import csr_matrix
 from scipy.linalg import eig
@@ -36,7 +35,7 @@ class Analyze_KTN(object):
     path : str or Path object
         path to directory with all relevant files
     K : array-like (nnodes, nnodes)
-        Rate matrix with elements :math:`K_{ij}` corresponding to the `i \leftarrow j` transition rate, 
+        Rate matrix with elements :math:`K_{ij}` corresponding to the `i \leftarrow j` transition rate,
         and diagonal elements :math:`K_{ii} = -\sum_\gamma K_{\gamma i}` such that the columns sum to zero.
     pi : array-like (nnodes,)
         Stationary distribution of nodes, :math:`\pi_i`, i.e. vector of equilibrium occupation probabilities.
@@ -45,7 +44,7 @@ class Analyze_KTN(object):
     communities : dict
         dictionary mapping community IDs (1-indexed) to node IDs (1-indexed).
     commdata : str
-        Filename, located in directory specified by `path`, of a single-column file where 
+        Filename, located in directory specified by `path`, of a single-column file where
         each line contains the community ID (0-indexed) of the node specified by the line number in the file
 
     Note
@@ -56,7 +55,7 @@ class Analyze_KTN(object):
 
     def __init__(self, path, K=None, pi=None, commpi=None, communities=None,
                  commdata=None, temp=None, thresh=None):
-        self.path = Path(path) 
+        self.path = Path(path)
         self.K = K
         self.pi = pi
         self.commpi = commpi
@@ -96,7 +95,7 @@ class Analyze_KTN(object):
                 self.commpi = commpi/commpi.sum()
             else:
                 raise ValueError("The attributes K, pi, and commpi must be specified.")
-        
+
         N = len(self.communities)
         Rlea = np.zeros((N,N))
 
@@ -107,7 +106,7 @@ class Analyze_KTN(object):
                     cj = np.array(self.communities[j+1]) - 1
                     Rlea[i, j] = np.sum(self.K[np.ix_(ci, cj)]@self.pi[cj]) / self.commpi[j]
                     Rlea[j, i] = np.sum(self.K[np.ix_(cj, ci)]@self.pi[ci]) / self.commpi[i]
-        
+
         for i in range(N):
             Rlea[i, i] = -np.sum(Rlea[:, i])
         return Rlea
@@ -151,15 +150,15 @@ class Analyze_KTN(object):
         #H-S relation
         second_inversion = spla.inv(M.T@first_inverse@D_V@M)
         R_HS = Pi_col@np.ones((1,N)) - D_N@second_inversion
-        if not check_detailed_balance(self.commpi, R_HS):
+        if not ktna.check_detailed_balance(self.commpi, R_HS):
             print(f'HS does not satisfy detailed balance')
         return R_HS
 
     def construct_coarse_rate_matrix_KKRA(self, mfpt=None, GT=False, temp=None, **kwargs):
-        r"""Calculate optimal coarse-grained rate matrix using Eqn. (79) 
+        r"""Calculate optimal coarse-grained rate matrix using Eqn. (79)
         of Kells et al. *J. Chem. Phys.* (2020), aka the KKRA expression
         in Eqn. (10) of Kannan et al. *J. Chem. Phys.* (2020).
-        
+
         Parameters
         ----------
         mfpt : (nnodes, nnodes)
@@ -202,13 +201,13 @@ class Analyze_KTN(object):
         R = Pi_col@np.ones((1,N)) - D_N@spla.inv(Pi_col@Pi_col.T +
                                                  M.T@D_n@mfpt@pi_col@Pi_col.T -
                                                  M.T@D_n@mfpt@D_n@M)
-        if not check_detailed_balance(self.commpi, R):
+        if not ktna.check_detailed_balance(self.commpi, R):
             print(f'KKRA does not satisfy detailed balance')
         return R
 
     def get_intermicrostate_mfpts_linear_solve(self):
         r"""Calculate the matrix of inter-microstate MFPTs between all pairs of nodes
-        by solving a system of linear equations given by Eq.(8) of 
+        by solving a system of linear equations given by Eq.(8) of
         Kannan et al. *J. Chem. Phys.* (2020)."""
 
         K = self.K
@@ -223,7 +222,7 @@ class Analyze_KTN(object):
                         mfpt[i][j] = -spla.solve(K[np.arange(n)!=i, :][:, np.arange(n)!=i],
                                                 (np.arange(n)==j)[np.arange(n)!=i]).sum()
                     except scipy.linalg.LinAlgWarning as err:
-                        raise Exception('LinAlgWarning') 
+                        raise Exception('LinAlgWarning')
         return mfpt
 
     def get_intermicrostate_mfpts_fundamental_matrix(self):
@@ -241,7 +240,7 @@ class Analyze_KTN(object):
     def get_intercommunity_MFPTs_linear_solve(self):
         r"""Calculate the true MFPTs between communities by inverting the non-absorbing
         rate matrix. Equivalent to Eqn. (14) in Swinbourne & Wales *JCTC* (2020)."""
-       
+
         K = ktn.K
         pi = ktn.pi
         n = K.shape[0]
@@ -301,7 +300,7 @@ class Analyze_KTN(object):
         """ Calculate a rate matrix using  MFPTs between communities.
         Note that the true-intercommunity MFPTs cannot be used to construct
         a reduced Markov chain that satisfies detailed balance."""
-        
+
         if self.K is None:
             if temp is not None:
                 logpi, Kmat = read_ktn_info(f'T{temp:.3f}', log=True)
@@ -316,18 +315,18 @@ class Analyze_KTN(object):
         N = len(self.communities)
         D_N = np.diag(self.commpi)
         mfpt = self.get_intercommunity_MFPTs_linear_solve(self)
-        
+
         matrix_of_ones = np.ones((N,1))@np.ones((1,N))
         #R_MFPT = inv(MFPT)@(inv(D_N) - matrix_of_ones)
         R_MFPT = spla.solve(mfpt,np.diag(1.0/self.commpi) - matrix_of_ones)
-        check_detailed_balance(self.commpi, R_MFPT)
+        ktna.check_detailed_balance(self.commpi, R_MFPT)
         return R_MFPT
 
     def get_free_energies_from_rates(self, R, thresh, temp, kB=1.0, planck=1.0):
         """ Estimate free energies of all macrostates and transition states
         between macrostates from an arbitrary rate matrix R. Write out a `min.data`
         and `ts.data` file for coarse-grained network.
-        
+
         TODO: Get largest connected component of coarse-grained rate matrix.
 
         Warning
@@ -362,7 +361,7 @@ class Analyze_KTN(object):
                 if idx[i] not in commpi_renorm:
                     raise ValueError('The rate matrix R has unconnected \
                                      components.')
-                commpi_renorm[idy[i]] = commpi_renorm[idx[i]]*dbalance 
+                commpi_renorm[idy[i]] = commpi_renorm[idx[i]]*dbalance
         #calculate free energies for this connected set
         min_nrgs = {}
         if temp==3.0:
@@ -379,7 +378,7 @@ class Analyze_KTN(object):
         correction_factor = minfree[0, 1]
         with open(self.path/f'min.data.T{temp:.3f}','w') as f:
             for i in range(N):
-                f.write(f'{min_nrgs[i]} {correction_factor} 1 1.0 1.0 1.0\n') 
+                f.write(f'{min_nrgs[i]} {correction_factor} 1 1.0 1.0 1.0\n')
 
         ts_nrgs_LJ = []
         Ls = []
@@ -410,7 +409,7 @@ class Analyze_KTN(object):
     def get_timescale_error(self, m, K, R):
         """ Calculate the ith timescale error for i in {1,2,...m} of a
         coarse-grained rate matrix R compared to the full matrix K.
-        
+
         Parameters
         ----------
         m : int
@@ -424,9 +423,9 @@ class Analyze_KTN(object):
         -------
         timescale_errors : np.ndarray[float] (m-1,)
             Errors for m-1 slowest timescales
-        
+
         """
-        
+
         ncomms = len(self.communities)
         if m >= ncomms:
             raise ValueError('The number of dominant eigenvectors must be' \
@@ -441,10 +440,10 @@ class Analyze_KTN(object):
 
     def calculate_eigenfunction_error(self, m, K, R):
         r""" Calculate the :math:`i^{\rm th}` eigenvector approximation error for :math:`i \in {1, 2,
-        ... m}` of a coarse-grained rate matrix `R` by comparing its eigenvector 
+        ... m}` of a coarse-grained rate matrix `R` by comparing its eigenvector
         to the correspcorresponding eigenvector of the full matrix.
         """
-        
+
         ncomms = len(self.communities)
         if m >= ncomms:
             raise ValueError('The number of dominant eigenvectors must be' \
@@ -464,7 +463,7 @@ class Analyze_KTN(object):
     def get_comm_stat_probs(self, logpi, log=True):
         """ Calculate the community stationary probabilities by summing over
         the stationary probabilities of the nodes in each community.
-        
+
         Parameters
         ----------
         logpi : list (nnodes,)
@@ -486,7 +485,7 @@ class Analyze_KTN(object):
         logcommpi = np.zeros((ncomms,))
         for ci in self.communities:
             #zero-indexed list of minima in community ci
-            nodelist = np.array(self.communities[ci]) - 1 
+            nodelist = np.array(self.communities[ci]) - 1
             logcommpi[ci-1] = -np.inf
             for node in nodelist:
                 logcommpi[ci-1] = np.log(np.exp(logcommpi[ci-1]) + np.exp(logpi[node]))
@@ -501,7 +500,7 @@ class Analyze_KTN(object):
 """Functions to analyze KTNs without any community structure."""
 
 def read_ktn_info(self, suffix, log=False):
-    """ Read in input files `stat_prob_{suffix}.dat`, `ts_weights_{suffix}.dat`, and `ts_conns_{suffix}.dat` 
+    """ Read in input files `stat_prob_{suffix}.dat`, `ts_weights_{suffix}.dat`, and `ts_conns_{suffix}.dat`
     describing the stationary probabilities and connectivity of the nodes in the Markov chain to be analyzed.
     Files must be located in the directory specified by `self.path`."""
 
@@ -532,7 +531,7 @@ def read_ktn_info(self, suffix, log=False):
     assert(np.all(np.abs(Kmat_connected@pi)<1.E-10))
 
     if log:
-        return logpi, Kmat_connected 
+        return logpi, Kmat_connected
     else:
         return pi, Kmat_connected
 
@@ -546,7 +545,7 @@ def calc_eigenvectors(K, k, which_eig='SM', norm=False):
     evals = np.array(sorted(list(evals),reverse=True),dtype=float)
     if norm:
         row_sums = evecs.sum(axis=1)
-        evecs = evecs / row_sums[:, np.newaxis] 
+        evecs = evecs / row_sums[:, np.newaxis]
     return evals, evecs
 
 def construct_transition_matrix(K, tau_lag):
@@ -555,13 +554,13 @@ def construct_transition_matrix(K, tau_lag):
     """
     T = expm(tau_lag*K)
     for x in np.sum(T, axis=0):
-        #assert( abs(x - 1.0) < 1.0E-10) 
+        #assert( abs(x - 1.0) < 1.0E-10)
         print(f'Transition matrix is not column-stochastic at' \
                 f'tau={tau_lag}')
     return T
 
 def get_timescales(K, m, tau_lag):
-    """ Return characteristic timescales obtained from the `m` dominant 
+    """ Return characteristic timescales obtained from the `m` dominant
     eigenvalues of the transition matrix constructed from `K` at lag time
     `tau_lag`."""
     T = construct_transition_matrix(K, tau_lag)
@@ -600,34 +599,11 @@ def calculate_spectral_error(m, Rs, labels):
     plt.legend()
     fig.tight_layout()
 
-def check_detailed_balance(pi, K):
-    """ Check if Markov chain satisfies detailed balance condition, 
-    :math:`k_{ij} \pi_j = k_{ji} \pi_i` for all :math:`i,j`.
-
-    Parameters
-    ----------
-    pi : array-like (nnodes,) or (ncomms,)
-        stationary probabilities
-    K : array-like (nnodes, nnodes) or (ncomms, ncomms)
-        transition rate matrix
-
-    """
-    for i in range(K.shape[0]):
-        for j in range(K.shape[1]):
-            if i < j:
-                left = K[i,j]*pi[j]
-                right = K[j,i]*pi[i]
-                diff = abs(left - right)
-                if (diff > 1.E-10):
-                    #print(f'Detailed balance not satisfied for i={i}, j={j}')
-                    return False
-    return True
-
 def read_communities(commdat):
     """Read in a single column file called communities.dat where each line
     is the community ID (zero-indexed) of the minima given by the line
     number.
-    
+
     Parameters
     ----------
     commdat : .dat file
@@ -648,6 +624,3 @@ def read_communities(commdat):
             else:
                 communities[groupID] = [minID]
     return communities
-
-
-

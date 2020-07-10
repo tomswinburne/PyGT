@@ -394,9 +394,9 @@ class sampler:
 		print("DIRECT = %2.4g + %2.4g = %2.4g" % (BAB,BAIB,BAB+BAIB))
 		res = (BAIB+BAB)*1.0
 		if gt_check:
-			rB, rtau, rN, retry = GT(rm_vec=self.sys.selI,B=self.sys.B,tau=1.0/self.sys.kt,block=1)
+			rB, rtau = GT(rm_vec=self.sys.selI,B=self.sys.B,tau=1.0/self.sys.kt,block=1)
 			rD = 1.0 / rtau
-			#print(rB)
+			rN = rtau.size
 			r_initial_states = self.sys.selB[~self.sys.selI]
 			r_final_states = self.sys.selA[~self.sys.selI]
 			BAIB, BAB = direct_solve(rB,r_initial_states,r_final_states,rho=rho)

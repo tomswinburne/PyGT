@@ -141,21 +141,16 @@ class rate_network:
     """ recursively build disjoint subgroups and fit into tree structure """
 
     def find_split(self,M,tree,_E,depth,ithresh=0):
-        timer = time.clock()
         ds_sg = []
         tree.value = self.threshes[ithresh] #  where tree splits
         for thresh in self.threshes[ithresh:]:
-            time.clock()
             _M = np.where(M<thresh,M,0.)
-            timer = time.clock()
             nc,cc = csgraph.connected_components(csr_matrix(_M))
-            timer = time.clock()
             if nc>1:
                 ds_sg = []
                 for j in range(nc):
                     ds_sg.append([_M[cc==j,:][:,cc==j],_E[cc==j,:]])
                 break
-            timer = time.clock()
             tree.value = thresh
             ithresh += 1
         #if nc > 1:

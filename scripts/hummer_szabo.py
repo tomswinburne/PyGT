@@ -5,15 +5,11 @@ Deepti Kannan, 2020"""
 
 #library code
 import PyGT
-from PyGT import ktn_io as kio
-from PyGT import gt_tools as gt
-from PyGT import fpt_stats as fpt
-from PyGT import conversion as convert
-from PyGT.dimred.ktn_analysis import *
+#from PyGT.dimred.ktn_analysis import *
 #other modules
 import numpy as np
 import scipy as sp
-import scipy.linalg as spla 
+import scipy.linalg as spla
 from scipy.sparse.linalg import eigs
 from scipy.sparse import csr_matrix
 from scipy.linalg import eig
@@ -36,10 +32,10 @@ green = '#6CB41C'
 blue = '#07B4CC'
 grey = '#2D3A3B'
 
-params = {'axes.edgecolor': 'black', 
-                  'axes.facecolor':'white', 
-                  'axes.grid': False, 
-                  'axes.linewidth': 0.5, 
+params = {'axes.edgecolor': 'black',
+                  'axes.facecolor':'white',
+                  'axes.grid': False,
+                  'axes.linewidth': 0.5,
                   'backend': 'ps',
                   'savefig.format': 'ps',
                   'axes.titlesize': 11,
@@ -49,23 +45,23 @@ params = {'axes.edgecolor': 'black',
                   'ytick.labelsize': 8,
                   'text.usetex': True,
                   'figure.figsize': [7, 5],
-                  'font.family': 'sans-serif', 
-                  #'mathtext.fontset': 'cm', 
+                  'font.family': 'sans-serif',
+                  #'mathtext.fontset': 'cm',
                   'xtick.bottom':True,
                   'xtick.top': False,
                   'xtick.direction': 'out',
-                  'xtick.major.pad': 3, 
+                  'xtick.major.pad': 3,
                   'xtick.major.size': 3,
                   'xtick.minor.bottom': False,
                   'xtick.major.width': 0.2,
 
-                  'ytick.left':True, 
-                  'ytick.right':False, 
+                  'ytick.left':True,
+                  'ytick.right':False,
                   'ytick.direction':'out',
                   'ytick.major.pad': 3,
-                  'ytick.major.size': 3, 
+                  'ytick.major.size': 3,
                   'ytick.major.width': 0.2,
-                  'ytick.minor.right':False, 
+                  'ytick.minor.right':False,
                   'lines.linewidth':2}
 plt.rcParams.update(params)
 
@@ -80,10 +76,11 @@ def compare_HS_LEA(temps, data_path=Path('KTN_data/32state'), theta=False):
         df['T'] = [temp]
         ktn = Analyze_KTN(data_path, commdata='communities.dat')
         #KTN input
-        beta = 1./temp
-        B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
-        Q = K.todense() - D.todense()
-        AS, BS = kio.load_AB(data_path,index_sel) 
+        beta = 1.0/temp
+        B, K, tau, N, u, s, Emin, index_sel = PyGT.io.load_ktn(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+		D = np.ravel(K.sum(axis=0))
+        Q = K.todense() - np.diags(D)
+        AS, BS = kio.load_ktn_AB(data_path,index_sel)
         D = np.ravel(K.sum(axis=0))
         BF = beta*u-s
         BF -= BF.min()
@@ -99,9 +96,9 @@ def compare_HS_LEA(temps, data_path=Path('KTN_data/32state'), theta=False):
         full_df = pgt.compute_rates(AS, BS, B, escape_rates=D, K=K, BF=BF, fullGT=True)
         df['MFPTAB'] = full_df['MFPTAB']
         df['MFPTBA'] = full_df['MFPTBA']
-        
+
         #compute coarse-grained networks: 4 versions of Hummer-Szabo + LEA
-        mfpt, pi = fpt.get_intermicrostate_mfpts_GT(temp, data_path)
+        mfpt, pi = PyGT.fpt_stats.get_intermicrostate_mfpts_GT(temp, data_path)
         labels = []
         matrices = []
         try:
@@ -118,7 +115,7 @@ def compare_HS_LEA(temps, data_path=Path('KTN_data/32state'), theta=False):
             print(f'KKRA had the following error: {e}')
 
         #try inter-microstate MFPT calculations
-        
+
         #weighted-MFPT with eigendecomposition for computer inter-microstate MFPTs
         try:
             mfpt = ktn.get_intermicrostate_mfpts_linear_solve()
@@ -157,14 +154,14 @@ def compare_HS_LEA(temps, data_path=Path('KTN_data/32state'), theta=False):
             labels.append('PTinvert_GT')
         except Exception as e:
             print(f'Inversion of weighted-MFPTs from GT had the following error: {e}')
-        
+
         #try:
         #    Rhs_solve = spla.solve(pt, np.diag(1.0/commpi) - np.ones((ncomms,ncomms)))
         #    matrices.append(Rhs_solve)
         #    labels.append('PTsolve')
         #except Exception as e:
         #    print(f'Linear solve with weighted-MFPTs had the following error: {e}')
-        
+
         try:
             Rlea = ktn.construct_coarse_rate_matrix_LEA(temp)
             matrices.append(Rlea)
@@ -269,7 +266,7 @@ def plot_mfpts_32state(df, insetdf=None, theta=False, mfpt_eig=False, log=True):
     #now plot inset with super low temps to show that t_c^-1 breaks
     if not mfpt_eig:
         ax.legend(loc=4, frameon=True)
-        axins = inset_axes(ax, width="40%", height="40%", 
+        axins = inset_axes(ax, width="40%", height="40%",
                         bbox_to_anchor=(.12, 0.12, 0.85, .85),
                         bbox_transform=ax.transAxes, loc=2)
         insetdf.replace([np.inf, -np.inf], np.nan)
@@ -298,8 +295,8 @@ def calculate_condition_numbers(invtemps=np.linspace(1, 40, 20), data_path=Path(
         df['T'] = [temp]
         beta = 1./temp
         ktn = Analyze_KTN(data_path, commdata='communities.dat')
-        B, K, D, N, u, s, Emin, index_sel = kio.load_mat(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
-        Q = K.todense() - D.todense()
+        B, K, tau, N, u, s, Emin, index_sel = PyGT.io.load_ktn(path=data_path,beta=beta,Emax=None,Nmax=None,screen=False)
+        Q = K.todense() - np.diags(1.0/tau)
         mfpt, pi = pgt.get_intermicrostate_mfpts_GT(temp, data_path)
         #compute weighted-MFPT between communities
         commpi = ktn.get_comm_stat_probs(np.log(pi), log=False)
@@ -330,7 +327,7 @@ def calculate_condition_numbers(invtemps=np.linspace(1, 40, 20), data_path=Path(
         except Exception as e:
             df['KKRA_2nd_term'] = [np.nan]
             df['KKRA_rates'] = [np.nan]
-        
+
         #fundamental matrix (in original Hummer-Szabo expression)
         fund_mat = pi_col@np.ones((1,n)) - Q
         df['Fund_matrix'] = [np.linalg.cond(fund_mat)]
@@ -351,7 +348,7 @@ def calculate_condition_numbers(invtemps=np.linspace(1, 40, 20), data_path=Path(
     bigdf = pd.concat(dfs, ignore_index=True, sort=False)
     return bigdf
 
-def plot_condition_numbers(df):   
+def plot_condition_numbers(df):
     #plot
     invtemps = 1./df['T']
     fig, ax = plt.subplots(figsize=[1.2*columnwidth, 0.9*columnwidth])
@@ -422,4 +419,3 @@ def plot_theta_approx_panel(invT = np.linspace(0.1, 50, 10), data_path=Path('KTN
     axes[1][1].set_xlabel(r'$1/T$')
     plt.subplots_adjust(left=0.08, right=0.95, bottom=0.17, top=0.95, wspace=0.15, hspace=0.2)
     plt.savefig('plots/theta_approx_panel_32state.pdf')
-

@@ -1,8 +1,8 @@
-Tutorial with graph\_tran
+Tutorial with PyGT
 =========================
 
 To help you get started, here, we outline a step-by-step guide on how to use the
-`graph\_tran` package for the analysis of discrete- or continuous-time Markov
+`PyGT` package for the analysis of discrete- or continuous-time Markov
 chains. First, we will go over the various submodules in the package and then
 walk through various examples of using graph transformation for computing mean
 first passage times and estimating reduced Markov chains given a community
@@ -11,7 +11,7 @@ structure.
 Getting Started
 ---------------
 
-`graph_tran` has to two submodules, `lib` and `ktn`. The `lib` module contains
+`PyGT` has to two submodules, `lib` and `ktn`. The `lib` module contains
 an implementation of the GT algorithm as well as wrappers for analyzing first
 passage time statistics between two endpoint regions of interest. The `ktn`
 module provides functions to estimate a reduced Markov chain given a community

@@ -1,7 +1,7 @@
 dimred.partialGT
 ================
 
-.. automodule:: graph_tran.dimred.partialGT
+.. automodule:: PyGT.dimred.partialGT
     :members:
     :undoc-members:
 

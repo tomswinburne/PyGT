@@ -15,7 +15,8 @@ class aib_system:
 
 	def gt(self,rm_reg,block=50):
 
-		self.B, self.tau, self.N, retry = GT(rm_vec=rm_reg,B=self.B.copy(),tau=1.0/self.kt.copy(),retK=False,block=block)
+		self.B, self.tau = GT(rm_vec=rm_reg,B=self.B.copy(),tau=1.0/self.kt.copy(),rates=False,block=block)
+		self.N = self.tau.size
 		self.kt = 1.0/self.tau
 		self.K = self.B@sp.diags(self.kt)
 		self.u = self.u[~rm_reg]

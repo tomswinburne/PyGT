@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=source
 set BUILDDIR=build
-set SPHINXPROJ=graph_transformation
+set SPHINXPROJ=PyGT
 
 if "%1" == "" goto help
 
