@@ -200,7 +200,7 @@ def singleGT(B,tau,sel,timeit=False,dense=False):
 			Bij += kron(Bix,Bxj)
 			iDjj[Bxj.indices] += Bxj.data*iDxx
 
-		return Bij,iDjj,True#,ts,tm
+		return Bij,iDjj,True
 
 def GT(rm_vec,B,tau=None,block=1,dense=False,order=None,
 	Ndense=500,force_sparse=True,screen=False,retK=False):
@@ -235,7 +235,7 @@ def GT(rm_vec,B,tau=None,block=1,dense=False,order=None,
 	#total number of states to remove
 	NI = rm_vec.sum()
 	D = 1.0 / tau
-	
+
 
 	if screen:
 		print("GT regularization removing %d states:" % NI)
