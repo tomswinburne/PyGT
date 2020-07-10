@@ -20,10 +20,10 @@ to
 
 .. math::
 
-    \begin{eqnarray}
-        B_{ij}^{\prime} &\leftarrow B_{ij} + \frac{B_{ix}B_{xj}}{1-B_{xx}} \\
-        \tau_j^\prime  &\leftarrow \tau_j + \frac{B_{xj}\tau_j}{1-B_{xx}}
-    \end{eqnarray}
+	\begin{eqnarray}
+		B_{ij}^{\prime} &\leftarrow B_{ij} + \frac{B_{ix}B_{xj}}{1-B_{xx}} \\
+		\tau_j^\prime  &\leftarrow \tau_j + \frac{B_{xj}\tau_j}{1-B_{xx}}
+	\end{eqnarray}
 
 A matrix version of the above equations permits the removal of blocks of nodes
 simulatenously. [3]_ In practice, the larger the block of nodes, the less
@@ -226,16 +226,16 @@ def GT(rm_vec,B,tau=None,block=1,dense=False,order=None,
 	screen : bool
 		Whether to print progress of GT.
 	retK : bool
-		Whether to return the GT-reduced rate matrix in addition to B and D.
+		Whether to return the GT-reduced rate matrix in addition to B and tau
 
 	"""
 
-    retry=0
+	retry=0
 	N = rm_vec.size
 	#total number of states to remove
 	NI = rm_vec.sum()
 	D = 1.0 / tau
-
+	
 
 	if screen:
 		print("GT regularization removing %d states:" % NI)
@@ -272,8 +272,8 @@ def GT(rm_vec,B,tau=None,block=1,dense=False,order=None,
 			#order the nodes to remove
 			if order is None:
 				if not dense:
-                    #order contains number of elements in each row
-                    #equivalent to node in-degree
+					#order contains number of elements in each row
+					#equivalent to node in-degree
 					order = B.indptr[1:]-B.indptr[:-1]
 				else:
 					order = np.linspace(0.,1.0,B.shape[0])
@@ -281,7 +281,7 @@ def GT(rm_vec,B,tau=None,block=1,dense=False,order=None,
 				pobar.close()
 			pobar = None
 			order[~rm_vec] = order.max()+1
-			rm[order.argsort()[:min(rmb,NI)]] = True
+			rm[order.argsort()[:min(block,NI)]] = True
 
 		B, tau, success = singleGT(B,tau,rm,timeit=False,dense=dense)
 
