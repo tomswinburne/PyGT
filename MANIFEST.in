@@ -1,0 +1,5 @@
+prune KTN_data/
+prune csvs/
+prune doc/
+prune scripts/
+exclude *.ipynb *.png
