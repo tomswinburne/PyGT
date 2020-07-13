@@ -11,8 +11,8 @@
    :maxdepth: 2
    :caption: Contents:
 
-   GT.rst
    io.rst
+   GT.rst
    stats.rst
    mfpt.rst
    tools.rst
