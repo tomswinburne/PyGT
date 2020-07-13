@@ -8,6 +8,7 @@ cache/*
 output/*
 build/*
 dist/*
+scripts/*
 */__pycache__/*
 KTN_data/*
 KTN_data/*tar.gz

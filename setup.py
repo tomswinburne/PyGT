@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="PyGT-tomswinburne", # Replace with your own username
-    version="0.0.2",
+    version="0.1.0",
     author="TD Swinburne",
     author_email="tomswinburne+pip@gmail.com",
     description="First PyGT test",
