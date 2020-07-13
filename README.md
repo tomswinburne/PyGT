@@ -3,7 +3,7 @@
 >Tom Swinburne, CNRS-CINaM, 2019, swinburne@cinam.univ-mrs.fr
 >Deepti Kannan, U Cambridge
 
-Docs will be available at readthedocs xxx
+Docs will be available at readthedocs
 
 # INSTALLATION (beta)
 ```
