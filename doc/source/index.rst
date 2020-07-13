@@ -12,8 +12,8 @@
    :maxdepth: 2
    :caption: Contents:
 
+	 core.rst
    io.rst
-   gt.rst
    fpt_stats.rst
    dimred.rst
    conversion.rst

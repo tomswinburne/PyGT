@@ -39,7 +39,6 @@ also be cited when using this software:
 """
 __version__ = "0.2.0"
 
+from . import core
 
 from . import io
-
-from .core import *
