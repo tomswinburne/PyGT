@@ -23,7 +23,7 @@ At the start of any python script, include the following import statements:
 
     >>> #library code
     >>> import lib.ktn_io as kio
-    >>> import lib.gt_tools as gt
+    >>> import lib.gt_tools as GT
     >>> import lib.partialGT as pgt
     >>> import lib.fpt_stats as fpt
     >>> import lib.conversion as convert

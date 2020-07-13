@@ -24,7 +24,7 @@ import time,os, importlib
 np.set_printoptions(linewidth=160)
 from .. import io as kio
 from .. import fpt_stats as fpt
-from .. import gt as gt
+from .. import GT as GT
 from .. import conversion as convert
 from scipy.sparse import save_npz,load_npz, diags, eye, csr_matrix,bmat
 from scipy.sparse.linalg import eigs,inv,spsolve
@@ -210,7 +210,7 @@ def prune_intermediate_nodes(beta, data_path, rm_type='hybrid',
         print(f'in A: {rm_vec[AS].sum()}, in B: {rm_vec[BS].sum()}, in I: {rm_vec[IS].sum()}')
     #perform the graph transformation
 
-    GT_B, GT_tau, GT_Q = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,rates=True,Ndense=50,screen=False,**kwargs)
+    GT_B, GT_tau, GT_Q = GT.partialGT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,rates=True,Ndense=50,screen=False,**kwargs)
     GT_D = 1.0 / GT_tau
     r_N = GT_tau.size
 
@@ -280,7 +280,7 @@ def prune_source(beta, data_path, rm_type='hybrid', percent_retained_in_B=90.,
     r_BF = BF[~rm_vec]
     if screen:
         print(f'Nodes to eliminate: {rm_vec.sum()/BS.sum()}, percent retained: {100*(BS.sum()-rm_vec.sum())/BS.sum()}')
-    GT_B, GT_tau, GT_Q = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,rates=True,Ndense=50,screen=False,**kwargs)
+    GT_B, GT_tau, GT_Q = GT.partialGT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,rates=True,Ndense=50,screen=False,**kwargs)
     GT_D = 1.0 / GT_tau
     r_N = GT_tau.size
 
@@ -350,7 +350,7 @@ def prune_all_basins(beta, data_path, rm_type='hybrid', percent_retained=50., sc
             print(f'Percent eliminated from basin: {100*rm_vec[BS].sum()/BS.sum()}')
     #now do the GT all in one go
 
-    r_B, r_tau, r_Q = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,rates=True,Ndense=50,screen=False)
+    r_B, r_tau, r_Q = GT.partialGT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,rates=True,Ndense=50,screen=False)
     r_D = 1.0 / r_tau
     r_N = r_tau.size
 
@@ -421,7 +421,7 @@ def prune_basins_sequentially(beta, data_path, rm_type='hybrid', percent_retaine
             print(f'Percent eliminated from basin: {100*rm_vec[BS].sum()/BS.sum()}')
         #perform the GT for this basin alone
 
-        B, tau, Q = gt.GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,rates=True,Ndense=50,screen=False)
+        B, tau, Q = GT.partialGT(rm_vec=rm_vec,B=B,tau=1.0/D,block=10,rates=True,Ndense=50,screen=False)
         D = 1.0/tau
         N = tau.size
 

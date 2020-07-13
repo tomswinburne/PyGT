@@ -18,7 +18,7 @@ import time,os, importlib
 #from tqdm import tqdm
 np.set_printoptions(linewidth=160)
 from . import io as kio
-from . import gt
+from . import GT
 from . import conversion as convert
 from scipy.sparse import save_npz,load_npz, diags, eye, csr_matrix,bmat
 from scipy.sparse.linalg import eigs,inv,spsolve
@@ -262,7 +262,7 @@ def compute_MFPTAB(i, j, B, escape_rates=None, K=None, **kwargs):
 	#GT away all I states
 	inter_region = ~(AS+BS)
 	#left with a 2-state network
-	rB, tau_Fs, rQ = gt.GT(rm_vec=inter_region,B=B,tau=1.0/D,rates=True,block=1,**kwargs)
+	rB, tau_Fs, rQ = GT.partialGT(rm_vec=inter_region,B=B,tau=1.0/D,rates=True,block=1,**kwargs)
 	rD = 1.0/tau_Fs
 	rN = tau_Fs.size
 	#remaining network only has 1 in A and 1 in B = 2 states
@@ -372,7 +372,7 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
 
 	#use GT to renormalize away all I states
 
-	rB, rtau, rQ = gt.GT(rm_vec=inter_region,B=B,tau=1.0/D,rates=True,block=1,**kwargs)
+	rB, rtau, rQ = GT.partialGT(rm_vec=inter_region,B=B,tau=1.0/D,rates=True,block=1,**kwargs)
 	rD = 1.0/rtau
 	rN = rtau.size
 
@@ -402,7 +402,7 @@ def compute_rates(AS, BS, B, escape_rates=None, K=None, initA=None, initB=None, 
 				#print(f'Disconnecting source node {aind}')
 				rm_reg[r_s.nonzero()[0][s]] = False
 
-				rfB, tau_Fs, rfQ = gt.GT(rm_vec=rm_reg,B=rB,tau=1.0/rD,rates=True,block=1,Ndense=1)
+				rfB, tau_Fs, rfQ = GT.partialGT(rm_vec=rm_reg,B=rB,tau=1.0/rD,rates=True,block=1,Ndense=1)
 				#escape time tau_F
 				rfD = 1./tau_Fs
 				rfN = tau_Fs.size

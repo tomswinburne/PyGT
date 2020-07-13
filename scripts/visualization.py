@@ -10,7 +10,7 @@ import numpy as np
 from lib import partialGT as pgt
 from ktn.ktn_analysis import *
 import lib.ktn_io as kio
-import lib.gt_tools as gt
+import lib.gt_tools as GT
 import lib.conversion as convert
 import scipy as sp
 from scipy.sparse import save_npz,load_npz, diags, eye, csr_matrix, bmat
@@ -201,7 +201,7 @@ def illustrate_gt_gephi(temp, data_path = Path('KTN_data/32state'), suffix='gt',
     #remove all of intervening region
     rm_vec = ~AS
     rm_vec[24] = False #don't remove attractor node of B
-    r_B, r_tau, r_Q = gt.GT(rm_vec=rm_vec,B=B,tau=tau,rates=True,block=1,**kwargs)
+    r_B, r_tau, r_Q = GT.partialGT(rm_vec=rm_vec,B=B,tau=tau,rates=True,block=1,**kwargs)
     r_D = 1.0 /r_tau
     r_N = r_tau.size
     convert.ts_weights_conns_from_K(r_Q, data_path, suffix='_GT')
