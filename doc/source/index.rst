@@ -6,17 +6,17 @@
 ===============================================
 
 .. automodule:: PyGT
-    :members:
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-	 core.rst
+   GT.rst
    io.rst
-   fpt_stats.rst
-   dimred.rst
-   conversion.rst
+   stats.rst
+   mfpt.rst
+   tools.rst
+
 
 
 

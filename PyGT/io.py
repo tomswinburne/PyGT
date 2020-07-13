@@ -1,24 +1,41 @@
 # -*- coding: utf-8 -*-
-"""
-Read in input files describing the Markov chain to analyze
-----------------------------------------------------------
+r"""
 This module reads in the following input files:
-Files defining A and B sets
-...........................
+
+Files defining sets of minima
+-----------------------------
 min.A: single-column[int], (N_A + 1, )
 	First line contains the number of nodes in community A.
 	Subsequent lines contain the node ID (1-indexed) of the nodes belonging to A.
+	Example:
+
+	.. code-block:: none
+
+		10 # number of nodes in A
+		1
+		2
+		...
 
 min.B: single-column[int], (N_B + 1, )
 	First line contains the number of nodes in community B.
 	Subsequent lines contain the node ID (1-indexed) of the nodes belonging to B.
 
 communities.dat : single-column (nnnodes,)
-	used by DISCOTRESS and ktn_analysis module; each line contains community ID (0-indexed)
-	of the node specified by the line number in the file
+	Each line contains community ID (0-indexed)	of the node specified
+	by the line number in the file
 
-Files describing stationary points of energy landscape
-......................................................
+	Example:
+
+	.. code-block:: none
+
+		0
+		2
+		1
+		0
+		...
+
+Files describing minimia and saddle points of energy landscape
+--------------------------------------------------------------
 
 The following files are designed to describe a Markov chain in which nodes
 correspond to potential or free energy minima, and edges correspond to the
@@ -27,13 +44,30 @@ the PATHSAMPLE program implemented in the Fortran language:
 
 min.data: multi-column, (nnodes, 6)
 	Line numbers indicate node-IDs. Each line contains energy of local minimum [float],
-	log product of positive Hessian eigenvalues [float], point group [int], sorted
+	log product of positive Hessian eigenvalues :math:`\sum_i\log|m\omega_i^2|` [float], isometry [int], sorted
 	eigenvalues of inertia tensor itx [float], ity [float], itz [float]
+
+	Example (LJ13 dataset):
+
+	.. code-block:: none
+
+		-44.3268014195	158.2464487383	120	9.3629926605	9.3629926606	9.3629926607 # node 1
+		-41.4719798478	153.8092000860	2	8.7543536583	10.6788841871	11.4404999401 # node 2
+		...
+
 ts.data: multi-column, (nts, 8)
 	Each line contains energy of transition state [float], log product of positive
-	Hessian eigenvalues [float], point group [int], ID of first minimum it connects [int],
+	Hessian eigenvalues  :math:`\sum_i\log|m\omega_i^2|` [float], isometry [int], ID of first minimum it connects [int],
 	ID of second minimum it connects [int], sorted eigenvalues of inertia tensor itx [float],
 	ity [float], itz [float]
+
+	Example (LJ13 dataset):
+
+	.. code-block:: none
+
+		-40.4326640775	148.9095497699	1	2	1	9.0473340846	10.4342879996	10.9389332953
+		-40.9062828304	150.4182291647	2	3	1	8.6169912461	10.3990395875	11.4674850889
+		...
 
 The ktn.io package then calculates transition rates using unimolecular rate theory.
 
@@ -44,116 +78,7 @@ from io import StringIO
 import numpy as np
 from scipy.sparse import csgraph, csr_matrix, csc_matrix, eye, save_npz, load_npz, diags, issparse
 import warnings
-from .core import GT
-from scipy.special import factorial
-
-class timer:
-	def __init__(self):
-		self.t = time.time()
-	def __call__(self,str=None):
-		t = time.time() - self.t
-		self.t = time.time()
-		if not str is None:
-			print(str,":",t)
-		else:
-			return t
-
-class output_str:
-	def __init__(self):
-		self.print_str=""
-	def __call__(self,sa):
-		_print_str = ""
-		for s in sa:
-			_print_str += str(s)+" "
-		print(_print_str)
-		self.print_str += _print_str
-	def summary(self):
-		print("SUMMARY:\n",self.print_str)
-
-
-def load_ktn_AB(data_path,index_sel=None):
-	""" Read in A_states and B_states from min.A and min.B files, only keeping
-	the states that are part of the largest connected set, as specified by
-	index_sel.
-
-	Parameters
-	----------
-	data_path: str
-		path to location of min.A, min.B files
-	index_sel: array-like[bool] (nnodes, )
-		selects out indices of the maximum connected set
-
-	Returns
-	-------
-	A_states : array-like[bool] (index_sel.size, )
-		boolean array that selects out the A states
-	B_states : array-like[bool] (index_sel.size, )
-		boolean array that selects out the B states
-
-	"""
-
-	Aind = np.zeros(1).astype(int)
-	for line in open(os.path.join(data_path,'min.A')):
-		Aind = np.append(Aind,np.genfromtxt(StringIO(line.strip())).astype(int)-1)
-	Aind = Aind[2:]
-
-	Bind = np.zeros(1).astype(int)
-	for line in open(os.path.join(data_path,'min.B')):
-		Bind = np.append(Bind,np.genfromtxt(StringIO(line.strip())).astype(int)-1)
-	Bind = Bind[2:]
-
-	if index_sel is None:
-		return Aind,Bind
-
-	keep = np.zeros(index_sel.size,bool)
-	keep[Bind] = True
-
-	B_states = keep[index_sel]
-
-	keep = np.zeros(index_sel.size,bool)
-	keep[Aind] = True
-	A_states = keep[index_sel]
-	return A_states,B_states
-
-def read_communities(commdat, index_sel, screen=False):
-	"""Read in a single column file called communities.dat where each line
-	is the community ID (zero-indexed) of the minima given by the line
-	number. Produces boolean arrays, one per community, selecting out the
-	nodes that belong to each community.
-
-	Parameters
-	----------
-	commdat : .dat file
-		single-column file containing community IDs of each minimum
-	index_sel : (N,) boolean array
-		selects out the largest connected component of the network
-
-	Returns
-	-------
-	communities : dict
-		mapping from community ID (0-indexed) to a boolean array
-		of shape (len(index_sel), ) which selects out the states in that community.
-	"""
-
-	communities = {}
-	with open(commdat, 'r') as f:
-		for minID, line in enumerate(f, 0):
-			groupID =  int(line) #number from 0 to N-1
-			if groupID in communities:
-				communities[groupID].append(minID)
-			else:
-				communities[groupID] = [minID]
-
-	for ci in range(len(communities)):
-		#create a new index_selector to select out the minima in community ci
-		keep = np.zeros(index_sel.size,bool)
-		keep[communities[ci]] = True
-		#re-assign communities[ci] to be the index-selector for the maximally connected component of the graph
-		communities[ci] = keep[index_sel]
-		if screen:
-			print(f'Community {ci}: {keep.sum()}')
-
-	return communities
+from .GT import partialGT
 
 def load_ktn(path,beta=1.0,Nmax=None,Emax=None,screen=False,discon=False):
 	r""" Load in min.data and ts.data files, calculate rates, and find connected
@@ -205,7 +130,7 @@ def load_ktn(path,beta=1.0,Nmax=None,Emax=None,screen=False,discon=False):
 		energy of global minimum (energies in `u` are rescaled so that Emin=0)
 
 	retained : np.ndarray[bool] (nnodes,)
-		Boolean array selecting out largest connected component (index_sel.sum() = N).
+		Boolean array selecting out largest connected component (retained.sum() = N).
 
 	"""
 
@@ -313,57 +238,91 @@ def load_ktn(path,beta=1.0,Nmax=None,Emax=None,screen=False,discon=False):
 	B = K@iD
 	return B, K, 1.0/kt, N, GSD['E'], s, Emin, sel
 
-def load_CTMC(K):
-	r""" Setup a GT calculation for a transition rate matrix representing
-	a continuous-time Markov chain.
+
+def load_ktn_AB(data_path,retained=None):
+	""" Read in A_states and B_states from min.A and min.B files, only keeping
+	the states that are part of the largest connected set, as specified by
+	retained.
 
 	Parameters
 	----------
-	K : array-like (nnodes, nnodes)
-		Rate matrix with elements :math:`K_{ij}` corresponding to the :math:`i \leftarrow j` transition rate
-		and diagonal elements :math:`K_{ii} = \sum_\gamma K_{\gamma i}` such that the columns of :math:`\textbf{K}` sum to zero.
+	data_path: str
+		path to location of min.A, min.B files
+	retained: array-like[bool] (nnodes, )
+		selects out indices of the maximum connected set
 
 	Returns
 	-------
-	B : np.ndarray[float64] (nnodes, nnodes)
-		Branching probability matrix in dense format, used as input to GT
-	escape_rates : np.ndarray[float64] (nnodes,)
-		Array of inverse waiting times of nodes, used as input to GT
+	A_states : array-like[bool] (retained.size, )
+		boolean array that selects out the A states
+	B_states : array-like[bool] (retained.size, )
+		boolean array that selects out the B states
 
 	"""
-	#check that columns of K sum to zero
-	assert(np.all(K.sum(axis=0) < 1.E-10))
-	Q = K - np.diag(np.diag(K))
-	escape_rates = -1*np.diag(K)
-	B = Q@np.diag(1./escape_rates)
-	return B, escape_rates
 
-def load_DTMC(T, tau_lag):
-	r""" Setup a GT calculation for a transition probability matrix representing
-	a discrete-time Markov chain.
+	Aind = np.zeros(1).astype(int)
+	for line in open(os.path.join(data_path,'min.A')):
+		Aind = np.append(Aind,np.genfromtxt(StringIO(line.strip())).astype(int)-1)
+	Aind = Aind[2:]
+
+	Bind = np.zeros(1).astype(int)
+	for line in open(os.path.join(data_path,'min.B')):
+		Bind = np.append(Bind,np.genfromtxt(StringIO(line.strip())).astype(int)-1)
+	Bind = Bind[2:]
+
+	if retained is None:
+		return Aind,Bind
+
+	keep = np.zeros(retained.size,bool)
+	keep[Bind] = True
+
+	B_states = keep[retained]
+
+	keep = np.zeros(retained.size,bool)
+	keep[Aind] = True
+	A_states = keep[retained]
+	return A_states,B_states
+
+def read_communities(file, retained, screen=False):
+	"""Read in a single column file called communities.dat where each line
+	is the community ID (zero-indexed) of the minima given by the line
+	number. Produces boolean arrays, one per community, selecting out the
+	nodes that belong to each community.
 
 	Parameters
 	----------
-	T : array-like (nnodes, nnodes)
-		Discrete-time, column-stochastic transition probability matrix.
-	tau_lag : float
-		Lag time at which `T` was estimated.
+	file : .dat file
+		single-column file containing community IDs of each minimum
+
+	retained : (N,) boolean array
+		selects out the largest connected component of the network
 
 	Returns
 	-------
-	B : np.ndarray[float64] (nnodes, nnodes)
-		Branching probability matrix in dense format, used as input to GT
-	escape_rates : np.ndarray[float64] (nnodes,)
-		Array of inverse waiting times of nodes, used as input to GT
-
+	communities : dictionary
+		mapping from community ID (0-indexed) to a boolean array
+		which selects out the states in that community.
 	"""
 
-	nnodes = T.shape[0]
-	#check that T is column-stochastic
-	assert(np.all(np.abs(np.ones(nnodes) - T.sum(axis=0))<1.E-10))
-	escape_rates = np.tile(1./tau_lag, nnodes)
-	B=T
-	return B, escape_rates
+	communities = {}
+	with open(file, 'r') as f:
+		for minID, line in enumerate(f, 0):
+			groupID =  int(line) #number from 0 to N-1
+			if groupID in communities:
+				communities[groupID].append(minID)
+			else:
+				communities[groupID] = [minID]
+
+	for ci in range(len(communities)):
+		#create a new retainedector to select out the minima in community ci
+		keep = np.zeros(retained.size,bool)
+		keep[communities[ci]] = True
+		#re-assign communities[ci] to be the index-selector for the maximally connected component of the graph
+		communities[ci] = keep[retained]
+		if screen:
+			print(f'Community {ci}: {keep.sum()}')
+
+	return communities
 
 def load_save_mat(path="../../data/LJ38",beta=5.0,Nmax=8000,Emax=None,generate=True,TE=False,screen=False):
 	name = path.split("/")[-1]
@@ -525,7 +484,7 @@ def load_mat_gt(keep_ind,path='../data/LJ38/raw/',beta=10.0,Nmax=None,Emax=None)
 	map = -np.ones(oN,int)
 	map[kept] = np.arange(kept.sum())
 
-	B,tau = GT(rm_vec=rm_vec,B=B,tau=1.0/D,block=1,order=None)
+	B,tau = partialGT(rm_vec=rm_vec,B=B,tau=1.0/D,block=1,order=None)
 	N = tau.size
 
 	if not dense:

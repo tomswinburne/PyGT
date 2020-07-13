@@ -1,6 +1,15 @@
 """
 PyGT - Python analysis of metastable Markov models using graph transformation
 ---------------------------------------------------------------------------------------------
+
+.. note::
+	*NOT POSSIBLE YET!*
+	Install ``PyGT`` using the ``pip`` package manager:
+
+	.. code-block:: none
+
+		pip install PyGT
+
 Graph transformation [Wales09]_ is a deterministic dimensionality reduction algorithm
 that iteratively removes nodes from a Markov Chain while preserving the mean first
 passage time (MFPT) and branching probabilites between the retained nodes.
@@ -9,7 +18,6 @@ This package provides an efficient implementation of the graph transformation al
 accelerated via partial block matrix inversions [Swinburne20]_ for abitrary
 discrete-time or continuous-time Markov chains [Kannan20a]_. Code is also provided
 for the calculation of phenomenological rate constants between endpoint macrostates [Wales09]_.
-
 
 We also include code for two different approaches to the dimensionality reduction
 of Markov chains using the graph transformation algorithm. In the first
@@ -26,7 +34,7 @@ better-conditioned for further numerical analysis.
 All methods are discussed in detail in the following manuscripts, which should
 also be cited when using this software:
 
-.. References::
+.. rubric:: References
 
 .. [Wales09] D.J. Wales, *Calculating rate constants and committor probabilities for transition networks by graph transformation*, J. Chemical Physics (2009), https://doi.org/10.1063/1.3133782
 
@@ -39,6 +47,12 @@ also be cited when using this software:
 """
 __version__ = "0.2.0"
 
-from . import core
+from . import GT
 
 from . import io
+
+from . import tools
+
+from . import stats
+
+from . import mfpt
