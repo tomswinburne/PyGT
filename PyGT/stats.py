@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 r"""
 Calculate first passage statistics between macrostates
------------------------------------------------------------------
-Tools to calculate the mean first passage time distribution
+------------------------------------------------------
+Tools to calculate the first passage time distribution
 and phenomenological rate constants between endpoint macrostates
 :math:`\mathcal{A}` and :math:`\mathcal{B}`.
 
@@ -51,7 +51,7 @@ except:
 	have_pathos = False
 
 
-def compute_passage_stats(A_sel, B_sel, pi, Q, dopdf=True,rt=None):
+def compute_passage_stats(A_sel, B_sel, pi, K, dopdf=True,rt=None):
 	r"""Compute the A->B and B->A first passage time distribution,
 	first moment, and second moment using eigendecomposition of a CTMC
 	rate matrix.
@@ -64,8 +64,8 @@ def compute_passage_stats(A_sel, B_sel, pi, Q, dopdf=True,rt=None):
 		boolean array that selects out the B nodes
 	pi : (N,) array-like
 		stationary distribution
-	Q : (N, N) array-like
-		rate matrix
+	K : (N, N) array-like
+		CTMC rate matrix
 
 	dopdf : bool, optional
 		Do we calculate full fpt distribution or just the moments. Defaults=True.
@@ -84,6 +84,8 @@ def compute_passage_stats(A_sel, B_sel, pi, Q, dopdf=True,rt=None):
 		time and first passage time distribution p(t) for A->B and B->A
 
 	"""
+	#multiply by negative 1 so eigenvalues are positive instead of negative
+	Q=-K
 	if rt is None:
 		rt = np.logspace(-3,3,400)
 	#<tauBA>, <tau^2BA>, <tauAB>, <tau^2AB>
@@ -139,7 +141,7 @@ def compute_passage_stats(A_sel, B_sel, pi, Q, dopdf=True,rt=None):
 	else:
 		return tau
 
-def compute_escape_stats(B_sel, pi, Q, tau_escape=None, dopdf=True,rt=None):
+def compute_escape_stats(B_sel, pi, K, tau_escape=None, dopdf=True,rt=None):
 	r"""Compute escape time distribution and first and second moment
 	from the basin specified by `B_sel` using eigendecomposition.
 
@@ -149,14 +151,14 @@ def compute_escape_stats(B_sel, pi, Q, tau_escape=None, dopdf=True,rt=None):
 		boolean array that selects out the nodes in the active basin
 	pi : (N,) array-like
 		stationary distribution for CTMC
-	Q : (N, N) array-like
+	K : (N, N) array-like
 		CTMC rate matrix
 	tau_escape : float
 		mean time to escape from B. Used to calculate the escape
 		time distribution in multiple of tau_escape (p(t/tau_escape).
-		If None, uses the first moment in network defined by Q.
+		If None, uses the first moment in network defined by K.
 	dopdf : bool
-		whether to calculate full escapte time distribution, defaults to True
+		whether to calculate full escape time distribution, defaults to True
 	rt: array, optional
 		Vector of times to evaluate first passage time distribution in multiples
 		of :math:`\left<t\right>` for A->B and B->A. If ``None``, defaults to a logscale
@@ -172,6 +174,8 @@ def compute_escape_stats(B_sel, pi, Q, tau_escape=None, dopdf=True,rt=None):
 		time and escape time distribution :math:`p(t)\left<t\right>`
 
 	"""
+	#multiply by negative 1 so eigenvalues are positive instead of negative
+	Q=-K
 	if rt is None:
 		rt = np.logspace(-3,3,400)
 
@@ -201,14 +205,15 @@ def compute_escape_stats(B_sel, pi, Q, tau_escape=None, dopdf=True,rt=None):
 	else:
 		return tau
 
-def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=True, fullGT=False, pool_size=None, block=10, **kwargs):
+def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=True, fullGT=False, 
+	pool_size=None, block=1, screen=False, **kwargs):
 	r"""
 	Calculate kSS, kNSS, kF, k*, kQSD, and MFPT for the transition path
 	ensemble A_sel --> B_sel from rate matrix K. K can be the matrix of an original
 	Markov chain, or a partially graph-transformed Markov chain. [Wales09]_
 
 	Differs from ``compute_passage_stats()`` in that this function removes all intervening states
-	using GT before computing fpt stats and rates on the fully reduced network
+	using GT before computing FPT stats and rates on the fully reduced network
 	with state space :math:`(\mathcal{A} \cup \mathcal{B})`. This implementation also does not rely on a full
 	eigendecomposition of the non-absorbing matrix; it instead performs a matrix inversion,
 	or if `fullGT` is specified, all nodes in the set :math:`(\mathcal{A} \cup b)^\mathsf{c}`
@@ -285,9 +290,10 @@ def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=Tru
 
 	#use GT to renormalize away all I states
 
-	rB, rtau, rQ = GT.partialGT(rm_vec=inter_region,B=B,tau=tau,rates=True,block=block,**kwargs)
+	rB, rtau, rQ = GT.blockGT(rm_vec=inter_region,B=B,tau=tau,rates=True,block=block,**kwargs)
 	rD = 1.0/rtau
 	rN = rtau.size
+	rQ = -rQ #multiply by -1 so eigenvalues are positive
 
 	#first do A->B direction, then B->A
 	#r_s is the non-absorbing region (A first, then B)
@@ -300,7 +306,7 @@ def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=Tru
 	for i, r_s in enumerate([r_AS, r_BS]) :
 
 		if has_tqdm and screen:
-			pbar = tqdm(total=len(matrix_elements),leave=True,mininterval=0.0,desc='Rates')
+			pbar = tqdm(total=r_s.sum(),leave=True,mininterval=0.0,desc='Rates')
 
 		#local equilibrium distribution in r_s
 		rho = inits[i]
@@ -308,8 +314,8 @@ def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=Tru
 		T_Ba = np.zeros(r_s.sum())
 		if not fullGT:
 			#MFPT calculation via matrix inversion
-			invQ = spla.inv(rQ[r_s,:][:,r_s].todense())
-			tau = invQ.dot(rho).sum(axis=0)
+			invQ = spla.inv(rQ[r_s,:][:,r_s])
+			mfpt = invQ.dot(rho).sum(axis=0)
 			T_Ba = invQ.sum(axis=0)
 		#compare to individual T_Ba quantities from further GT compression
 		else:
@@ -321,7 +327,7 @@ def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=Tru
 				#print(f'Disconnecting source node {aind}')
 				rm_reg[r_s.nonzero()[0][s]] = False
 
-				rfB, tau_Fs = GT.partialGT(rm_vec=rm_reg,B=rB,tau=1.0/rD,rates=False,block=block,screen=screen,Ndense=1)
+				rfB, tau_Fs = GT.blockGT(rm_vec=rm_reg,B=rB,tau=1.0/rD,rates=False,block=block,screen=screen,Ndense=1)
 				#escape time tau_F
 				rfD = 1./tau_Fs
 				rfN = tau_Fs.size
@@ -330,12 +336,12 @@ def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=Tru
 				#tau_a^F / P_Ba^F
 				P_Ba = np.ravel(rfB[~rf_s,:][:,rf_s].sum(axis=0))[0]
 				if screen and has_tqdm:
-					if have_pathos and pool_size>1:
+					if have_pathos and pool_size is not None:
 						pbar.update(pool_size)
 					else:
 						pbar.update(1)
 				return tau_Fs[rf_s][0]/P_Ba
-			if have_pathos and pool_size>1:
+			if have_pathos and pool_size is not None:
 				with Pool(processes=pool_size) as p:
 					T_Ba = p.map(disconnect_sources, [s for s in range(r_s.sum())])
 			else:
@@ -343,8 +349,8 @@ def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=Tru
 					T_Ba[s] = disconnect_sources(s)
 
 			#MFPT_BA = (T_Ba@rho)
-			tau = T_Ba@rho
-		df[f'MFPT{dirs[i]}'] = [tau]
+			mfpt = T_Ba@rho
+		df[f'MFPT{dirs[i]}'] = mfpt
 
 		"""
 			Rates: SS, NSS, QSD, k*, kF
@@ -352,7 +358,7 @@ def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=Tru
 		if not MFPTonly:
 			#eigendecomposition of rate matrix in non-abosrbing region
 			#for A, full_RK[r_A, :][:, r_A] is just a 5x5 matrix
-			l, v = spla.eig(rQ[r_s,:][:,r_s].todense())
+			l, v = spla.eig(rQ[r_s,:][:,r_s])
 			#order the eigenvalues from smallest to largest -- they are positive since Q = D - K instead of K-D
 			qsdo = np.abs(l.real).argsort()
 			nu = l.real[qsdo]
@@ -363,14 +369,14 @@ def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=Tru
 			#committor C^B_A: probability of reaching B before A: 1_B.B_BA^I (eqn 6 of SwinburneW20)
 			C = np.ravel(rB[~r_s,:][:,r_s].sum(axis=0))
 			#for SS, we use waiting times from non-reduced network (DSS)
-			df[f'kSS{dirs[i]}'] = [C.dot(np.diag(rDSS[r_s])).dot(rho)]
+			df[f'kSS{dirs[i]}'] = C.dot(np.diag(rDSS[r_s])).dot(rho)
 			#for NSS, we use waiting times D^I_s from reduced network
-			df[f'kNSS{dirs[i]}'] = [C.dot(np.diag(rD[r_s])).dot(rho)]
+			df[f'kNSS{dirs[i]}'] = C.dot(np.diag(rD[r_s])).dot(rho)
 			#kQSD is same as NSS except using qsd instead of boltzmann
-			df[f'kQSD{dirs[i]}'] = [C.dot(np.diag(rD[r_s])).dot(qsd)]
+			df[f'kQSD{dirs[i]}'] = C.dot(np.diag(rD[r_s])).dot(qsd)
 			#k* is just 1/MFPT
-			df[f'k*{dirs[i]}'] = [1./tau]
+			df[f'k*{dirs[i]}'] = 1./mfpt
 			#and kF is <1/T_Ab>
-			df[f'kF{dirs[i]}'] = [(rho/T_Ba).sum()]
+			df[f'kF{dirs[i]}'] = (rho/T_Ba).sum()
 
 	return df

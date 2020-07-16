@@ -2,8 +2,8 @@
 r"""
 This module reads in the following input files:
 
-Files defining sets of minima
------------------------------
+Files defining sets of nodes
+----------------------------
 min.A: single-column[int], (N_A + 1, )
 	First line contains the number of nodes in community A.
 	Subsequent lines contain the node ID (1-indexed) of the nodes belonging to A.
@@ -20,7 +20,7 @@ min.B: single-column[int], (N_B + 1, )
 	First line contains the number of nodes in community B.
 	Subsequent lines contain the node ID (1-indexed) of the nodes belonging to B.
 
-communities.dat : single-column (nnnodes,)
+communities.dat : single-column[int] (nnnodes,)
 	Each line contains community ID (0-indexed)	of the node specified
 	by the line number in the file
 
@@ -69,7 +69,42 @@ ts.data: multi-column, (nts, 8)
 		-40.9062828304	150.4182291647	2	3	1	8.6169912461	10.3990395875	11.4674850889
 		...
 
-The ktn.io package then calculates transition rates using unimolecular rate theory.
+The `PyGT.io` module then calculates transition rates using unimolecular rate theory.
+
+Files defining a continuous-time Markov chain
+---------------------------------------------
+The following files describe the transition rates between nodes
+and their stationary probabilities in an arbitrary continuous-time Markov chain.
+
+ts_conns.dat : double-column[int], (nedges,)
+    Edge table where each row contains the IDs (1-indexed) of the nodes connected by
+    each edge.
+
+    Example:
+
+    .. code-block:: none
+
+        1   238 #edge connecting node 1 and node 238
+        2   307
+        ...
+
+ts_weights.dat : single-column[float], (2*nedges,)
+    Each pair of lines are the edge weights, :math:`\ln(k_{i\leftarrow j})` and
+    :math:`\ln(k_{j\leftarrow i})` for the :math:`i \leftrightarrow j`
+    bi-directional edge consistent with `ts_conns.dat`.
+
+    Example:
+
+    .. code-block:: none
+
+        -5.6600770665 #ln[k(1<-238)]
+        -9.3074770665 #ln[k(238<-1)]
+        -5.8668770665 #ln[k(1<-307)]
+        -7.3402770665 #ln[k(307<-1)]
+        ...
+
+stat_prob.dat : single-column[float], (nnodes,)
+    Log stationary probabilities of nodes.
 
 """
 
@@ -78,7 +113,7 @@ from io import StringIO
 import numpy as np
 from scipy.sparse import csgraph, csr_matrix, csc_matrix, eye, save_npz, load_npz, diags, issparse
 import warnings
-from .GT import partialGT
+from .GT import blockGT
 
 def load_ktn(path,beta=1.0,Nmax=None,Emax=None,screen=False,discon=False):
 	r""" Load in min.data and ts.data files, calculate rates, and find connected
@@ -90,7 +125,7 @@ def load_ktn(path,beta=1.0,Nmax=None,Emax=None,screen=False,discon=False):
 		path to min.data and ts.data files
 
 	beta : float, optional
-		value for 1 / (k_B T). Default = 1.0
+		value for :math:`1 / (k_B T)`. Default = 1.0
 
 	Nmax : int, optional
 		maximum number of minima to include in KTN. Default = None (i.e. infinity)
@@ -240,9 +275,9 @@ def load_ktn(path,beta=1.0,Nmax=None,Emax=None,screen=False,discon=False):
 
 
 def load_ktn_AB(data_path,retained=None):
-	""" Read in A_states and B_states from min.A and min.B files, only keeping
+	""" Read in `A_states` and `B_states` from min.A and min.B files, only keeping
 	the states that are part of the largest connected set, as specified by
-	retained.
+	`retained`.
 
 	Parameters
 	----------
@@ -291,7 +326,7 @@ def read_communities(file, retained, screen=False):
 
 	Parameters
 	----------
-	file : .dat file
+	file : str
 		single-column file containing community IDs of each minimum
 
 	retained : (N,) boolean array
@@ -323,3 +358,52 @@ def read_communities(file, retained, screen=False):
 			print(f'Community {ci}: {keep.sum()}')
 
 	return communities
+
+
+def read_ktn_info(path, suffix=''):
+    """ Read input files stat_prob.dat, ts_weights.dat, and ts_conns.dat
+    and return a rate matrix and vector of stationary probabilities.
+    
+    Parameters
+    ----------
+    path : str
+        path to directory containing stat_prob.dat, ts_weights.dat, and
+        ts_conns.dat files.
+    suffix : str
+        Suffix for file names, i.e. 'ts_weights{suffix}.dat'. Defaults to ''.
+
+    Returns
+    -------
+    pi : array-like (nnodes,)
+        vector of stationary probabilities.
+    K : array-like (nnodes,nnodes)
+        CTMC rate matrix in dense format.
+    
+    """
+
+    logpi = np.loadtxt(f'{path}/stat_prob{suffix}.dat')
+    pi = np.exp(logpi)
+    nnodes = len(pi)
+    assert(abs(1.0 - np.sum(pi)) < 1.E-10)
+    logk = np.loadtxt(f'{path}/ts_weights{suffix}.dat', 'float')
+    k = np.exp(logk)
+    tsconns = np.loadtxt(f'{path}/ts_conns{suffix}.dat', 'int')
+    Kmat = np.zeros((nnodes, nnodes))
+    for i in range(tsconns.shape[0]):
+        Kmat[tsconns[i,1]-1, tsconns[i,0]-1] = k[2*i]
+        Kmat[tsconns[i,0]-1, tsconns[i,1]-1] = k[2*i+1]
+    #set diagonals
+    for i in range(nnodes):
+        Kmat[i, i] = 0.0
+        Kmat[i, i] = -np.sum(Kmat[:, i])
+    #identify isolated minima (where row of Kmat = 0)
+    #TODO: identify unconnected minima
+    Kmat_nonzero_rows = np.where(~np.all(Kmat==0, axis=1))
+    Kmat_connected = Kmat[np.ix_(Kmat_nonzero_rows[0],
+                                    Kmat_nonzero_rows[0])]
+    pi = pi[Kmat_nonzero_rows]/np.sum(pi[Kmat_nonzero_rows])
+    assert(len(pi) == Kmat_connected.shape[0])
+    assert(Kmat_connected.shape[0] == Kmat_connected.shape[1])
+    assert(np.all(np.abs(Kmat_connected@pi)<1.E-10))
+
+    return pi, Kmat_connected

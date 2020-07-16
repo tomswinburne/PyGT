@@ -57,7 +57,7 @@ def full_MFPT_matrix(B, tau, pool_size=1, screen=False, **kwargs):
 	B : sparse or dense matrix (N,N)
 		branching probability matrix.
 	tau : array-like (N,)
-		vector of escape rates, i.e. inverse waiting times from each node.
+		vector of waiting times from each node.
 	pool_size : int,optional
 		Number of cores over which to parallelize computation.
 		only attempted if ``pool_size>1`` and ``pathos`` package is installed.
@@ -107,11 +107,20 @@ def full_MFPT_matrix(B, tau, pool_size=1, screen=False, **kwargs):
 
 	return mfpt
 
-def community_MFPT_matrix(communities, B, tau, pi, MS_approx=False, pool_size=1, screen=False,**kwargs):
+def community_MFPT_matrix(communities, B, tau, pi, MS_approx=False, diagzero=True, pool_size=1, screen=False,**kwargs):
 	r"""Compute matrix of effective inter-macrostate MFPTs with GT, defined as
-	:math:`\mathcal{T}_{AB} = \sum_{i\in A, j\in B} \pi_i,\pi_j\mathcal{T}_{ij} / (\sum_{i\in A}\pi_i)/(\sum_{j\in B}\pi_j)`.
-	This can be shown to satisfy the Kemeny constant condition, and thus is
-	suitable for producing a coarse grained rate matrix. [Kannan20a]_
+	
+	.. math::
+
+		\begin{equation} \label{eq:PT}
+		[ \mathcal{T}_\mathrm{C} ]_{IJ} = \frac{1}{\Pi_I \Pi_J} \sum_{i \in I} \sum_{j \in J} \pi_i \mathcal{T}_{ij} \pi_j - \frac{1}{\Pi_I \Pi_I} \sum_{i \in I} \sum_{i^\prime \in I} \pi_{i^\prime} \mathcal{T}_{i^\prime i} \pi_i,
+		\end{equation}
+
+
+	This matrix has diagonal elements equal to zero and can be shown to satisfy the Kemeny constant constraint, and thus is
+	suitable for producing a coarse grained rate matrix. If `diagzero` is set to False, an alternative matrix is computed
+	where the second term of the above equation is ignored so that the diagonal elements of the matrix will no longer
+	be zero. This alternative matrix also satisfies the Kemeny constant constraint. [Kannan20a]_
 
 	Parameters
 	----------
@@ -125,12 +134,14 @@ def community_MFPT_matrix(communities, B, tau, pi, MS_approx=False, pool_size=1,
 	tau : array-like (N,), float
 		vector of waiting times from each node.
 	pi : array-like (N,), float
-		microscopic stationary probability distribution
+		stationary probability distribution of microstates
 
 	MS_approx : bool, optional
 		If True, assume all communities are sufficiently metastable to
 		use only one microstate pair per community pair, a much more
 		efficient but approximate computation. [Kannan20a]_
+	diagzero : bool
+		Choose the inter-community MFPTs such that the diagonal elements are zero. Defaults to True.
 
 	pool_size : int,optional
 		Number of cores over which to parallelize computation. Default=1
@@ -161,6 +172,9 @@ def community_MFPT_matrix(communities, B, tau, pi, MS_approx=False, pool_size=1,
 		tauM = full_MFPT_matrix(B,tau,pool_size,screen=screen)
 
 		c_tau = A_pi@tauM@A_pi.T
+		#ensure diagonal elements are zero
+		if diagzero:
+			c_tau -= np.diag(A_pi@tauM@A_pi.T).reshape(Nc,1)@np.ones((1,Nc))
 
 	else:
 		if screen and has_tqdm:
@@ -169,7 +183,7 @@ def community_MFPT_matrix(communities, B, tau, pi, MS_approx=False, pool_size=1,
 		c_tau = np.zeros((Nc,Nc))
 		for i,cA in enumerate(communities.keys()):
 			for j,cB in enumerate(communities.keys()):
-				if i<=j:
+				if i<j or (i==j and not diagzero):
 					# select lowest free energy state
 					i_s = np.arange(N)[communities[cA]][pi[communities[cA]].argmax()]
 					j_s = np.arange(N)[communities[cB]][pi[communities[cB]].argmax()]
@@ -180,7 +194,7 @@ def community_MFPT_matrix(communities, B, tau, pi, MS_approx=False, pool_size=1,
 			pbar.close()
 	return c_pi, c_tau
 
-def compute_MFPT(i, j, B, tau, block=10, **kwargs):
+def compute_MFPT(i, j, B, tau, block=1, **kwargs):
 	r"""Compute the inter-microstate :math:`i\leftrightarrow j` MFPT using GT.
 	Called by ``full_MFPT_matrix()``. Unlike ``compute_rates()`` function,
 	which assumes there is at least 2 microstates in the absorbing macrostate,
@@ -197,7 +211,7 @@ def compute_MFPT(i, j, B, tau, block=10, **kwargs):
 	B : sparse or dense matrix (N,N)
 		branching probability matrix.
 	tau : array-like (N,)
-		vector of escape rates, i.e. inverse waiting times from each node.
+		vector of waiting times from each node.
 	block : int, optional
 		block size for matrix generalization GT procedure.
 		Reverts to slower but guaranteed stable one-by-one GT (block=1)
@@ -220,7 +234,7 @@ def compute_MFPT(i, j, B, tau, block=10, **kwargs):
 	#GT away all I states
 	inter_region = ~(AS+BS)
 	#left with a 2-state network
-	rB, tau_Fs = GT.partialGT(rm_vec=inter_region,B=B,tau=tau,rates=False,block=block,**kwargs)
+	rB, tau_Fs = GT.blockGT(rm_vec=inter_region,B=B,tau=tau,rates=False,block=block,**kwargs)
 	rD = 1.0/tau_Fs
 	rN = tau_Fs.size
 	#remaining network only has 1 in A and 1 in B = 2 states
