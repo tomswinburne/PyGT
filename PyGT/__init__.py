@@ -23,7 +23,7 @@ The original Markov chain does not need to satisfy detailed balance.
 This package provides an efficient implementation of the graph transformation algorithm,
 accelerated via partial block matrix inversions [Swinburne20a]_ for abitrary
 discrete-time or continuous-time Markov chains [Kannan20a]_. Code is also provided
-for the calculation of phenomenological rate constants between endpoint macrostates [Wales09]_.
+for the calculation of first passage time statistics and phenomenological rate constants between endpoint macrostates [Wales09]_.
 
 We also include code for two different approaches to the dimensionality reduction
 of Markov chains using the graph transformation algorithm. In the first
@@ -48,9 +48,12 @@ also be cited when using this software:
 
 .. [Swinburne20b] T.D. Swinburne, D. Kannan, D.J. Sharpe and D.J. Wales, *Rare Events and First Passage Time Statistics From the Energy Landscape*, J. Chemical Physics (2020)
 
-.. [Kannan20a] D. Kannan, D.J. Sharpe, T.D. Swinburne and D.J. Wales, *Calculating mean first passage time matricies of discrete- and continuous- time Markov chains using graph transformation*, In Prep. (2020)
+.. [Kannan20a] D. Kannan, D.J. Sharpe, T.D. Swinburne and D.J. Wales,
+*Dimensionality reduction of Markov chains using mean first passage times with
+graph transformation*, In Prep. (2020)
 
-.. [Kannan20b] D. Kannan, D.J. Sharpe, T.D. Swinburne and D.J. Wales, *Dimensionality reduction of complex networks with graph transformation* In Prep. (2020)
+.. [Kannan20b] D. Kannan, D.J. Sharpe, T.D. Swinburne and D.J. Wales,
+*Dimensionality reduction of complex networks with graph transformation*, In Prep. (2020)
 
 """
 __version__ = "0.2.0"

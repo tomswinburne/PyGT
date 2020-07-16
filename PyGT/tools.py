@@ -1,6 +1,9 @@
 r"""
+Optimal Markovian coarse-graining for a given community structure
+-----------------------------------------------------------------
+
 Various functions to analyze Markov chains, including
-estimating a coarse-grained model from a given community structure.
+estimating the optimal coarse-grained CTMC for a given community structure.
 
 """
 from scipy.sparse import diags, issparse, csgraph, csr_matrix

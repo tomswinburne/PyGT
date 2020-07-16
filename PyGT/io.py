@@ -320,7 +320,7 @@ def load_ktn_AB(data_path,retained=None):
 
 def read_communities(file, retained, screen=False):
 	"""Read in a single column file called communities.dat where each line
-	is the community ID (zero-indexed) of the minima given by the line
+	is the community ID (zero-indexed) of the nodes given by the line
 	number. Produces boolean arrays, one per community, selecting out the
 	nodes that belong to each community.
 
