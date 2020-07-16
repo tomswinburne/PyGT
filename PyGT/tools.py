@@ -254,8 +254,7 @@ def load_DTMC(T, tau_lag):
 	assert(np.all(np.abs(np.ones(nnodes) - T.sum(axis=0))<1.E-10))
 	tau = np.tile(tau_lag, nnodes)
 	B=T
-<<<<<<< HEAD
-	return B, escape_rates
+	return B, tau
 
 def eig_wrapper(M):
 	r"""Wrapper of ``scipy.linalg.eig`` that returns real eigenvalues and
@@ -279,8 +278,7 @@ def eig_wrapper(M):
     dp = np.diag(1.0/np.sqrt(np.diag((w.T@v).real)))
     nu,v,w = nu.real, (v.real@dp).T, w.real@dp
     return nu,v,w
-=======
-	return B, tau
+
 
 
 class Analyze_KTN(object):
