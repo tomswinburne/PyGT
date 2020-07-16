@@ -190,7 +190,7 @@ def blockGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=False)
 			rmb = 1
 			retry += 1
 			if screen and has_tqdm:
-				pobar = tqdm(total=rm.sum(),leave=False,mininterval=0.0,desc="STATE-BY-STATE SUBLOOP")
+				pobar = tqdm(total=rm.sum(),leave=True,mininterval=0.0,desc="STATE-BY-STATE SUBLOOP")
 	if screen and has_tqdm:
 		pbar.close()
 
@@ -279,6 +279,9 @@ def singleGT(rm_vec,B,tau):
 		# Float
 		Bs[Bd<0.99] = 1.0-Bd[Bd<0.99]
 		iGxx = np.diag(Bs) - Bxxnd
+		cond = np.linalg.cond(iGxx)
+		if cond>1.e15:
+			return B,tau,False
 		try:
 			Gxx = np.linalg.inv(iGxx)
 		except np.linalg.LinAlgError as err:
