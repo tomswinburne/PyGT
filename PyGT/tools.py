@@ -2,6 +2,7 @@ r"""
 Various functions to analyze transition matricies
 """
 from scipy.sparse import diags, issparse, csgraph, csr_matrix
+import scipy.linalg as spla
 import numpy as np
 
 
@@ -118,7 +119,7 @@ def make_fastest_path(G,i,f,depth=1,limit=None):
 	Wrapper for `scipy.sparse.csgraph.shortest_path` which returns node indicies
 	on as-determined shortest i->f path and those `depth` connections away.
 	Used to determine which nodes to remove by graph transformation during
-	sensitivity analysis applied to kinetic transition networks [Swinburne20]_.
+	sensitivity analysis applied to kinetic transition networks [Swinburne20a]_.
 
 
 
@@ -238,3 +239,26 @@ def load_DTMC(T, tau_lag):
 	escape_rates = np.tile(1./tau_lag, nnodes)
 	B=T
 	return B, escape_rates
+
+def eig_wrapper(M):
+	r"""Wrapper of ``scipy.linalg.eig`` that returns real eigenvalues and
+	orthonormal left and right eigenvector pairs
+
+	Parameters
+	----------
+	M : (N,N) dense matrix
+
+	Returns
+	-------
+	nu : (N,) array-like
+		Real component of eigenvalues
+	v : (N,N) array-like
+		Matrix of left eigenvectors
+	w : (N,N) array-like
+		Matrix of right eigenvectors
+
+	"""
+	nu,v,w = spla.eig(M,left=True)
+    dp = np.diag(1.0/np.sqrt(np.diag((w.T@v).real)))
+    nu,v,w = nu.real, (v.real@dp).T, w.real@dp
+    return nu,v,w

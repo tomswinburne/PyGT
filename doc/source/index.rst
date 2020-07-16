@@ -15,6 +15,7 @@
    GT.rst
    stats.rst
    mfpt.rst
+   spectral.rst
    tools.rst
 
 

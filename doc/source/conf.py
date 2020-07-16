@@ -52,6 +52,8 @@ extensions = [
     'matplotlib.sphinxext.plot_directive'
     ]
 
+autodoc_member_order = 'bysource'
+
 #napoleon settings
 napoleon_google_docstring = False
 napoleon_numpy_docstring = True

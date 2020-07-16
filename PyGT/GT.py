@@ -32,7 +32,7 @@ to
 A matrix version of the above equations permits the removal of blocks of nodes
 simulatenously. The code monitors for stability in the inversion
 algorithm, to allow for for one-by-one node removal instead if a block is
-ill-conditioned. [Swinburne20]_
+ill-conditioned. [Swinburne20a]_
 
 """
 
@@ -230,7 +230,7 @@ def singleGT(rm_vec,B,tau):
 	r"""
 	Single iteration of GT algorithm used by main GT function.
 	Either removes a single node with float precision correction [Wales09]_
-	or attemps node removal via	matrix inversion [Swinburne20]_. In the latter
+	or attemps node removal via	matrix inversion [Swinburne20a]_. In the latter
 	case, if an error is raised by ``np.linalg.inv`` this is communicated
 	through ``success``
 

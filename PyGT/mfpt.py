@@ -118,6 +118,8 @@ def community_MFPT_matrix(communities, B, tau, pi, MS_approx=False, pool_size=1,
 	communities : dict
 		mapping from community ID (0-indexed) to a boolean array
 		of shape (N, ) which selects out the states in that community.
+		Communities must be disjoint.
+		Communities must be disjoint.
 	B : sparse or dense matrix (N,N)
 		branching probability matrix.
 	tau : array-like (N,), float
@@ -157,7 +159,7 @@ def community_MFPT_matrix(communities, B, tau, pi, MS_approx=False, pool_size=1,
 		# (Nc,N) projection tensor of stationary distribution
 		A_pi = np.r_[[(pi * communities[c] )/pi[communities[c]].sum() for c in ck]]
 		tauM = full_MFPT_matrix(B,tau,pool_size,screen=screen)
-		
+
 		c_tau = A_pi@tauM@A_pi.T
 
 	else:
