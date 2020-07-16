@@ -48,12 +48,9 @@ also be cited when using this software:
 
 .. [Swinburne20b] T.D. Swinburne, D. Kannan, D.J. Sharpe and D.J. Wales, *Rare Events and First Passage Time Statistics From the Energy Landscape*, J. Chemical Physics (2020)
 
-.. [Kannan20a] D. Kannan, D.J. Sharpe, T.D. Swinburne and D.J. Wales,
-*Dimensionality reduction of Markov chains using mean first passage times with
-graph transformation*, In Prep. (2020)
+.. [Kannan20a] D. Kannan, D.J. Sharpe, T.D. Swinburne and D.J. Wales, *Dimensionality reduction of Markov chains using mean first passage times with graph transformation*, In Prep. (2020)
 
-.. [Kannan20b] D. Kannan, D.J. Sharpe, T.D. Swinburne and D.J. Wales,
-*Dimensionality reduction of complex networks with graph transformation*, In Prep. (2020)
+.. [Kannan20b] D. Kannan, D.J. Sharpe, T.D. Swinburne and D.J. Wales, *Dimensionality reduction of complex networks with graph transformation*, In Prep. (2020)
 
 """
 __version__ = "0.2.0"
