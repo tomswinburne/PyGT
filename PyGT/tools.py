@@ -6,19 +6,16 @@ Various functions to analyze Markov chains, including
 estimating a coarse-grained model from a given community structure.
 
 """
-<<<<<<< HEAD
 from scipy.sparse import diags, issparse, csgraph, csr_matrix
 import scipy.linalg as spla
 import numpy as np
-=======
->>>>>>> 6c7ddec8917684937284db963a2695873a89078a
 
 from . import mfpt as fpt
 
 import numpy as np
 from numpy.linalg import inv
-import scipy 
-import scipy.linalg as spla 
+import scipy
+import scipy.linalg as spla
 from scipy.sparse import diags, issparse, csgraph, csr_matrix
 from scipy.sparse.linalg import eigs
 from scipy.linalg import eig, expm
@@ -287,7 +284,7 @@ def eig_wrapper(M):
 
 
 class Analyze_KTN(object):
-	r""" Estimate a coarse-grained continuous-time Markov chain 
+	r""" Estimate a coarse-grained continuous-time Markov chain
 	given a partiioning :math:`\mathcal{C} = \{I, J, ...\}` of the :math:`V` nodes into :math:`N<V` communities.
 	Various formulations for the inter-community rates are implemented, including the local
 	equilibrium approximation, Hummer-Szabo relation, and other routes to obtain the optimal
@@ -298,7 +295,7 @@ class Analyze_KTN(object):
 	path : str or Path object
 		path to directory with all relevant files
 	K : array-like (nnodes, nnodes)
-		Rate matrix with elements :math:`K_{ij}` corresponding to the `i \leftarrow j` transition rate, 
+		Rate matrix with elements :math:`K_{ij}` corresponding to the `i \leftarrow j` transition rate,
 		and diagonal elements :math:`K_{ii} = -\sum_\gamma K_{\gamma i}` such that the columns sum to zero.
 	pi : array-like (nnodes,)
 		Stationary distribution of nodes, :math:`\pi_i`, i.e. vector of equilibrium occupation probabilities.
@@ -307,7 +304,7 @@ class Analyze_KTN(object):
 	communities : dict
 		dictionary mapping community IDs (1-indexed) to node IDs (1-indexed).
 	commdata : str
-		Filename, located in directory specified by `path`, of a single-column file where 
+		Filename, located in directory specified by `path`, of a single-column file where
 		each line contains the community ID (0-indexed) of the node specified
 		by the line number in the file.
 
@@ -319,7 +316,7 @@ class Analyze_KTN(object):
 
 	def __init__(self, path, K=None, pi=None, commpi=None, communities=None,
 				 commdata=None):
-		self.path = Path(path) 
+		self.path = Path(path)
 		self.K = K
 		self.pi = pi
 		self.commpi = commpi
@@ -340,7 +337,7 @@ class Analyze_KTN(object):
 
 		if self.K is None:
 			raise ValueError("The attributes K, pi, and commpi must be specified.")
-		
+
 		N = len(self.communities)
 		Rlea = np.zeros((N,N))
 
@@ -351,7 +348,7 @@ class Analyze_KTN(object):
 					cj = np.array(self.communities[j+1]) - 1
 					Rlea[i, j] = np.sum(self.K[np.ix_(ci, cj)]@self.pi[cj]) / self.commpi[j]
 					Rlea[j, i] = np.sum(self.K[np.ix_(cj, ci)]@self.pi[ci]) / self.commpi[i]
-		
+
 		for i in range(N):
 			Rlea[i, i] = -np.sum(Rlea[:, i])
 		return Rlea
@@ -392,16 +389,16 @@ class Analyze_KTN(object):
 		return R_HS
 
 	def construct_coarse_rate_matrix_KKRA(self, mfpt=None, GT=False, **kwargs):
-		r"""Calculate optimal coarse-grained rate matrix using Eqn. (79) 
+		r"""Calculate optimal coarse-grained rate matrix using Eqn. (79)
 		of Kells et al. *J. Chem. Phys.* (2020), aka the KKRA expression
 		in Eqn. (10) of  [Kannan20a]_.
-		
+
 		Parameters
 		----------
 		mfpt : (nnodes, nnodes)
 			Matrix of inter-microstate MFPTs between all pairs of nodes. Defaults to None.
 		GT : bool
-			If True, matrix of inter-microstate MFPTs is computed with GT. 
+			If True, matrix of inter-microstate MFPTs is computed with GT.
 			Kwargs can then be specified for GT (such as the pool_size for parallelization).    Defaults to False.
 
 		"""
@@ -437,7 +434,7 @@ class Analyze_KTN(object):
 
 	def get_intermicrostate_mfpts_linear_solve(self):
 		r"""Calculate the matrix of inter-microstate MFPTs between all pairs of nodes
-		by solving a system of linear equations given by Eq.(8) of 
+		by solving a system of linear equations given by Eq.(8) of
 		[Kannan20a]_."""
 
 		K = self.K
@@ -452,7 +449,7 @@ class Analyze_KTN(object):
 						mfpt[i][j] = -spla.solve(K[np.arange(n)!=i, :][:, np.arange(n)!=i],
 												(np.arange(n)==j)[np.arange(n)!=i]).sum()
 					except scipy.linalg.LinAlgWarning as err:
-						raise Exception('LinAlgWarning') 
+						raise Exception('LinAlgWarning')
 		return mfpt
 
 	def get_intermicrostate_mfpts_fundamental_matrix(self):
@@ -470,7 +467,7 @@ class Analyze_KTN(object):
 	def get_intercommunity_MFPTs_linear_solve(self):
 		r"""Calculate the true MFPTs between communities by inverting the non-absorbing
 		rate matrix. Equivalent to Eqn. (14) in Swinbourne & Wales *JCTC* (2020)."""
-	   
+
 		K = ktn.K
 		pi = ktn.pi
 		n = K.shape[0]
@@ -495,7 +492,7 @@ class Analyze_KTN(object):
 	def get_intercommunity_weighted_MFPTs(self, mfpt, diagzero=True):
 		r"""Comppute the matrix :math:`\widetilde{\mathcal{T}}_{\rm C}` of appropriately weighted
 		inter-community MFPTs, as defined in Eq. (18) in [Kannan20a]_.
-		
+
 		Parameters
 		----------
 		mfpt : array-like (N,N)
@@ -504,7 +501,7 @@ class Analyze_KTN(object):
 			Whether to define the inter-community weighted MFPTs such as the diagonal elements are zero. Defaults to True.
 
 		"""
-		
+
 		pi = self.pi
 		commpi = self.commpi
 		N = len(self.communities)
@@ -522,7 +519,7 @@ class Analyze_KTN(object):
 	def get_timescale_error(self, m, K, R):
 		""" Calculate the ith timescale error for i in {1,2,...m} of a
 		coarse-grained rate matrix R compared to the full matrix K.
-		
+
 		Parameters
 		----------
 		m : int
@@ -536,9 +533,9 @@ class Analyze_KTN(object):
 		-------
 		timescale_errors : np.ndarray[float] (m-1,)
 			Errors for m-1 slowest timescales
-		
+
 		"""
-		
+
 		ncomms = len(self.communities)
 		if m >= ncomms:
 			raise ValueError('The number of dominant eigenvectors must be' \
@@ -553,10 +550,10 @@ class Analyze_KTN(object):
 
 	def get_eigenfunction_error(self, m, K, R):
 		r""" Calculate the :math:`i^{\rm th}` eigenvector approximation error for :math:`i \in {1, 2,
-		... m}` of a coarse-grained rate matrix `R` by comparing its eigenvector 
+		... m}` of a coarse-grained rate matrix `R` by comparing its eigenvector
 		to the correspcorresponding eigenvector of the full matrix.
 		"""
-		
+
 		ncomms = len(self.communities)
 		if m >= ncomms:
 			raise ValueError('The number of dominant eigenvectors must be' \
@@ -576,7 +573,7 @@ class Analyze_KTN(object):
 	def get_comm_stat_probs(self, logpi, log=True):
 		""" Calculate the community stationary probabilities by summing over
 		the stationary probabilities of the nodes in each community.
-		
+
 		Parameters
 		----------
 		logpi : list (nnodes,)
@@ -597,7 +594,7 @@ class Analyze_KTN(object):
 		logcommpi = np.zeros((ncomms,))
 		for ci in self.communities:
 			#zero-indexed list of minima in community ci
-			nodelist = np.array(self.communities[ci]) - 1 
+			nodelist = np.array(self.communities[ci]) - 1
 			logcommpi[ci-1] = -np.inf
 			for node in nodelist:
 				logcommpi[ci-1] = np.log(np.exp(logcommpi[ci-1]) + np.exp(logpi[node]))
@@ -612,7 +609,7 @@ class Analyze_KTN(object):
 		"""Read in a single column file called communities.dat where each line
 		is the community ID (zero-indexed) of the minima given by the line
 		number.
-		
+
 		Parameters
 		----------
 		commdat : .dat file
