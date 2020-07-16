@@ -46,7 +46,7 @@ also be cited when using this software:
 
 .. [Swinburne20] T.D. Swinburne and D.J. Wales, *Defining, Calculating, and Converging Observables of a Kinetic Transition Network*, J. Chemical Theory and Computation (2020), https://doi.org/10.1021/acs.jctc.9b01211
 
-.. [Kannan20a] D. Kannan, D.J. Sharpe, T.D. Swinburne, D.J. Wales, *Calculating mean first passage time matricies of discrete- and continuous- time Markov chains using graph transformation*, In Prep. (2020)
+.. [Kannan20a] D. Kannan, D.J. Sharpe, T.D. Swinburne, D.J. Wales, *Dimensionality reduction of Markov chains using mean first passage times with graph transformation*, In Prep. (2020)
 
 .. [Kannan20b] D. Kannan, D.J. Sharpe, T.D. Swinburne, D.J. Wales, *Dimensionality reduction of complex networks with graph transformation* In Prep. (2020)
 

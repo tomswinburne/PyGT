@@ -3,10 +3,10 @@ r"""
 Iteratively remove nodes from a Markov chain with graph transformation
 ----------------------------------------------------------------------
 
-This module exploits the graph transformation algorithm to eliminate
+This module implements the graph transformation algorithm to eliminate
 nodes from a discrete- or continuous-time Markov chain. When the removed nodes
-are well chosen the resulting network is less sparse, of lower dimensionality,
-and is generally better-conditioned. See `PyGT.analysis` for various tools
+are chosen judiciously, the resulting network is less sparse, of lower dimensionality,
+and is generally better-conditioned. See `PyGT.tools` for various tools
 which help select nodes to eliminate, namely, ranking nodes based on their mean
 waiting times and equilibrium occupation probabilities. [Kannan20b]_
 
@@ -16,7 +16,7 @@ the :math:`i \leftarrow j` inter-microstate transition rate and :math:`\tau_j`
 is the mean waiting time of node :math:`j`. In a discrete-time Markov chain,
 :math:`\textbf{B}` is replaced with the discrete-time transition probability
 matrix :math:`\textbf{T}(\tau)` and the waiting times of all nodes are uniform,
-equal to :math:`\tau`.
+equal to the lag time :math:`\tau`.
 
 In each iteration of GT, a single node :math:`x` is removed, and the branching
 probabilities and waiting times of the neighboring nodes are updated according
@@ -63,7 +63,7 @@ except:
 
 
 
-def partialGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=False):
+def blockGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=False):
 
 	r"""
 	Main function for GT code, production of a reduced matrix by graph transformation.
@@ -214,7 +214,7 @@ def partialGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=Fals
 	if dense:
 		B = B.todense()
 	if rates:
-		K = omB.dot(diags(1.0/tau)) # (1-B).D = K ( :) )
+		K = -omB.dot(diags(1.0/tau)) # (B-1).D = K ( :) )
 		if dense:
 			K = K.todense()
 
