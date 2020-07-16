@@ -63,7 +63,7 @@ except:
 
 
 
-def blockGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=False):
+def blockGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=False,cond_thresh=1.0e13):
 
 	r"""
 	Main function for GT code, production of a reduced matrix by graph transformation.
@@ -96,7 +96,11 @@ def blockGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=False)
 	screen: bool, optional
 			Whether to print progress of GT. Default = False
 
-
+	cond_thresh: float, optional
+			Threshold condition number below which block matrix inversion
+			is attempted. If block condition number is too high, conventional
+			GT is used to remove nodes, which is less efficient but more stable.
+			Default=``1e13``
 	Returns
 	-------
 	B:		(N',N') dense or sparse matrix
@@ -172,7 +176,7 @@ def blockGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=False)
 			order[~rm_vec] = order.max()+1
 			rm[order.argsort()[:min(block,NI)]] = True
 
-		B, tau, success = singleGT(rm,B,tau)
+		B, tau, success = singleGT(rm,B,tau,cond_thresh)
 
 		if success:
 			if screen and has_tqdm:
@@ -190,7 +194,7 @@ def blockGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=False)
 			rmb = 1
 			retry += 1
 			if screen and has_tqdm:
-				pobar = tqdm(total=rm.sum(),leave=True,mininterval=0.0,desc="STATE-BY-STATE SUBLOOP")
+				pobar = tqdm(total=rm.sum(),leave=True,mininterval=0.0,desc="1-by-1 GT subloop")
 	if screen and has_tqdm:
 		pbar.close()
 
@@ -226,7 +230,7 @@ def blockGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=False)
 	return B,tau
 
 
-def singleGT(rm_vec,B,tau):
+def singleGT(rm_vec,B,tau,cond_thresh=1.0e13):
 	r"""
 	Single iteration of GT algorithm used by main GT function.
 	Either removes a single node with float precision correction [Wales09]_
@@ -245,6 +249,10 @@ def singleGT(rm_vec,B,tau):
 	tau:	(N,) array-like
 	     	Array of waiting times
 
+	cond_thresh: float, optional
+			Threshold condition number below which matrix inversion is attempted.
+			If condition number is higher than ``cond_thresh``,
+			``singleGT()`` returns ``success=False``. Default=``1.0e13``
 	Returns
 	-------
 	B:		(N',N') dense or sparse matrix
@@ -254,7 +262,8 @@ def singleGT(rm_vec,B,tau):
 	     	Array of N'<N renormalized waiting times
 
 	success: bool
-			 False if ``LinAlgError`` raised by ``np.linalg.inv``
+			 False if estimated condition number is too high or
+			 ``LinAlgError`` raised by ``np.linalg.inv``
 
 	"""
 
@@ -279,8 +288,7 @@ def singleGT(rm_vec,B,tau):
 		# Float
 		Bs[Bd<0.99] = 1.0-Bd[Bd<0.99]
 		iGxx = np.diag(Bs) - Bxxnd
-		cond = np.linalg.cond(iGxx)
-		if cond>1.e15:
+		if np.linalg.cond(iGxx)>cond_thresh:
 			return B,tau,False
 		try:
 			Gxx = np.linalg.inv(iGxx)
