@@ -275,9 +275,9 @@ def eig_wrapper(M):
 
 	"""
 	nu,v,w = spla.eig(M,left=True)
-    dp = np.diag(1.0/np.sqrt(np.diag((w.T@v).real)))
-    nu,v,w = nu.real, (v.real@dp).T, w.real@dp
-    return nu,v,w
+	dp = np.diag(1.0/np.sqrt(np.diag((w.T@v).real)))
+	nu,v,w = nu.real, (v.real@dp).T, w.real@dp
+	return nu,v,w
 
 
 
@@ -628,4 +628,3 @@ class Analyze_KTN(object):
 				else:
 					communities[groupID] = [minID]
 		return communities
->>>>>>> 6c7ddec8917684937284db963a2695873a89078a

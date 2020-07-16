@@ -33,8 +33,8 @@ In particular, the set is projected such that the slowest eigenvector pair
 becomes the LEA pair :math:`({\bf 1}_J,\hat{\pi}_J)`, allowing interpolation
 between the LEA and the exact solution
 
-The vector pairs are chosen until the first ``nmodes`` moments of the
-community escape time is reprodued to a relative error of ``obs_err``.
+The vector pairs are chosen until the first ``nmoments`` moments of the
+community escape time is reprodued to a relative error of ``tol``.
 Further details can be found in [Swinburne20b]_.
 
 ``PyGT.spectral.project()`` returns left and right projections matricies
@@ -49,7 +49,7 @@ Further details can be found in [Swinburne20b]_.
 		,\quad N'\leq N
 	\end{equation}
 
-With an error tolerance ``obs_err=0`` we recover the exact solution,
+With an error tolerance ``tol=0`` we recover the exact solution,
 i.e. :math:`N'\to N, {\bf Y}\to\mathbb{I}_N, {\bf X}\to\mathbb{I}_N`
 
 ``PyGT.spectral.reduce()`` uses these matricies to produce the reduced rate
@@ -278,17 +278,17 @@ def project(communities,  pi, Q, style="specBP",nmoments=2,tol=0.01):
 		nu,v,w = tools.eig_wrapper(bM)
 		wv = (w.sum(axis=0)) * (v@brho)
 
-		ltauv = np.zeros((wv.size,nmodes+2))
+		ltauv = np.zeros((wv.size,nmoments+2))
 		ltauv[:,0] = wv * nu / (wv*nu).sum()
 		ltauv[:,1] = wv
 
-		for inm in range(nmodes):
+		for inm in range(nmoments):
 			lv = wv / nu**(inm+1)
 			ltauv[:,inm+2] = lv/lv.sum()
 		reconst = np.zeros(ltauv.shape[1])
 
 
-		if obs_err==0.0:
+		if tol==0.0:
 			evorder = np.abs(wv).argsort()[::-1]
 		else:
 			evorder = np.abs(ltauv.prod(axis=1)).argsort()[::-1]
@@ -324,8 +324,7 @@ def project(communities,  pi, Q, style="specBP",nmoments=2,tol=0.01):
 			reconst += ltauv[evind]
 			proj_X.append(vecs[:,0])
 			proj_Y.append(vecs[:,1])
-			proj_c[i]+=1.0
-			if np.abs(reconst-1.0).max()<obs_err:
+			if np.abs(reconst-1.0).max()<tol:
 				#print(reconst)
 				break
 
