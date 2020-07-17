@@ -208,11 +208,22 @@ def compute_escape_stats(B_sel, pi, K, tau_escape=None, dopdf=True,rt=None):
 def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=True, fullGT=False,
 	pool_size=None, block=1, screen=False, **kwargs):
 	r"""
-	Calculate kSS, kNSS, kF, k*, kQSD, and MFPT for the transition path
-	ensemble A_sel --> B_sel from rate matrix K. K can be the matrix of an original
-	Markov chain, or a partially graph-transformed Markov chain. [Wales09]_
+	In a total state space partitioned into three sets A,B and I, calculate 
+	various approximate A<->B transition rates [Wales09]_ and the MFPT from a
+	rate matrix K. K can be the matrix of an original Markov chain, or a 
+	partially graph-transformed Markov chain. [Swinburne20a]_
 
-	Differs from ``compute_passage_stats()`` in that this function removes all intervening states
+	Rate definitions (all assume A,B in local equilibrium) see [Swinburne20a]_ for details
+
+	kSS :  assumes I in steady state, A,B local equilibrium
+
+	kNSS : Relaxes counts for non-steady state in I. Tends to exact rate if reactant metastable
+
+	k^F : Boltzmann weighted sum of inverse of exact MFPT from each reactant state, i.e. :math:`\sum_j\pi_j/\mathcal{T}_j`
+	
+	k^* : Inverse of exact MFPT from reactant, i.e. :math:`1/\sum_j\pi_j\mathcal{T}_j`
+
+	``compute_rates()`` differs from ``compute_passage_stats()`` in that this function removes all intervening states
 	using GT before computing FPT stats and rates on the fully reduced network
 	with state space :math:`(\mathcal{A} \cup \mathcal{B})`. This implementation also does not rely on a full
 	eigendecomposition of the non-absorbing matrix; it instead performs a matrix inversion,
