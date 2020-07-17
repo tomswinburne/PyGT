@@ -100,7 +100,7 @@ def blockGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=False,
 			Threshold condition number below which block matrix inversion
 			is attempted. If block condition number is too high, conventional
 			GT is used to remove nodes, which is less efficient but more stable.
-			Default=``1e13``
+			Default= ``1e13``
 	Returns
 	-------
 	B:		(N',N') dense or sparse matrix
@@ -252,7 +252,8 @@ def singleGT(rm_vec,B,tau,cond_thresh=1.0e13):
 	cond_thresh: float, optional
 			Threshold condition number below which matrix inversion is attempted.
 			If condition number is higher than ``cond_thresh``,
-			``singleGT()`` returns ``success=False``. Default=``1.0e13``
+			``singleGT()`` returns ``success=False``.
+			Default= ``1.0e13``
 	Returns
 	-------
 	B:		(N',N') dense or sparse matrix

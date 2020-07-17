@@ -205,7 +205,7 @@ def compute_escape_stats(B_sel, pi, K, tau_escape=None, dopdf=True,rt=None):
 	else:
 		return tau
 
-def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=True, fullGT=False, 
+def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=True, fullGT=False,
 	pool_size=None, block=1, screen=False, **kwargs):
 	r"""
 	Calculate kSS, kNSS, kF, k*, kQSD, and MFPT for the transition path
@@ -312,6 +312,10 @@ def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=Tru
 		rho = inits[i]
 		#MFPTs to B from each source microstate a
 		T_Ba = np.zeros(r_s.sum())
+
+		if not fullGT:
+			fullGT = bool(np.linalg.cond(rQ[r_s,:][:,r_s])>1.0e12)
+
 		if not fullGT:
 			#MFPT calculation via matrix inversion
 			invQ = spla.inv(rQ[r_s,:][:,r_s])
