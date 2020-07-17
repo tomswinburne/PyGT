@@ -228,11 +228,11 @@ def compute_rates(A_sel, B_sel, B, tau, pi, initA=None, initB=None, MFPTonly=Tru
 		\tau^\prime_b}{1-P^\prime_{bb}}
 		\end{equation}
 
-	If the MFPT is less than :math:`10^{20}`, `fullGT` does not need to be
-	specified since the inversion of the non-absorbing matrix is numerically
-	stable. However, for extremely metastable systems, `fullGT` should be
-	specified to ensure numerical stability of the operation.
-
+	If the MFPT is less than :math:`10^{20}`, `fullGT` should not be needed
+	since the inversion of the non-absorbing matrix should be numerically
+	stable. However, a condition number check is performed regardless, which
+	forces a full GT if the MFPT problem is considered numerically unstable.
+	
 
 	Parameters
 	----------
