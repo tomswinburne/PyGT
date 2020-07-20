@@ -49,7 +49,8 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
-    'matplotlib.sphinxext.plot_directive'
+    'matplotlib.sphinxext.plot_directive',
+	"sphinx_rtd_theme"
     ]
 
 autodoc_member_order = 'bysource'
@@ -101,12 +102,13 @@ pygments_style = 'sphinx'
 #html_theme = 'zerovm'
 #import zerovm_sphinx_theme
 #html_theme_path = [zerovm_sphinx_theme.theme_path]
-import sphinx_theme
-html_theme = "stanford_theme"
-html_theme_path = [sphinx_theme.get_html_theme_path('stanford-theme')]
 
-#import sphinx_rtd_theme
-#html_theme = "sphinx_rtd_theme"
+#import sphinx_theme
+#html_theme = "stanford_theme"
+#html_theme_path = [sphinx_theme.get_html_theme_path('stanford-theme')]
+
+import sphinx_rtd_theme
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
