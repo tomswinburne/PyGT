@@ -5,7 +5,7 @@
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = PyGT
-SOURCEDIR     = ./
+SOURCEDIR     = source
 BUILDDIR      = build
 
 
