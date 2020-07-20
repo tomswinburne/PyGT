@@ -1,5 +1,6 @@
 *.npz
 *.txt
+!docs/requirements.txt
 *.pdf
 *.pyc
 *.egg-info
