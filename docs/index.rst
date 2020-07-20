@@ -17,9 +17,9 @@
    mfpt.rst
    spectral.rst
    tools.rst
-
-
-
+   
+   tutorials/basic.nblink
+   tutorials/coarse.nblink
 
 Indices and tables
 ==================
