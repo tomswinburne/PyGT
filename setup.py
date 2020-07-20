@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.1.0",
     author="TD Swinburne",
     author_email="swinburne@cinam.univ-mrs.fr",
-    description="Numerically stable analysis of metastable Markov chains in Python",
+    description="Stable analysis of metastable Markov chains in Python",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/tomswinburne/PyGT",

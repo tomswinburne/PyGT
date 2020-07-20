@@ -1,4 +1,4 @@
-# PyGT : Numerically stable analysis of metastable Markov chains in Python
+# PyGT : Stable analysis of metastable Markov chains in Python
 
 > Tom Swinburne, CNRS-CINaM, swinburne at cinam.univ-mrs.fr
 
