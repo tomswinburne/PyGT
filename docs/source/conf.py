@@ -160,7 +160,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'PyGT.tex', 'graph\\_tran Documentation',
+    (master_doc, 'PyGT.tex', 'PyGT Documentation',
      'Thomas D. Swinburne, Deepti Kannan', 'manual'),
 ]
 
