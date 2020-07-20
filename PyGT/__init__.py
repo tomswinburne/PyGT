@@ -16,11 +16,13 @@ PyGT - Python analysis of metastable Markov models using graph transformation
 
 .. note::
 
-	We highly recommend checking out the tutorials in this doc. These are 
-	generated from jupyter notebooks that can be found on github at 
-	https://github.com/tomswinburne/PyGT/
+	We highly recommend checking out the tutorials in this doc, which are 
+	generated from jupyter notebooks.
+	
+	These notebooks can be run online with binder -`basic tutorial online <https://gesis.mybinder.org/binder/v2/gh/tomswinburne/PyGT/87ec9aea8cfb38e85ed90a84adeafd03fb21e92f>`_
 
-	To obatain these notebooks simply clone the repo:
+	Alternatively,  they can be found on github at 	https://github.com/tomswinburne/PyGT/
+	To obtain these notebooks simply clone the repo:
 
 	.. code-block:: none
 
