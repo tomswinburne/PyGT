@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="PyGT",
-    version="0.1.0",
+    version="0.2.0",
     author="TD Swinburne",
     author_email="swinburne@cinam.univ-mrs.fr",
     description="Stable analysis of metastable Markov chains",
