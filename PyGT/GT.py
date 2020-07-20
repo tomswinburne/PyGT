@@ -311,6 +311,7 @@ def singleGT(rm_vec,B,tau,cond_thresh=1.0e13):
 			b_xx = Bix.sum()
 		else:
 			b_xx = 1.0-Bxx
+
 		if dense:
 			iDjj = iDjj.flatten()
 			Bxj = np.ravel(Bxj.flatten() / b_xx)
