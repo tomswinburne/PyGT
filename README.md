@@ -15,23 +15,23 @@ J. Chemical Physics (accepted 2020)
 More functionality will be added soon. Please see full documentation at [readthedocs](https://pygt.readthedocs.io)
 
 ## Recommended installation with pip
-- If you want to avoid updates to `numpy`,`scipy` and `matplotlib` we recommend using a `virtualenv` with e.g. [conda](https://docs.conda.io/en/latest/miniconda.html)-
+- We recommend using a `virtualenv` with e.g. [conda](https://docs.conda.io/en/latest/miniconda.html)-
 ```
 	conda create --name PyGTenv python=3.5
 	conda activate PyGTenv
 ```
-- One can then install PyGT using `pip` with
+- One can then safely install PyGT using `pip` with
 ```
 	pip install PyGT
 ```
 
 ## Run the examples
-- Install jupyter notebook, again inside virtualenv if desired
+- Install jupyter notebook if required, inside the same `virtualenv`
 ```
 	pip install jupyter
 ```
 - Open the example notebook
 ```
   cd examples
-	jupyter-notebook basic_functions.ipynb
+  jupyter-notebook basic_functions.ipynb
 ```

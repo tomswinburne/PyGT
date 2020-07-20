@@ -13,7 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/tomswinburne/PyGT",
     packages=setuptools.find_packages(),
-    install_requires=['scipy','numpy','matplotlib','tqdm','pathos'],
+    install_requires=['scipy>=1.5','numpy>=1.17','matplotlib>=3','tqdm>=4.47','pathos>=0.26'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
