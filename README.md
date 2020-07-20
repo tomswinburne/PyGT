@@ -28,7 +28,7 @@ More functionality will be added soon. Please see full documentation at [readthe
 ## Run the examples
 - Install jupyter notebook if required, inside the same `virtualenv`
 ```
-	pip install jupyter
+	conda install -c conda-forge jupyterlab
 ```
 - Open the example notebook
 ```
