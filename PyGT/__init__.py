@@ -11,12 +11,18 @@ PyGT - Python analysis of metastable Markov models using graph transformation
 
 		pip install PyGT
 
-	An alternative is to checkout the git repository then ensure the
-	``PyGT-git-repo/PyGT/`` directory is in ``$PYTHON_PATH``, e.g. using
-	``sys.path.insert`` (as in the example notebook)
+	Check out the examples on github at https://github.com/tomswinburne/PyGT/
+	.. code-block:: none
 
-It is highly recommended to run the example notebooks that can be found on our
-GitHub repo at https://github.com/tomswinburne/PyGT/
+		# clone entire source code and examples
+		git clone https://github.com/tomswinburne/PyGT.git
+		# go to examples folder
+		cd PyGT/examples
+		# run notebook
+		jupyter-notebook basic-functions.ipynb
+
+	An alternative to ``pip`` installation is ensure ``PyGT/PyGT/`` is in ``$PYTHON_PATH``
+	or use ``sys.path.insert`` (see example notebook)
 
 Graph transformation [Wales09]_ is a deterministic dimensionality reduction algorithm
 that iteratively removes nodes from a Markov Chain while preserving the mean first
