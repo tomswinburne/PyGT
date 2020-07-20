@@ -11,7 +11,8 @@ PyGT - Python analysis of metastable Markov models using graph transformation
 
 		pip install PyGT
 
-	Check out the examples on github at https://github.com/tomswinburne/PyGT/
+	Checkout the examples on github at https://github.com/tomswinburne/PyGT/
+
 	.. code-block:: none
 
 		# clone entire source code and examples
