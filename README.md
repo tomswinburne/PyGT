@@ -12,7 +12,15 @@ T.D. Swinburne and D.J. Wales, *Defining, Calculating, and Converging Observable
 T.D. Swinburne, D. Kannan, D.J. Sharpe and D.J. Wales, *Rare Events and First Passage Time Statistics From the Energy Landscape*,
 J. Chemical Physics (accepted 2020)
 
-More functionality will be added soon. Please see full documentation at [readthedocs](https://pygt.readthedocs.io)
+More functionality will be added soon. 
+
+## Documentation and online examples
+
+ - Example notebooks can be run online with binder: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tomswinburne/PyGT/master?filepath=examples%2Fbasic_functions.ipynb)
+
+ - Please see full documentation at [readthedocs](https://pygt.readthedocs.io)
+
+
 
 ## Recommended installation with pip
 - We recommend using a `virtualenv` with e.g. [conda](https://docs.conda.io/en/latest/miniconda.html)-
@@ -25,7 +33,7 @@ More functionality will be added soon. Please see full documentation at [readthe
 	pip install PyGT
 ```
 
-## Run the examples
+## Run the examples locally
 - Install [jupyter](https://jupyter.org/install) notebook if required, inside the same `virtualenv`
 ```
 	conda install -c conda-forge notebook

@@ -11,16 +11,22 @@ PyGT - Python analysis of metastable Markov models using graph transformation
 
 		pip install PyGT
 
-	An alternative to ``pip`` installation is ensure ``PyGT/PyGT/`` is in ``$PYTHON_PATH`` 
+	An alternative to ``pip`` installation is ensure ``PyGT/PyGT/`` is in ``$PYTHON_PATH``
 	or use ``sys.path.insert`` (see example notebook)
 
 .. note::
 
-	We highly recommend checking out the tutorials in this doc, which are 
+	We highly recommend checking out the tutorials in this doc, which are
 	generated from jupyter notebooks.
-	
-	These notebooks can be run online with binder -`basic tutorial online <https://gesis.mybinder.org/binder/v2/gh/tomswinburne/PyGT/87ec9aea8cfb38e85ed90a84adeafd03fb21e92f>`_
 
+	These notebooks can be run online with binder: |binderlink|
+
+
+	.. |binderlink| image:: https://mybinder.org/badge_logo.svg
+					:target: https://mybinder.org/v2/gh/tomswinburne/PyGT.git/master?filepath=examples%2Fbasic_functions.ipynb
+
+
+	
 	Alternatively,  they can be found on github at 	https://github.com/tomswinburne/PyGT/
 	To obtain these notebooks simply clone the repo:
 
