@@ -10,7 +10,7 @@ Beta version of code used in the following papers :
 T.D. Swinburne and D.J. Wales, *Defining, Calculating, and Converging Observables of a Kinetic Transition Network*, J. Chemical Theory and Computation (2020), [link](https://doi.org/10.1021/acs.jctc.9b01211)
 
 T.D. Swinburne, D. Kannan, D.J. Sharpe and D.J. Wales, *Rare Events and First Passage Time Statistics From the Energy Landscape*,
-J. Chemical Physics (accepted 2020)
+Submitted to J. Chemical Physics (2020)
 
 More functionality will be added soon. 
 
