@@ -26,7 +26,7 @@ PyGT - Python analysis of metastable Markov models using graph transformation
 					:target: https://mybinder.org/v2/gh/tomswinburne/PyGT.git/master?filepath=examples%2Fbasic_functions.ipynb
 
 
-	
+
 	Alternatively,  they can be found on github at 	https://github.com/tomswinburne/PyGT/
 	To obtain these notebooks simply clone the repo:
 
@@ -70,7 +70,7 @@ also be cited when using this software:
 
 .. [Swinburne20a] T.D. Swinburne and D.J. Wales, *Defining, Calculating, and Converging Observables of a Kinetic Transition Network*, J. Chemical Theory and Computation (2020), https://doi.org/10.1021/acs.jctc.9b01211
 
-.. [Swinburne20b] T.D. Swinburne, D. Kannan, D.J. Sharpe and D.J. Wales, *Rare Events and First Passage Time Statistics From the Energy Landscape*, J. Chemical Physics (2020)
+.. [Swinburne20b] T.D. Swinburne, D. Kannan, D.J. Sharpe and D.J. Wales, *Rare Events and First Passage Time Statistics From the Energy Landscape*, Submitted to J. Chemical Physics (2020)
 
 .. [Kannan20a] D. Kannan, D.J. Sharpe, T.D. Swinburne and D.J. Wales, *Dimensionality reduction of Markov chains using mean first passage times with graph transformation*, In Prep. (2020)
 
