@@ -1,36 +1,45 @@
 """
-PyGT - Python analysis of metastable Markov models using graph transformation
+PyGT - Graph transformation and reduction in Python
 ---------------------------------------------------------------------------------------------
+
+
+
+**Graph transformation is designed for highly metastable (ill-conditioned) systems, where linear algebra methods fail.** ``PyGT`` **extracts observables and produces coarse-grained models.**
 
 .. note::
 
 
-	You can install ``PyGT`` using the ``pip`` package manager, preferably in a virtualenv:
+	You can install ``PyGT`` using the ``pip`` package manager (preferably in a virtualenv):
 
-	.. code-block:: none
+	.. code-block:: bash
 
 		pip install PyGT
 
-	An alternative to ``pip`` installation is ensure ``PyGT/PyGT/`` is in ``$PYTHON_PATH``
-	or use ``sys.path.insert`` (see example notebook)
+	Simplest possible usage in Python:
+
+	.. code-block:: python
+
+		import PyGT
+
+		# B : branching probabilities, tau : waiting times, pi : Boltzmann
+		# rm_vec : Boolean vector of nodes to remove
+
+		gt_B, gt_tau = PyGT.GT.blockGT(rm_vec,B,tau,block=10)
+
+		# gt_B,gt_tau : exact branching probabilites and waiting times
 
 .. note::
 
-	We highly recommend checking out the tutorials in this doc, which are
-	generated from jupyter notebooks.
-
-	These notebooks can be run online with binder: |binderlink|
-
+	Tutorials (see menu) can be run online with binder: |binderlink|
 
 	.. |binderlink| image:: https://mybinder.org/badge_logo.svg
 					:target: https://mybinder.org/v2/gh/tomswinburne/PyGT.git/master?filepath=examples%2Fbasic_functions.ipynb
 
 
 
-	Alternatively,  they can be found on github at 	https://github.com/tomswinburne/PyGT/
-	To obtain these notebooks simply clone the repo:
+	The notebooks can be cloned from the PyGT github repo:
 
-	.. code-block:: none
+	.. code-block:: bash
 
 		# clone entire source code and examples
 		git clone https://github.com/tomswinburne/PyGT.git
@@ -39,15 +48,16 @@ PyGT - Python analysis of metastable Markov models using graph transformation
 		# run notebook
 		jupyter-notebook basic-functions.ipynb
 
-
 Graph transformation [Wales09]_ is a deterministic dimensionality reduction algorithm
 that iteratively removes nodes from a Markov Chain while preserving the mean first
 passage time (MFPT) and branching probabilites between the retained nodes.
 The original Markov chain does not need to satisfy detailed balance.
+
 This package provides an efficient implementation of the graph transformation algorithm,
 accelerated via partial block matrix inversions [Swinburne20a]_ for abitrary
 discrete-time or continuous-time Markov chains [Kannan20a]_. Code is also provided
-for the calculation of first passage time statistics and phenomenological rate constants between endpoint macrostates [Wales09]_ [Swinburne20b]_.
+for the calculation of first passage time statistics and phenomenological
+rate constants between endpoint macrostates [Wales09]_ [Swinburne20b]_.
 
 We also include code for two different approaches to the dimensionality reduction
 of Markov chains using the graph transformation algorithm. In the first
