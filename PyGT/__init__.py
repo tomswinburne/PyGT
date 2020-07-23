@@ -17,16 +17,15 @@ PyGT - Graph transformation and reduction in Python
 
 	Simplest possible usage in Python:
 
+		- Takes matrix ``B`` of branching probabilites and ``tau`` of waiting times
+		- Removes nodes selected by ``rm_vec``
+		- Retained nodes have exact branching probabilities ``gt_B`` and waiting times ``gt_tau``
+
 	.. code-block:: python
 
 		import PyGT
-
-		# B : branching probabilities, tau : waiting times, pi : Boltzmann
-		# rm_vec : Boolean vector of nodes to remove
-
+		# Removes nodes in blocks of <=10 whilst retaining numerical stability
 		gt_B, gt_tau = PyGT.GT.blockGT(rm_vec,B,tau,block=10)
-
-		# gt_B,gt_tau : exact branching probabilites and waiting times
 
 .. note::
 
@@ -35,7 +34,7 @@ PyGT - Graph transformation and reduction in Python
 	.. |binderlink| image:: https://mybinder.org/badge_logo.svg
 					:target: https://mybinder.org/v2/gh/tomswinburne/PyGT.git/master?filepath=examples%2Fbasic_functions.ipynb
 
-
+.. note::
 
 	The notebooks can be cloned from the PyGT github repo:
 
