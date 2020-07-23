@@ -1,10 +1,10 @@
-# PyGT : Stable analysis of metastable Markov chains
+# PyGT : Graph transformation and reduction in Python
 
 > Tom Swinburne, CNRS-CINaM, swinburne at cinam.univ-mrs.fr
 
 > Deepti Kannan, U Cambridge
 
-v0.1.0 :copyright: TD Swinburne and D Kannan 2020
+v0.2.0 :copyright: TD Swinburne and D Kannan 2020
 
 Beta version of code used in the following papers :
 T.D. Swinburne and D.J. Wales, *Defining, Calculating, and Converging Observables of a Kinetic Transition Network*, J. Chemical Theory and Computation (2020), [link](https://doi.org/10.1021/acs.jctc.9b01211)
@@ -12,7 +12,7 @@ T.D. Swinburne and D.J. Wales, *Defining, Calculating, and Converging Observable
 T.D. Swinburne, D. Kannan, D.J. Sharpe and D.J. Wales, *Rare Events and First Passage Time Statistics From the Energy Landscape*,
 Submitted to J. Chemical Physics (2020)
 
-More functionality will be added soon. 
+More functionality will be added soon.
 
 ## Documentation and online examples
 
