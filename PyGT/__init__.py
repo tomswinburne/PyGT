@@ -1,32 +1,33 @@
-"""
+r"""
 PyGT - Graph transformation and reduction in Python
 ---------------------------------------------------------------------------------------------
 
+**Graph transformation is designed for highly metastable (ill-conditioned) systems, where linear algebra methods fail.** [Wales09]_
 
-
-**Graph transformation is designed for highly metastable (ill-conditioned) systems, where linear algebra methods fail.** ``PyGT`` **extracts observables and produces coarse-grained models.**
+``PyGT`` **produces stable coarse-grained models with exact branching probabilities and mean first passage times.** [Swinburne20a]_
 
 .. note::
 
-
-	You can install ``PyGT`` using the ``pip`` package manager (preferably in a virtualenv):
+	You can install ``PyGT`` using the ``pip`` package manager (preferably in a virtual environment):
 
 	.. code-block:: bash
 
 		pip install PyGT
 
-	Simplest possible usage in Python:
 
-		- Takes matrix ``B`` of branching probabilites and ``tau`` of waiting times
-		- Removes nodes selected by ``rm_vec``
-		- Retained nodes have exact branching probabilities ``gt_B`` and waiting times ``gt_tau``
+Simplest possible usage in continuous time with transition rates :math:`k_{ij}`:
+	- Vector ``tau`` of mean state waiting times :math:`\tau_j=1/\left(\sum_ik_{ij}\right)`
+	- Sparse or dense matrix ``B`` of branching probabilities :math:`B_{ij}=k_{ij}\tau_j`
+	- Boolean vector ``rm_vec`` selecting nodes to remove
 
 	.. code-block:: python
 
 		import PyGT
-		# Removes nodes in blocks of <=10 whilst retaining numerical stability
-		gt_B, gt_tau = PyGT.GT.blockGT(rm_vec,B,tau,block=10)
+		# Removes nodes in blocks of <=30 whilst retaining numerical stability
+		gt_B, gt_tau = PyGT.GT.blockGT(rm_vec,B,tau,block=30,screen=True)
 
+	.. image:: example.png
+	
 .. note::
 
 	Tutorials (see menu) can be run online with binder: |binderlink|
@@ -34,9 +35,7 @@ PyGT - Graph transformation and reduction in Python
 	.. |binderlink| image:: https://mybinder.org/badge_logo.svg
 					:target: https://mybinder.org/v2/gh/tomswinburne/PyGT.git/master?filepath=examples%2Fbasic_functions.ipynb
 
-.. note::
-
-	The notebooks can be cloned from the PyGT github repo:
+	The notebooks can also be cloned from the ``PyGT`` github repo:
 
 	.. code-block:: bash
 

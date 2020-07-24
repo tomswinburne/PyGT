@@ -122,7 +122,9 @@ def blockGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=False,
 		density = B[B>0.0].sum()/float(B.size)
 
 	retry=0
+
 	N = rm_vec.size
+	pN = N
 	#total number of states to remove
 	NI = rm_vec.sum()
 	D = 1.0 / tau
@@ -194,7 +196,7 @@ def blockGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=False,
 			rmb = 1
 			retry += 1
 			if screen and has_tqdm:
-				pobar = tqdm(total=rm.sum(),leave=True,mininterval=0.0,desc="1-by-1 GT subloop")
+				pobar = tqdm(total=rm.sum(),leave=True,mininterval=0.0,desc="1-by-1 GT subloop for stability")
 	if screen and has_tqdm:
 		pbar.close()
 
@@ -223,7 +225,7 @@ def blockGT(rm_vec,B,tau,block=20,order=None,rates=False,Ndense=50,screen=False,
 			K = K.todense()
 
 	if screen:
-		print("GT done in %2.2g seconds with %d floating point corrections" % (time.time()-t,retry))
+		print("GT removed %d nodes in %2.2g seconds with %d floating point corrections" % (pN-N,time.time()-t,retry))
 
 	if rates:
 		return B,tau,K
