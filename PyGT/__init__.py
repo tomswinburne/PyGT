@@ -2,9 +2,9 @@ r"""
 PyGT - Graph transformation and reduction in Python
 ---------------------------------------------------------------------------------------------
 
-**Graph transformation is designed for highly metastable (ill-conditioned) systems, where linear algebra methods fail.** [Wales09]_
+**Graph transformation is designed for the analysis of highly metastable (ill-conditioned) Markov chains, where linear algebra methods fail.** [Wales09]_
 
-``PyGT`` **produces stable coarse-grained models with exact branching probabilities and mean first passage times.** [Swinburne20a]_
+``PyGT`` **produces stable coarse-grained models with exact branching probabilities and mean first passage times, in discrete or continuous time.** [Swinburne20a]_
 
 .. note::
 
