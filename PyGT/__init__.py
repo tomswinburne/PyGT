@@ -23,8 +23,8 @@ Simplest possible usage in continuous time with transition rates :math:`k_{ij}`:
 	.. code-block:: python
 
 		import PyGT
-		# Removes nodes in blocks of <=30 whilst retaining numerical stability
-		gt_B, gt_tau = PyGT.GT.blockGT(rm_vec,B,tau,block=30,screen=True)
+		# Removes nodes in blocks of <=50 whilst retaining numerical stability
+		gt_B, gt_tau = PyGT.GT.blockGT(rm_vec,B,tau,block=50,screen=True)
 
 	.. image:: example.png
 	
