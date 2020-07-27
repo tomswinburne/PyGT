@@ -7,9 +7,7 @@
 v0.3.0 :copyright: TD Swinburne and D Kannan 2020
 
 ## Quick installation
-```bash
-pip install PyGT
-```
+```pip install PyGT```
 If this looks unfamiliar, please see below
 
 
