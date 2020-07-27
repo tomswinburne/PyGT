@@ -4,7 +4,14 @@
 
 > Deepti Kannan, U Cambridge
 
-v0.2.0 :copyright: TD Swinburne and D Kannan 2020
+v0.3.0 :copyright: TD Swinburne and D Kannan 2020
+
+## Quick installation
+```bash
+pip install PyGT
+```
+If this looks unfamiliar, please see below
+
 
 Beta version of code used in the following papers :
 T.D. Swinburne and D.J. Wales, *Defining, Calculating, and Converging Observables of a Kinetic Transition Network*, J. Chemical Theory and Computation (2020), [link](https://doi.org/10.1021/acs.jctc.9b01211)
@@ -24,12 +31,12 @@ More functionality will be added soon.
 
 ## Recommended installation with pip
 - We recommend using a `virtualenv` with e.g. [conda](https://docs.conda.io/en/latest/miniconda.html)-
-```
+```bash
 	conda create --name PyGTenv python=3.5
 	conda activate PyGTenv
 ```
 - One can then safely install PyGT using `pip` with
-```
+```bash
 	pip install PyGT
 ```
 
