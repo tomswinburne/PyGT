@@ -326,7 +326,7 @@ class Analyze_KTN(object):
 			raise AttributeError('Either communities or commdata must' \
 								'be specified.')
 		if K is not None and pi is not None:
-			commpi = self.get_comm_stat_probs(np.log(pi), log=False)
+			commpi = self.get_comm_stat_probs(pi, log=False)
 			self.commpi = commpi
 
 	def construct_coarse_rate_matrix_LEA(self):
@@ -568,14 +568,14 @@ class Analyze_KTN(object):
 				errors[i] += np.linalg.norm(coarse_evec - Kevecs[i, minima])
 		return errors
 
-	def get_comm_stat_probs(self, logpi, log=True):
+	def get_comm_stat_probs(self, pi, log=False):
 		""" Calculate the community stationary probabilities by summing over
 		the stationary probabilities of the nodes in each community.
 
 		Parameters
 		----------
-		logpi : list (nnodes,)
-			log stationary probabilities of node in original Markov chain
+		pi : list (nnodes,)
+			stationary probabilities of node in original Markov chain
 
 		Returns
 		-------
@@ -584,19 +584,21 @@ class Analyze_KTN(object):
 
 		"""
 
-		pi = np.exp(logpi)
+		#pi = np.exp(logpi)
 		if (np.sum(pi) - 1.0) > 1.E-10:
 			pi = pi/np.sum(pi)
-			logpi = np.log(pi)
 		ncomms = len(self.communities)
-		logcommpi = np.zeros((ncomms,))
+		commpi = np.zeros((ncomms,))
 		for ci in self.communities:
 			#zero-indexed list of minima in community ci
 			nodelist = np.array(self.communities[ci]) - 1
-			logcommpi[ci-1] = -np.inf
+			#logcommpi[ci-1] = -np.inf
+			commpi[ci-1] = 0
 			for node in nodelist:
-				logcommpi[ci-1] = np.log(np.exp(logcommpi[ci-1]) + np.exp(logpi[node]))
-		commpi = np.exp(logcommpi)
+				commpi[ci-1] += pi[node]
+				#logcommpi[ci-1] = np.log(np.exp(logcommpi[ci-1]) + np.exp(logpi[node]))
+		#commpi = np.exp(logcommpi)
+		logcommpi = np.log(commpi)
 		assert abs(np.sum(commpi) - 1.0) < 1.E-10
 		if log:
 			return logcommpi
