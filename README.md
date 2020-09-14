@@ -2,7 +2,7 @@
 
 > Tom Swinburne, CNRS-CINaM, swinburne at cinam.univ-mrs.fr
 
-> Deepti Kannan, Wales Group, Cambridge, dw34 at cam.ac.uk
+> Deepti Kannan, Wales Group, Cambridge, dk588 at cam.ac.uk
 
 v0.3.0 :copyright: TD Swinburne and D Kannan 2020
 
