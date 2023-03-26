@@ -1,6 +1,6 @@
 # PyGT : Graph transformation and reduction in Python
 
-> Tom Swinburne, CNRS-CINaM, swinburne at cinam.univ-mrs.fr
+> Tom Swinburne, CNRS-CINaM, thomas dor swinburne at cnrs.fr
 
 > Deepti Kannan, Wales Group, Cambridge, dk588 at cam.ac.uk
 
